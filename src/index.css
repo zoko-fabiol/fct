@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --fct-blue-dark: #0f2a4a;
+    --fct-blue-primary: #1e3a8a;
+    --fct-green-primary: #059669;
+    --fct-green-light: #10b981;
+    --fct-bg-light: #f8fafc;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  body {
+    background-color: #f8fafc;
+    color: #1e293b;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Print styles for official FCT documents (Contracts, Invoices, Receipts) */
+@media print {
+  nav, header, aside, .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}

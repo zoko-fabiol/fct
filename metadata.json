@@ -1,0 +1,6 @@
+{
+  "name": "FCT ERP & CRM Automobile - Douala",
+  "description": "Système intégré de gestion automobile (ERP & CRM) pour Franchise Conseils Trading (FCT) à Bonamoussadi Douala. Flotte, locations, ventes, caisse certifiée XAF et synchronisation hors-ligne.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

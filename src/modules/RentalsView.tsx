@@ -1,0 +1,1733 @@
+/**
+ * @license
+ * FCT ERP & CRM AUTOMOBILE - Locations & Gestion des Contrats 360°
+ * Franchise Conseils Trading - Douala, Cameroun
+ */
+
+import React, { useState, useMemo } from 'react';
+import { dbStore, DatabaseState } from '../services/dbStore.ts';
+import { CloudinaryUploadDropzone } from '../components/ui/CloudinaryUploadDropzone.tsx';
+import { Language, translations } from '../services/i18n.ts';
+import { RentalContract, RentalStatus, AppModule } from '../../packages/shared-types/index.ts';
+import {
+  formatXAF,
+  calculateRentalDays,
+  checkVehicleAvailability,
+  hasEffectivePermission,
+} from '../../packages/business-rules/index.ts';
+import { DocumentPrintData } from '../components/DocumentModal.tsx';
+import { DeleteConfirmModal } from '../components/DeleteConfirmModal.tsx';
+import { DocumentViewerModal } from '../components/ui/DocumentViewerModal.tsx';
+import {
+  EntityActivitySummary,
+  EntitySearchFilters,
+  EntityStatusBadge,
+  EntityDetailHeader,
+  EntityTabs,
+  EntityRelations,
+  EntityTimeline,
+  EmptyState,
+} from '../components/ui/EntityComponents.tsx';
+import { EntityShowroomLayout } from '../components/ui/EntityShowroomLayout.tsx';
+import { EntityCard } from '../components/ui/EntityCard.tsx';
+import {
+  Upload,
+  FileText,
+  Eye,
+  Download,
+  KeyRound,
+  Plus,
+  Printer,
+  Calendar,
+  AlertCircle,
+  CheckCircle2,
+  Car,
+  Clock,
+  Shield,
+  X,
+  UserCheck,
+  Pencil,
+  Ban,
+  Trash2,
+  Wallet,
+  Receipt,
+  ExternalLink,
+  DollarSign,
+  User,
+  ArrowRight,
+  Gauge,
+  Fuel,
+  FileCheck,
+  ClipboardList,
+} from 'lucide-react';
+
+interface RentalsViewProps {
+  state: DatabaseState;
+  lang: Language;
+  onOpenPrintModal: (data: DocumentPrintData) => void;
+  onNavigate?: (module: AppModule, entityId?: string) => void;
+  contextEntityId?: string | null;
+}
+
+export const RentalsView: React.FC<RentalsViewProps> = ({
+  state,
+  lang,
+  onOpenPrintModal,
+  onNavigate,
+  contextEntityId,
+}) => {
+  const currentUser = dbStore.getCurrentUser();
+  const [activeTab, setActiveTab] = useState<string>('ALL');
+  const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+
+  // Selected contract for Showroom / Fiche Détaillée
+  const [selectedContract, setSelectedContract] = useState<RentalContract | null>(null);
+  const [contractDetailTab, setContractDetailTab] = useState<'TERMS' | 'DOCS' | 'VEHICLE' | 'CUSTOMER' | 'INSPECTION' | 'FINANCES' | 'TIMELINE'>('TERMS');
+
+  // Modals
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingContract, setEditingContract] = useState<RentalContract | null>(null);
+  const [cancelConfirmContract, setCancelConfirmContract] = useState<RentalContract | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [actionAlert, setActionAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Return Check-out Inspection Modal State
+  const [returnModalContract, setReturnModalContract] = useState<RentalContract | null>(null);
+  const [returnMileage, setReturnMileage] = useState<number>(0);
+  const [returnFuel, setReturnFuel] = useState<number>(8);
+  const [penaltiesAmount, setPenaltiesAmount] = useState<number>(0);
+  const [penaltyNotes, setPenaltyNotes] = useState<string>('');
+
+  const [editForm, setEditForm] = useState({
+    startDate: '',
+    endDate: '',
+    dailyRateXAF: 0,
+    securityDepositXAF: 0,
+    driverIncluded: false,
+    driverId: '',
+  });
+
+  // Form State for new contract
+  const [contractForm, setContractForm] = useState({
+    customerId: state.customers[0]?.id || '',
+    vehicleId: state.vehicles.find((v) => v.status === 'AVAILABLE')?.id || '',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString().split('T')[0],
+    dailyRateXAF: 85000,
+    securityDepositXAF: 300000,
+    driverIncluded: false,
+    driverId: '',
+  });
+
+  // Handle contextual opening
+  React.useEffect(() => {
+    if (contextEntityId) {
+      // 1. Is it a Customer ID? (e.g. from CRM "Nouveau Contrat")
+      const cust = state.customers.find((c) => c.id === contextEntityId);
+      if (cust) {
+        setContractForm((prev) => ({
+          ...prev,
+          customerId: cust.id,
+        }));
+        setSelectedContract(null);
+        setIsCreateModalOpen(true);
+        return;
+      }
+
+      // 2. Is it a Vehicle ID? (e.g. from Showroom "Louer ce véhicule")
+      const veh = state.vehicles.find((v) => v.id === contextEntityId);
+      if (veh) {
+        setContractForm((prev) => ({
+          ...prev,
+          vehicleId: veh.id,
+          dailyRateXAF: veh.rentalDailyRate,
+          securityDepositXAF: veh.securityDepositRate,
+        }));
+        setSelectedContract(null);
+        setIsCreateModalOpen(true);
+        return;
+      }
+
+      // 3. Is it a Contract ID? (to view showroom)
+      const contract = state.contracts.find((c) => c.id === contextEntityId);
+      if (contract) {
+        setSelectedContract(contract);
+        return;
+      }
+    }
+  }, [contextEntityId, state.customers, state.vehicles, state.contracts]);
+
+  // Top KPIs
+  const activeContractsCount = state.contracts.filter(
+    (c) => c.status === 'CONFIRMED' || (c.status as string) === 'ACTIVE'
+  ).length;
+  const completedContractsCount = state.contracts.filter(
+    (c) => c.status === 'RETURNED' || (c.status as string) === 'COMPLETED'
+  ).length;
+  const totalRevenue = state.contracts
+    .filter((c) => c.status !== 'CANCELLED')
+    .reduce((sum, c) => sum + (c.paidAmountXAF || 0), 0);
+  const totalPendingBalance = state.contracts
+    .filter((c) => c.status === 'CONFIRMED' || (c.status as string) === 'ACTIVE')
+    .reduce((sum, c) => sum + (c.remainingAmountXAF || 0), 0);
+
+  const kpis = [
+    {
+      id: 'kpi-active',
+      label: 'Contrats Actifs',
+      value: activeContractsCount,
+      sublabel: 'Véhicules en circulation',
+      icon: KeyRound,
+      colorVariant: 'blue' as const,
+    },
+    {
+      id: 'kpi-completed',
+      label: 'Locations Clôturées',
+      value: completedContractsCount,
+      sublabel: 'Véhicules restitués',
+      icon: CheckCircle2,
+      colorVariant: 'emerald' as const,
+    },
+    {
+      id: 'kpi-revenue',
+      label: 'Revenus Encaissés',
+      value: formatXAF(totalRevenue),
+      sublabel: 'XAF réglés en agence',
+      icon: DollarSign,
+      colorVariant: 'purple' as const,
+    },
+    {
+      id: 'kpi-balance',
+      label: 'Soldes en Attente',
+      value: formatXAF(totalPendingBalance),
+      sublabel: 'Reste à percevoir',
+      icon: Clock,
+      colorVariant: totalPendingBalance > 0 ? ('amber' as const) : ('slate' as const),
+    },
+  ];
+
+  const handleOpenEdit = (contract: RentalContract) => {
+    setEditingContract(contract);
+    setEditForm({
+      startDate: contract.startDate,
+      endDate: contract.endDate,
+      dailyRateXAF: contract.dailyRateXAF,
+      securityDepositXAF: contract.securityDepositXAF,
+      driverIncluded: contract.driverIncluded,
+      driverId: contract.driverId || '',
+    });
+    setFormError(null);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEditContract = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingContract) return;
+
+    const start = new Date(editForm.startDate).getTime();
+    const end = new Date(editForm.endDate).getTime();
+    const diffDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+    const totalAmount = diffDays * editForm.dailyRateXAF;
+
+    const driver = editForm.driverId ? state.drivers.find((d) => d.id === editForm.driverId) : undefined;
+
+    try {
+      dbStore.updateContract(editingContract.id, {
+        startDate: editForm.startDate,
+        endDate: editForm.endDate,
+        dailyRateXAF: editForm.dailyRateXAF,
+        securityDepositXAF: editForm.securityDepositXAF,
+        totalDays: diffDays,
+        totalAmountXAF: totalAmount,
+        remainingAmountXAF: Math.max(0, totalAmount - editingContract.paidAmountXAF),
+        driverIncluded: editForm.driverIncluded,
+        driverId: driver?.id,
+        driverName: driver?.fullName,
+      });
+
+      setIsEditModalOpen(false);
+      if (selectedContract?.id === editingContract.id) {
+        const updated = state.contracts.find((c) => c.id === editingContract.id);
+        if (updated) setSelectedContract(updated);
+      }
+      setActionAlert({
+        type: 'success',
+        message: `Contrat ${editingContract.contractNumber} mis à jour avec succès.`,
+      });
+      setTimeout(() => setActionAlert(null), 4000);
+    } catch (err: any) {
+      setFormError(err.message || 'Erreur lors de la modification du contrat');
+    }
+  };
+
+  const handleConfirmCancelContract = (reason: string) => {
+    if (!cancelConfirmContract) return;
+    try {
+      const num = cancelConfirmContract.contractNumber;
+      dbStore.cancelContract(cancelConfirmContract.id, reason);
+      setCancelConfirmContract(null);
+      if (selectedContract?.id === cancelConfirmContract.id) {
+        setSelectedContract(null);
+      }
+      setActionAlert({
+        type: 'success',
+        message: `Contrat ${num} annulé avec succès. Véhicule et chauffeur libérés.`,
+      });
+      setTimeout(() => setActionAlert(null), 4000);
+    } catch (err: any) {
+      setActionAlert({ type: 'error', message: err.message || 'Erreur lors de l’annulation' });
+      setTimeout(() => setActionAlert(null), 6000);
+    }
+  };
+
+  const handleSelectVehicle = (vehId: string) => {
+    const veh = state.vehicles.find((v) => v.id === vehId);
+    if (veh) {
+      setContractForm({
+        ...contractForm,
+        vehicleId: vehId,
+        dailyRateXAF: veh.rentalDailyRate,
+        securityDepositXAF: veh.securityDepositRate,
+      });
+    }
+  };
+
+  const handleCreateContract = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+
+    const availability = checkVehicleAvailability(
+      contractForm.vehicleId,
+      contractForm.startDate,
+      contractForm.endDate,
+      state.contracts
+    );
+
+    if (!availability.isAvailable) {
+      setFormError(availability.conflictReason || 'Véhicule déjà réservé sur cette période.');
+      return;
+    }
+
+    try {
+      const created = dbStore.createContract(contractForm);
+      setIsCreateModalOpen(false);
+      handlePrintContract(created);
+    } catch (err: any) {
+      setFormError(err.message || 'Erreur de création de contrat');
+    }
+  };
+
+  const handleConfirmReturn = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!returnModalContract) return;
+
+    dbStore.checkOutReturn(
+      returnModalContract.id,
+      {
+        fuelLevel: returnFuel,
+        mileage: returnMileage,
+        bodyConditionNotes: penaltyNotes || 'Restitution standard conforme',
+        cleanlinessCondition: penaltiesAmount > 0 ? 'DIRTY' : 'CLEAN',
+        hasSpareWheel: true,
+        hasJackAndTools: true,
+        inspectorName: dbStore.getCurrentUser().fullName,
+        photos: [],
+        signatureDate: new Date().toISOString(),
+      },
+      penaltiesAmount,
+      penaltyNotes
+    );
+
+    if (selectedContract?.id === returnModalContract.id) {
+      const updated = state.contracts.find((c) => c.id === returnModalContract.id);
+      if (updated) setSelectedContract(updated);
+    }
+
+    setReturnModalContract(null);
+    setActionAlert({
+      type: 'success',
+      message: `Restitution validée pour le contrat ${returnModalContract.contractNumber}. Véhicule remis en circulation.`,
+    });
+    setTimeout(() => setActionAlert(null), 5000);
+  };
+
+  const handlePrintContract = (contract: RentalContract) => {
+    const customer = state.customers.find((c) => c.id === contract.customerId);
+    const printData: DocumentPrintData = {
+      title: 'CONTRAT DE LOCATION AUTOMOBILE FCT',
+      docNumber: contract.contractNumber,
+      date: contract.createdAt.split('T')[0],
+      customerName: contract.customerName,
+      customerPhone: customer?.phone,
+      customerAddress: customer?.address,
+      items: [
+        {
+          description: `Location véhicule ${contract.vehicleName} (${contract.totalDays} jour(s)) - Période du ${contract.startDate} au ${contract.endDate}`,
+          qty: contract.totalDays,
+          unitPrice: contract.dailyRateXAF,
+          total: contract.totalAmountXAF,
+        },
+        ...(contract.driverIncluded
+          ? [
+              {
+                description: `Option Chauffeur Professionnel Agréé FCT inclus (${contract.driverName || 'Affecté en agence'})`,
+                qty: contract.totalDays,
+                unitPrice: 0,
+                total: 0,
+              },
+            ]
+          : []),
+      ],
+      subtotal: contract.totalAmountXAF,
+      tax: 0,
+      total: contract.totalAmountXAF,
+      depositAmount: contract.securityDepositXAF,
+      notes: `Caution consigné obligatoire : ${formatXAF(contract.securityDepositXAF)}. Le locataire s'engage à respecter les conditions générales d'assurance et d'utilisation du réseau FCT Douala.`,
+    };
+
+    onOpenPrintModal(printData);
+  };
+
+
+  const [isAddDocModalOpen, setIsAddDocModalOpen] = useState(false);
+  const [viewerDoc, setViewerDoc] = useState<any | null>(null);
+  const [docForm, setDocForm] = useState({
+    title: '',
+    category: 'CONTRAT_SIGNE',
+    fileUrl: '',
+    notes: '',
+  });
+
+  const handleAddDocumentToContract = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedContract) return;
+    try {
+      const newDoc = {
+        id: `doc_rent_${Date.now()}`,
+        title: docForm.title || `Contrat Signé - ${selectedContract.contractNumber}`,
+        category: docForm.category,
+        fileUrl: docForm.fileUrl,
+        uploadedAt: new Date().toISOString(),
+        relatedEntityId: selectedContract.id,
+        relatedContractId: selectedContract.id,
+        notes: docForm.notes || `Document rattaché au contrat ${selectedContract.contractNumber}`,
+      };
+      dbStore.addDocument(newDoc as any);
+      setIsAddDocModalOpen(false);
+      setDocForm({ title: '', category: 'CONTRAT_SIGNE', fileUrl: '', notes: '' });
+      setActionAlert({ type: 'success', message: 'Document rattaché avec succès au contrat.' });
+      setTimeout(() => setActionAlert(null), 4000);
+    } catch (err: any) {
+      setActionAlert({ type: 'error', message: err.message || 'Erreur lors de l\'ajout du document' });
+    }
+  };
+
+  const filteredContracts = useMemo(() => {
+    return state.contracts.filter((c) => {
+      const matchesTab =
+        activeTab === 'ALL' ||
+        (activeTab === 'ACTIVE' && (c.status === 'CONFIRMED' || (c.status as string) === 'ACTIVE')) ||
+        (activeTab === 'COMPLETED' && (c.status === 'RETURNED' || (c.status as string) === 'COMPLETED')) ||
+        c.status === activeTab;
+      const matchesSearch =
+        c.contractNumber.toLowerCase().includes(search.toLowerCase()) ||
+        c.customerName.toLowerCase().includes(search.toLowerCase()) ||
+        c.vehicleName.toLowerCase().includes(search.toLowerCase()) ||
+        (c.driverName || '').toLowerCase().includes(search.toLowerCase());
+      return matchesTab && matchesSearch;
+    });
+  }, [state.contracts, activeTab, search]);
+
+
+  // =========================================================================
+  // VUE NIVEAU B : SHOWROOM PLEINE PAGE DU CONTRAT SÉLECTIONNÉ
+  // =========================================================================
+  if (selectedContract) {
+    const linkedVeh = state.vehicles.find((v) => v.id === selectedContract.vehicleId);
+    const linkedDrv = selectedContract.driverId
+      ? state.drivers.find((d) => d.id === selectedContract.driverId)
+      : null;
+    const linkedCust = state.customers.find((c) => c.id === selectedContract.customerId);
+    const contractDocs = (state.documents || []).filter(
+      (d: any) => d.relatedEntityId === selectedContract.id || d.relatedContractId === selectedContract.id
+    );
+
+    return (
+      <>
+        <EntityShowroomLayout
+          backLabel="Retour aux contrats de location"
+          onBack={() => setSelectedContract(null)}
+          title={`Contrat ${selectedContract.contractNumber}`}
+          subtitle={`${selectedContract.customerName} • ${selectedContract.vehicleName}`}
+          referenceId={selectedContract.contractNumber}
+          status={selectedContract.status}
+          statusLabel={
+            selectedContract.status === 'CONFIRMED' || (selectedContract.status as string) === 'ACTIVE'
+              ? 'En Cours'
+              : selectedContract.status === 'RETURNED' || (selectedContract.status as string) === 'COMPLETED'
+              ? 'Restitué'
+              : selectedContract.status === 'OVERDUE'
+              ? 'En Retard'
+              : selectedContract.status === 'CANCELLED'
+              ? 'Annulé'
+              : 'Brouillon'
+          }
+          avatarImageUrl={linkedVeh?.photoUrls?.[0]}
+          avatarIcon={KeyRound}
+          actions={
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsAddDocModalOpen(true)}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Rattacher Document</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePrintContract(selectedContract)}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Imprimer Contrat</span>
+              </button>
+              {(selectedContract.status === 'CONFIRMED' || (selectedContract.status as string) === 'ACTIVE') &&
+                hasEffectivePermission(currentUser, 'rentals', 'update') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReturnModalContract(selectedContract);
+                      setReturnMileage(linkedVeh?.mileage || 50000);
+                    }}
+                    className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-xs transition"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Clôturer / Retour</span>
+                  </button>
+                )}
+            </div>
+          }
+          kpis={[
+            {
+              label: 'Tarif Journalier',
+              value: formatXAF(selectedContract.dailyRateXAF),
+              sublabel: 'Par jour de location',
+            },
+            {
+              label: 'Durée Totale',
+              value: `${selectedContract.totalDays} Jours`,
+              sublabel: `Du ${selectedContract.startDate} au ${selectedContract.endDate}`,
+            },
+            {
+              label: 'Montant Global',
+              value: formatXAF(selectedContract.totalAmountXAF),
+              sublabel: `Payé: ${formatXAF(selectedContract.paidAmountXAF)}`,
+              highlight: true,
+            },
+            {
+              label: 'Caution Consignée',
+              value: formatXAF(selectedContract.securityDepositXAF),
+              sublabel: selectedContract.depositReturnedXAF > 0 ? 'Caution Restituée' : 'Consignée en Caisse',
+            },
+          ]}
+          tabs={[
+            { id: 'TERMS', label: 'Conditions & Dates', icon: ClipboardList },
+            { id: 'DOCS', label: 'Justificatifs & Documents', icon: FileText, badge: contractDocs.length },
+            { id: 'VEHICLE', label: 'Véhicule & Chauffeur', icon: Car },
+            { id: 'CUSTOMER', label: 'Client Signataire', icon: User },
+            { id: 'FINANCES', label: 'Règlements & Factures', icon: DollarSign },
+            { id: 'INSPECTION', label: 'État des Lieux', icon: FileCheck },
+            { id: 'TIMELINE', label: 'Historique & Audit', icon: Clock },
+          ]}
+          activeTab={contractDetailTab}
+          onTabChange={(t) => setContractDetailTab(t as any)}
+        >
+          {/* TAB 1: TERMS */}
+          {contractDetailTab === 'TERMS' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
+                  <div className="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    <span>Période Contractuelle</span>
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-700">
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Date de départ :</span>
+                      <span className="font-bold text-slate-900">{selectedContract.startDate}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Date de restitution :</span>
+                      <span className="font-bold text-slate-900">{selectedContract.endDate}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Durée totale :</span>
+                      <span className="font-black text-blue-900">{selectedContract.totalDays} jour(s)</span>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span className="text-slate-500">Date d'émission :</span>
+                      <span className="font-mono text-slate-600">{selectedContract.createdAt}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
+                  <div className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <DollarSign className="w-4 h-4 text-emerald-600" />
+                    <span>Tarification & Caution XAF</span>
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-700">
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Tarif journalier :</span>
+                      <span className="font-bold text-slate-900">{formatXAF(selectedContract.dailyRateXAF)} / jour</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Montant total contrat :</span>
+                      <span className="font-black text-sm text-blue-950">{formatXAF(selectedContract.totalAmountXAF)}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-slate-100">
+                      <span className="text-slate-500">Caution obligatoire :</span>
+                      <span className="font-bold text-emerald-800">{formatXAF(selectedContract.securityDepositXAF)}</span>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span className="text-slate-500">Statut de la caution :</span>
+                      <span className="font-semibold text-slate-800">{selectedContract.depositReturnedXAF > 0 ? 'Restituée au client' : 'Consignée en agence FCT'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: DOCS */}
+          {contractDetailTab === 'DOCS' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">Documents & Contrats Numérisés</h3>
+                  <p className="text-xs text-slate-500">Contrat signé, permis du locataire, attestation d'assurance et état des lieux numérisés</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddDocModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Rattacher un document</span>
+                </button>
+              </div>
+
+              {contractDocs.length === 0 ? (
+                <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-500 space-y-2">
+                  <FileText className="w-8 h-8 text-slate-300 mx-auto" />
+                  <p className="font-bold text-slate-700">Aucun document numérique rattaché à ce contrat</p>
+                  <p className="text-xs text-slate-400">Cliquez sur « Rattacher un document » pour archiver le contrat signé ou le permis.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {contractDocs.map((doc: any) => (
+                    <div key={doc.id} className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-xs transition flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold shrink-0">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-slate-900 text-xs">{doc.title}</h4>
+                          <div className="text-[11px] text-slate-500">{doc.category} • Ajouté le {doc.uploadedAt ? doc.uploadedAt.split('T')[0] : 'N/A'}</div>
+                          {doc.notes && <div className="text-[11px] text-slate-600 italic mt-0.5">{doc.notes}</div>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setViewerDoc(doc)}
+                          className="p-1.5 rounded-lg text-slate-600 hover:text-blue-700 hover:bg-slate-100 transition cursor-pointer"
+                          title="Visualiser le contrat"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        {doc.fileUrl && (
+                          <a
+                            href={doc.fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            download={doc.title}
+                            className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-slate-100 transition cursor-pointer"
+                            title="Télécharger"
+                          >
+                            <Download className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: VEHICLE */}
+          {contractDetailTab === 'VEHICLE' && (
+            <div className="space-y-4">
+              {linkedVeh ? (
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    {linkedVeh.photoUrls?.[0] ? (
+                      <img src={linkedVeh.photoUrls[0]} alt={linkedVeh.model} className="w-24 h-16 rounded-xl object-cover border border-slate-200 shadow-2xs" />
+                    ) : (
+                      <div className="w-24 h-16 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400">
+                        <Car className="w-8 h-8" />
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-black text-slate-900 text-sm">
+                        {linkedVeh.brand} {linkedVeh.model} ({linkedVeh.year})
+                      </h4>
+                      <div className="text-slate-600 text-xs mt-0.5">
+                        Immatriculation : <span className="font-bold text-blue-900">{linkedVeh.licensePlate}</span> • VIN : <span className="font-mono text-slate-700">{linkedVeh.vin}</span>
+                      </div>
+                      <div className="text-slate-500 text-xs mt-0.5">
+                        Kilométrage actuel : <span className="font-bold text-slate-800">{linkedVeh.mileage?.toLocaleString()} km</span> • Catégorie : {linkedVeh.category}
+                      </div>
+                    </div>
+                  </div>
+
+                  {onNavigate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedContract(null);
+                        onNavigate('vehicles', linkedVeh.id);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-[#0f2a4a] hover:bg-[#163a66] text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer self-start md:self-center"
+                    >
+                      <Car className="w-3.5 h-3.5" />
+                      <span>Ouvrir Fiche Showroom Véhicule</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-slate-50 text-slate-500 text-xs">Véhicule non trouvé.</div>
+              )}
+
+              {linkedDrv ? (
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-blue-100 text-blue-900 flex items-center justify-center text-xl font-black shrink-0">
+                      {linkedDrv.fullName.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 mb-1">Chauffeur Professionnel Agréé FCT</div>
+                      <h4 className="font-black text-slate-900 text-sm">{linkedDrv.fullName}</h4>
+                      <div className="text-slate-600 text-xs mt-0.5">
+                        Permis N° : <span className="font-bold">{linkedDrv.licenseNumber}</span> (Cat. {(linkedDrv.licenseCategories || []).join(', ') || 'B'}) • Tél : {linkedDrv.phone}
+                      </div>
+                    </div>
+                  </div>
+
+                  {onNavigate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedContract(null);
+                        onNavigate('drivers', linkedDrv.id);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer self-start md:self-center"
+                    >
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>Ouvrir Profil Chauffeur</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs">
+                  Location en formule autonome sans chauffeur FCT affecté.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 4: CUSTOMER */}
+          {contractDetailTab === 'CUSTOMER' && (
+            <div className="space-y-4">
+              {linkedCust ? (
+                <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                      {linkedCust.type === 'COMPANY' ? 'Client Entreprise' : 'Client Particulier'}
+                    </div>
+                    <h4 className="font-black text-slate-900 text-base">
+                      {linkedCust.companyName || linkedCust.fullName}
+                    </h4>
+                    <div className="text-slate-600 text-xs">Téléphone : <span className="font-bold text-slate-900">{linkedCust.phone}</span></div>
+                    <div className="text-slate-600 text-xs">Email : {linkedCust.email}</div>
+                    <div className="text-slate-600 text-xs">Adresse / Ville : {linkedCust.address}</div>
+                    {linkedCust.taxNumber && (
+                      <div className="font-mono text-slate-500 text-xs">NIU Fiscal : {linkedCust.taxNumber}</div>
+                    )}
+                  </div>
+
+                  {onNavigate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedContract(null);
+                        onNavigate('crm', linkedCust.id);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer shrink-0"
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      <span>Consulter Fiche Client CRM 360°</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-slate-50 text-slate-500 text-xs">Client introuvable.</div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 5: FINANCES */}
+          {contractDetailTab === 'FINANCES' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-center">
+                  <div className="text-xs font-bold text-blue-700 uppercase">Montant Total Prévu</div>
+                  <div className="text-lg font-black text-blue-950 mt-1">{formatXAF(selectedContract.totalAmountXAF)}</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
+                  <div className="text-xs font-bold text-emerald-700 uppercase">Montant Encaissé</div>
+                  <div className="text-lg font-black text-emerald-950 mt-1">{formatXAF(selectedContract.paidAmountXAF)}</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-center">
+                  <div className="text-xs font-bold text-amber-700 uppercase">Solde Restant</div>
+                  <div className="text-lg font-black text-amber-950 mt-1">{formatXAF(selectedContract.remainingAmountXAF)}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs">
+                <div>
+                  <span className="font-bold text-slate-900 block text-xs">Caution Consignée en Caisse</span>
+                  <span className="text-slate-500 text-[11px]">
+                    Dépôt de garantie bloqué pour couverture des éventuels dommages ou carburant manquant
+                  </span>
+                </div>
+                <span className="font-black text-sm text-emerald-800">{formatXAF(selectedContract.securityDepositXAF)}</span>
+              </div>
+
+              {onNavigate && (
+                <div className="flex gap-2 pt-1 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cid = selectedContract.id;
+                      setSelectedContract(null);
+                      onNavigate('billing', cid);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  >
+                    <Receipt className="w-3.5 h-3.5" />
+                    <span>Consulter les Factures Liées</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cid = selectedContract.id;
+                      setSelectedContract(null);
+                      onNavigate('cash', cid);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  >
+                    <Wallet className="w-3.5 h-3.5" />
+                    <span>Encaisser au Journal de Caisse</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 6: INSPECTION */}
+          {contractDetailTab === 'INSPECTION' && (
+            <div className="space-y-4">
+              {selectedContract.inspectionRetour ? (
+                <div className="p-5 rounded-2xl bg-white border border-emerald-200 shadow-xs space-y-3">
+                  <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
+                    <span className="font-black text-emerald-950 text-xs flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Rapport de Restitution &amp; État des Lieux de Retour</span>
+                    </span>
+                    <span className="text-xs text-emerald-800 font-mono">
+                      {selectedContract.inspectionRetour.signatureDate}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-800">
+                    <div>Kilométrage relevé au retour : <span className="font-bold">{selectedContract.inspectionRetour.mileage.toLocaleString()} km</span></div>
+                    <div>Jauge de carburant : <span className="font-bold">{selectedContract.inspectionRetour.fuelLevel} / 8</span></div>
+                    <div>État de propreté : <span className="font-bold">{selectedContract.inspectionRetour.cleanlinessCondition}</span></div>
+                    <div>Inspecteur FCT : <span className="font-semibold">{selectedContract.inspectionRetour.inspectorName}</span></div>
+                  </div>
+                  {selectedContract.inspectionRetour.bodyConditionNotes && (
+                    <div className="p-3 rounded-xl bg-slate-50 text-xs text-slate-700">
+                      <strong>Observations carrosserie :</strong> {selectedContract.inspectionRetour.bodyConditionNotes}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-500 space-y-2">
+                  <FileCheck className="w-8 h-8 text-slate-300 mx-auto" />
+                  <p className="font-bold text-slate-700">Véhicule actuellement en cours de location</p>
+                  <p className="text-xs text-slate-400">L'inspection de retour sera enregistrée lors de la clôture et restitution du véhicule.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 7: TIMELINE */}
+          {contractDetailTab === 'TIMELINE' && (
+            <EntityTimeline
+              events={[
+                {
+                  id: 'evt-create',
+                  date: selectedContract.createdAt,
+                  title: `Émission du contrat ${selectedContract.contractNumber}`,
+                  description: `Véhicule ${selectedContract.vehicleName} réservé pour ${selectedContract.customerName} du ${selectedContract.startDate} au ${selectedContract.endDate}.`,
+                  type: 'INFO',
+                },
+                ...(selectedContract.status === 'RETURNED' || (selectedContract.status as string) === 'COMPLETED'
+                  ? [
+                      {
+                        id: 'evt-return',
+                        date: selectedContract.inspectionRetour?.signatureDate || selectedContract.endDate,
+                        title: 'Restitution du véhicule et inspection de fin de contrat',
+                        description: 'Véhicule inspecté et remis en état disponible dans la flotte FCT.',
+                        type: 'SUCCESS' as const,
+                      },
+                    ]
+                  : []),
+                ...(selectedContract.status === 'CANCELLED'
+                  ? [
+                      {
+                        id: 'evt-cancel',
+                        date: selectedContract.createdAt,
+                        title: 'Annulation du contrat de location',
+                        description: 'Contrat annulé administrativement. Caution libérée.',
+                        type: 'DANGER' as const,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          )}
+        </EntityShowroomLayout>
+
+        {/* Modal d'inspection de retour */}
+        {returnModalContract && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 text-slate-800 space-y-4">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <span>Inspection de Restitution &amp; Fin de Location</span>
+              </h3>
+
+              <p className="text-xs text-slate-600">
+                Contrat <strong className="text-slate-900">{returnModalContract.contractNumber}</strong> • Client :{' '}
+                <strong className="text-slate-900">{returnModalContract.customerName}</strong>
+              </p>
+
+              <form onSubmit={handleConfirmReturn} className="space-y-3 text-xs">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">Kilométrage au retour *</label>
+                    <input
+                      type="number"
+                      value={returnMileage}
+                      onChange={(e) => setReturnMileage(Number(e.target.value))}
+                      className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">Jauge Carburant (sur 8) *</label>
+                    <select
+                      value={returnFuel}
+                      onChange={(e) => setReturnFuel(Number(e.target.value))}
+                      className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                    >
+                      {[8, 7, 6, 5, 4, 3, 2, 1, 0].map((level) => (
+                        <option key={level} value={level}>
+                          {level}/8 {level === 8 ? '(Plein complet)' : level <= 2 ? '(Réserve)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Pénalités éventuelles retenues sur caution (XAF)</label>
+                  <input
+                    type="number"
+                    value={penaltiesAmount}
+                    onChange={(e) => setPenaltiesAmount(Number(e.target.value))}
+                    placeholder="0"
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Observations d'état de retour / Carrosserie</label>
+                  <textarea
+                    value={penaltyNotes}
+                    onChange={(e) => setPenaltyNotes(e.target.value)}
+                    placeholder="Ex: Véhicule restitué propre, aucune rayure supplémentaire constatée."
+                    rows={2}
+                    className="w-full p-2.5 rounded-lg border border-slate-200"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setReturnModalContract(null)}
+                    className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs"
+                  >
+                    Valider le Retour &amp; Clôturer
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal d'ajout de document */}
+        {isAddDocModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-slate-800 space-y-4">
+              <div className="flex items-center justify-between border-b pb-3">
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-purple-600" />
+                  <span>Rattacher un Document au Contrat</span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsAddDocModalOpen(false)}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddDocumentToContract} className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Intitulé du document *</label>
+                  <input
+                    type="text"
+                    required
+                    value={docForm.title}
+                    onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
+                    placeholder="Ex: Contrat signé par le client, Scan CNI / Permis..."
+                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Catégorie du document</label>
+                  <select
+                    value={docForm.category}
+                    onChange={(e) => setDocForm({ ...docForm, category: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-slate-200"
+                  >
+                    <option value="CONTRAT_SIGNE">Contrat de Location Signé</option>
+                    <option value="PERMIS_CONDUIRE">Permis de Conduire Locataire</option>
+                    <option value="CNI_PASSEPORT">CNI / Passeport Locataire</option>
+                    <option value="ETAT_DES_LIEUX">État des Lieux Numérisé</option>
+                    <option value="RECU_CAUTION">Reçu de Caution</option>
+                    <option value="AUTRE">Autre Justificatif</option>
+                  </select>
+                </div>
+
+                <CloudinaryUploadDropzone
+                  folder="fct_automobile/rentals"
+                  label="Contrat signé / Justificatif (Téléversement Cloudinary FCT) :"
+                  helperText="Glissez ou sélectionnez le contrat signé ou permis locataire (PDF, PNG, JPG)"
+                  currentValue={docForm.fileUrl}
+                  onUploadSuccess={(url) => setDocForm({ ...docForm, fileUrl: url })}
+                  onClear={() => setDocForm({ ...docForm, fileUrl: '' })}
+                />
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Notes / Observations</label>
+                  <textarea
+                    rows={2}
+                    value={docForm.notes}
+                    onChange={(e) => setDocForm({ ...docForm, notes: e.target.value })}
+                    placeholder="Observations ou annotations..."
+                    className="w-full p-2.5 rounded-xl border border-slate-200"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddDocModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold cursor-pointer shadow-xs"
+                  >
+                    Enregistrer et Rattacher
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Top Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <KeyRound className="w-6 h-6 text-emerald-600" />
+            <span>Locations &amp; Contrats de Flotte 360°</span>
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Émission des contrats, inspections départ/retour, cautions consignées et suivi des règlements à Douala
+          </p>
+        </div>
+
+        {hasEffectivePermission(currentUser, 'rentals', 'create') && (
+          <button
+            onClick={() => {
+              setFormError(null);
+              setIsCreateModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Émettre un Nouveau Contrat</span>
+          </button>
+        )}
+      </div>
+
+      {/* Action Notification Alert */}
+      {actionAlert && (
+        <div
+          className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-between shadow-xs ${
+            actionAlert.type === 'success'
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+              : 'bg-rose-50 border-rose-300 text-rose-800'
+          }`}
+        >
+          <span>{actionAlert.message}</span>
+          <button
+            onClick={() => setActionAlert(null)}
+            className="cursor-pointer text-slate-500 hover:text-slate-800 p-1 rounded"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Top Activity Summary KPIs */}
+      <EntityActivitySummary items={kpis} columns={4} />
+
+      {/* Filters & View Switcher */}
+      <EntitySearchFilters
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Rechercher n° contrat (CTR-...), client, véhicule, chauffeur..."
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        tabs={[
+          { id: 'ALL', label: 'Tous les contrats', count: state.contracts.length },
+          { id: 'ACTIVE', label: 'En cours', count: activeContractsCount },
+          { id: 'COMPLETED', label: 'Restitués', count: completedContractsCount },
+          {
+            id: 'CANCELLED',
+            label: 'Annulés',
+            count: state.contracts.filter((c) => c.status === 'CANCELLED').length,
+          },
+        ]}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
+
+      {/* Content: Cards or Table */}
+      {filteredContracts.length === 0 ? (
+        <EmptyState
+          title="Aucun contrat de location trouvé"
+          description="Aucun contrat ne correspond à votre recherche ou filtre actuel."
+          icon={KeyRound}
+          action={
+            hasEffectivePermission(currentUser, 'rentals', 'create')
+              ? { label: 'Émettre un contrat', onClick: () => setIsCreateModalOpen(true) }
+              : undefined
+          }
+        />
+      ) : viewMode === 'cards' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredContracts.map((contract) => {
+            const linkedVeh = state.vehicles.find((v) => v.id === contract.vehicleId);
+            const isActive = contract.status === 'CONFIRMED' || (contract.status as string) === 'ACTIVE';
+
+            return (
+              <EntityCard
+                key={contract.id}
+                title={contract.contractNumber}
+                subtitle={`${contract.customerName} • ${contract.vehicleName}`}
+                referenceId={contract.contractNumber}
+                imageUrl={linkedVeh?.photoUrls?.[0]}
+                fallbackIcon={KeyRound}
+                status={contract.status}
+                statusLabel={
+                  isActive
+                    ? 'En Location'
+                    : contract.status === 'RETURNED' || (contract.status as string) === 'COMPLETED'
+                    ? 'Restitué'
+                    : contract.status === 'OVERDUE'
+                    ? 'En Retard'
+                    : contract.status === 'CANCELLED'
+                    ? 'Annulé'
+                    : 'Brouillon'
+                }
+                onClick={() => setSelectedContract(contract)}
+                metrics={[
+                  {
+                    label: 'Période & Durée',
+                    value: `${contract.totalDays} jour(s) (${contract.startDate} au ${contract.endDate})`,
+                    icon: Calendar,
+                  },
+                  {
+                    label: 'Montant Total XAF',
+                    value: formatXAF(contract.totalAmountXAF),
+                    icon: DollarSign,
+                    highlight: true,
+                  },
+                  {
+                    label: 'Caution Consignée',
+                    value: formatXAF(contract.securityDepositXAF),
+                    icon: Shield,
+                  },
+                  {
+                    label: 'Chauffeur Dédié',
+                    value: contract.driverIncluded ? contract.driverName || 'Oui' : 'Sans chauffeur',
+                    icon: User,
+                  },
+                ]}
+                quickActions={
+                  <div className="flex items-center gap-1">
+                    {isActive && hasEffectivePermission(currentUser, 'rentals', 'update') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReturnModalContract(contract);
+                          setReturnMileage(linkedVeh?.mileage || 50000);
+                        }}
+                        className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition shadow-2xs"
+                        title="Restituer le véhicule"
+                      >
+                        Retour
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrintContract(contract);
+                      }}
+                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                      title="Imprimer le contrat"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                    </button>
+                    {isActive && hasEffectivePermission(currentUser, 'rentals', 'update') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCancelConfirmContract(contract);
+                        }}
+                        className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition"
+                        title="Annuler le contrat"
+                      >
+                        <Ban className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                }
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
+                <tr>
+                  <th className="py-3 px-4">N° Contrat</th>
+                  <th className="py-3 px-4">Client</th>
+                  <th className="py-3 px-4">Véhicule</th>
+                  <th className="py-3 px-4">Période (Départ - Retour)</th>
+                  <th className="py-3 px-4 text-center">Chauffeur</th>
+                  <th className="py-3 px-4 text-right">Montant Total</th>
+                  <th className="py-3 px-4 text-right">Caution</th>
+                  <th className="py-3 px-4 text-center">Statut</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredContracts.map((contract) => {
+                  const isActive = contract.status === 'CONFIRMED' || (contract.status as string) === 'ACTIVE';
+
+                  return (
+                    <tr
+                      key={contract.id}
+                      onClick={() => setSelectedContract(contract)}
+                      className="hover:bg-blue-50/40 transition cursor-pointer"
+                    >
+                      <td className="py-3 px-4 font-mono font-bold text-blue-900">{contract.contractNumber}</td>
+                      <td className="py-3 px-4 font-bold text-slate-900">{contract.customerName}</td>
+                      <td className="py-3 px-4 text-slate-700 font-medium">{contract.vehicleName}</td>
+                      <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
+                        {contract.startDate} → {contract.endDate} ({contract.totalDays}j)
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        {contract.driverIncluded ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
+                            {contract.driverName || 'Oui'}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[10px]">Non</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right font-black text-slate-900 whitespace-nowrap">
+                        {formatXAF(contract.totalAmountXAF)}
+                      </td>
+                      <td className="py-3 px-4 text-right font-semibold text-emerald-800 whitespace-nowrap">
+                        {formatXAF(contract.securityDepositXAF)}
+                      </td>
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                        <EntityStatusBadge
+                          status={contract.status}
+                          label={
+                            isActive
+                              ? 'En Location'
+                              : contract.status === 'RETURNED' || (contract.status as string) === 'COMPLETED'
+                              ? 'Restitué'
+                              : contract.status === 'OVERDUE'
+                              ? 'En Retard'
+                              : contract.status === 'CANCELLED'
+                              ? 'Annulé'
+                              : 'Brouillon'
+                          }
+                          size="sm"
+                        />
+                      </td>
+                      <td
+                        className="py-3 px-4 text-right space-x-1 whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {isActive && hasEffectivePermission(currentUser, 'rentals', 'update') && (
+                          <button
+                            onClick={() => {
+                              setReturnModalContract(contract);
+                              const veh = state.vehicles.find((v) => v.id === contract.vehicleId);
+                              setReturnMileage(veh?.mileage || 50000);
+                            }}
+                            title="Effectuer l'inspection de retour"
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] cursor-pointer inline-flex items-center gap-1 shadow-2xs transition"
+                          >
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Retour</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handlePrintContract(contract)}
+                          title="Imprimer le contrat"
+                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer inline-flex items-center transition"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
+                        {isActive && hasEffectivePermission(currentUser, 'rentals', 'update') && (
+                          <>
+                            <button
+                              onClick={() => handleOpenEdit(contract)}
+                              title="Modifier les dates/tarifs"
+                              className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 cursor-pointer inline-flex items-center transition"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setCancelConfirmContract(contract)}
+                              title="Annuler le contrat"
+                              className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 cursor-pointer inline-flex items-center transition"
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      
+
+      {/* Return Inspection Modal */}
+      {returnModalContract && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 text-slate-800 space-y-4">
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              <span>Inspection de Restitution &amp; Fin de Location</span>
+            </h3>
+
+            <p className="text-xs text-slate-600">
+              Contrat <strong className="text-slate-900">{returnModalContract.contractNumber}</strong> • Client :{' '}
+              <strong className="text-slate-900">{returnModalContract.customerName}</strong>
+            </p>
+
+            <form onSubmit={handleConfirmReturn} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Kilométrage au retour *</label>
+                  <input
+                    type="number"
+                    value={returnMileage}
+                    onChange={(e) => setReturnMileage(Number(e.target.value))}
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Jauge Carburant (sur 8) *</label>
+                  <select
+                    value={returnFuel}
+                    onChange={(e) => setReturnFuel(Number(e.target.value))}
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                  >
+                    {[8, 7, 6, 5, 4, 3, 2, 1, 0].map((level) => (
+                      <option key={level} value={level}>
+                        {level}/8 {level === 8 ? '(Plein complet)' : level <= 2 ? '(Réserve)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Pénalités éventuelles retenues sur caution (XAF)</label>
+                <input
+                  type="number"
+                  value={penaltiesAmount}
+                  onChange={(e) => setPenaltiesAmount(Number(e.target.value))}
+                  placeholder="0"
+                  className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Observations d'état de retour / Carrosserie</label>
+                <textarea
+                  value={penaltyNotes}
+                  onChange={(e) => setPenaltyNotes(e.target.value)}
+                  placeholder="Ex: Véhicule restitué propre, aucune rayure supplémentaire constatée."
+                  rows={2}
+                  className="w-full p-2.5 rounded-lg border border-slate-200"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setReturnModalContract(null)}
+                  className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs"
+                >
+                  Valider le Retour &amp; Clôturer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* New Contract Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 text-slate-800 space-y-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-emerald-600" />
+                <span>Émettre un Contrat de Location</span>
+              </h3>
+              <button
+                onClick={() => setIsCreateModalOpen(false)}
+                className="p-1 rounded text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {formError && (
+              <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-800 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateContract} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Client *</label>
+                <select
+                  value={contractForm.customerId}
+                  onChange={(e) => setContractForm({ ...contractForm, customerId: e.target.value })}
+                  className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                  required
+                >
+                  {state.customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.companyName || c.fullName} ({c.type}) - {c.phone}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Véhicule à louer *</label>
+                <select
+                  value={contractForm.vehicleId}
+                  onChange={(e) => handleSelectVehicle(e.target.value)}
+                  className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                  required
+                >
+                  {state.vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.brand} {v.model} ({v.licensePlate}) - {formatXAF(v.rentalDailyRate)}/j - {v.status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Date de début *</label>
+                  <input
+                    type="date"
+                    value={contractForm.startDate}
+                    onChange={(e) => setContractForm({ ...contractForm, startDate: e.target.value })}
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Date de fin *</label>
+                  <input
+                    type="date"
+                    value={contractForm.endDate}
+                    onChange={(e) => setContractForm({ ...contractForm, endDate: e.target.value })}
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Tarif Journalier (XAF) *</label>
+                  <input
+                    type="number"
+                    value={contractForm.dailyRateXAF}
+                    onChange={(e) => setContractForm({ ...contractForm, dailyRateXAF: Number(e.target.value) })}
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Caution Obligatoire (XAF) *</label>
+                  <input
+                    type="number"
+                    value={contractForm.securityDepositXAF}
+                    onChange={(e) => setContractForm({ ...contractForm, securityDepositXAF: Number(e.target.value) })}
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <label className="flex items-center gap-2 font-bold text-slate-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={contractForm.driverIncluded}
+                    onChange={(e) => setContractForm({ ...contractForm, driverIncluded: e.target.checked })}
+                    className="w-4 h-4 rounded text-blue-900"
+                  />
+                  <span>Option Chauffeur Professionnel Agréé FCT inclus</span>
+                </label>
+
+                {contractForm.driverIncluded && (
+                  <div>
+                    <label className="block text-slate-600 font-medium mb-1">Sélectionner le chauffeur</label>
+                    <select
+                      value={contractForm.driverId}
+                      onChange={(e) => setContractForm({ ...contractForm, driverId: e.target.value })}
+                      className="w-full p-2 rounded-lg border border-slate-200 font-bold bg-white"
+                    >
+                      <option value="">Sélectionner parmi les chauffeurs disponibles</option>
+                      {state.drivers.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.fullName} ({d.status}) - Permis {d.licenseNumber}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs"
+                >
+                  Valider &amp; Imprimer Contrat
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Contract Modal */}
+      {isEditModalOpen && editingContract && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 text-slate-800 space-y-4">
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-blue-900" />
+              <span>Modifier Contrat {editingContract.contractNumber}</span>
+            </h3>
+
+            <form onSubmit={handleSaveEditContract} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Date Début *</label>
+                  <input
+                    type="date"
+                    value={editForm.startDate}
+                    onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Date Fin *</label>
+                  <input
+                    type="date"
+                    value={editForm.endDate}
+                    onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Tarif Journalier (XAF)</label>
+                  <input
+                    type="number"
+                    value={editForm.dailyRateXAF}
+                    onChange={(e) => setEditForm({ ...editForm, dailyRateXAF: Number(e.target.value) })}
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Caution (XAF)</label>
+                  <input
+                    type="number"
+                    value={editForm.securityDepositXAF}
+                    onChange={(e) => setEditForm({ ...editForm, securityDepositXAF: Number(e.target.value) })}
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold cursor-pointer shadow-xs"
+                >
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {cancelConfirmContract && (
+        <DeleteConfirmModal
+          isOpen={Boolean(cancelConfirmContract)}
+          title="Annuler le Contrat de Location"
+          itemName={`Contrat ${cancelConfirmContract.contractNumber} (${cancelConfirmContract.customerName})`}
+          itemDetails={`Période du ${cancelConfirmContract.startDate} au ${cancelConfirmContract.endDate} d'un montant de ${formatXAF(cancelConfirmContract.totalAmountXAF)}.`}
+          warningMessage="L'annulation libérera le véhicule et le chauffeur affecté. Cette action sera enregistrée dans le journal d'audit de sécurité."
+          onConfirm={handleConfirmCancelContract}
+          onCancel={() => setCancelConfirmContract(null)}
+        />
+      )}
+      {/* Modal Visualiseur Universel */}
+      <DocumentViewerModal
+        isOpen={Boolean(viewerDoc)}
+        onClose={() => setViewerDoc(null)}
+        document={viewerDoc}
+      />
+    </div>
+  );
+};

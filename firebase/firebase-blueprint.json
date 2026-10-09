@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "Fiche véhicule du parc automobile FCT Douala",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "vin": { "type": "string", "maxLength": 20, "minLength": 8 },
+        "licensePlate": { "type": "string", "maxLength": 30 },
+        "brand": { "type": "string", "maxLength": 60 },
+        "model": { "type": "string", "maxLength": 60 },
+        "year": { "type": "number" },
+        "category": { "type": "string", "enum": ["SUV", "BERLINE", "4X4", "PICKUP", "UTILITAIRE", "LUXE"] },
+        "transmission": { "type": "string", "enum": ["AUTOMATIQUE", "MANUELLE"] },
+        "fuel": { "type": "string", "enum": ["DIESEL", "ESSENCE", "HYBRIDE"] },
+        "mileage": { "type": "number" },
+        "acquisitionCost": { "type": "number" },
+        "rentalDailyRate": { "type": "number" },
+        "salePrice": { "type": "number" },
+        "status": { "type": "string", "enum": ["AVAILABLE", "RENTED", "MAINTENANCE", "RESERVED", "SOLD"] }
+      },
+      "required": ["vin", "licensePlate", "brand", "model", "category", "status"]
+    },
+    "RentalContract": {
+      "title": "RentalContract",
+      "description": "Contrat de location automobile",
+      "type": "object",
+      "properties": {
+        "contractNumber": { "type": "string", "maxLength": 32 },
+        "customerId": { "type": "string", "maxLength": 128 },
+        "vehicleId": { "type": "string", "maxLength": 128 },
+        "startDate": { "type": "string", "maxLength": 10 },
+        "endDate": { "type": "string", "maxLength": 10 },
+        "totalAmountXAF": { "type": "number" },
+        "securityDepositXAF": { "type": "number" },
+        "status": { "type": "string", "enum": ["DRAFT", "CONFIRMED", "ACTIVE", "RETURNED", "CANCELLED", "OVERDUE"] }
+      },
+      "required": ["contractNumber", "customerId", "vehicleId", "startDate", "endDate", "totalAmountXAF", "status"]
+    },
+    "CashMovement": {
+      "title": "CashMovement",
+      "description": "Mouvement d'espèces en caisse certifiée FCT",
+      "type": "object",
+      "properties": {
+        "receiptNumber": { "type": "string", "maxLength": 32 },
+        "sessionId": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["INFLOW", "OUTFLOW"] },
+        "category": { "type": "string", "maxLength": 40 },
+        "amountXAF": { "type": "number" },
+        "receivedFromOrPaidTo": { "type": "string", "maxLength": 120 },
+        "paymentMethod": { "type": "string", "enum": ["CASH"] },
+        "isReversal": { "type": "boolean" },
+        "performedById": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["receiptNumber", "sessionId", "type", "category", "amountXAF", "paymentMethod", "performedById"]
+    }
+  },
+  "firestore": {
+    "/vehicles/{vehicleId}": {
+      "schema": { "$ref": "Vehicle" },
+      "description": "Inventaire du parc automobile FCT"
+    },
+    "/rental_contracts/{contractId}": {
+      "schema": { "$ref": "RentalContract" },
+      "description": "Contrats et locations automobiles"
+    },
+    "/cash_movements/{movementId}": {
+      "schema": { "$ref": "CashMovement" },
+      "description": "Journal immuable des flux de caisse en espèces"
+    }
+  }
+}

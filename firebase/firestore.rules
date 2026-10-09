@@ -1,0 +1,184 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Refus strict par défaut (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Fonctions d'authentification et de validation RBAC
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Récupération sécurisée du profil utilisateur sans e-mail en dur
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && getUserRole() == 'super_admin';
+    }
+
+    function isDirector() {
+      return isSignedIn() && (getUserRole() == 'director' || isSuperAdmin());
+    }
+
+    function isCashier() {
+      return isSignedIn() && (getUserRole() == 'accountant_cashier' || isDirector());
+    }
+
+    function isRentalAgent() {
+      return isSignedIn() && (getUserRole() == 'rental_agent' || isDirector());
+    }
+
+    function isSalesAgent() {
+      return isSignedIn() && (getUserRole() == 'sales_agent' || isDirector());
+    }
+
+    function isFleetManager() {
+      return isSignedIn() && (getUserRole() == 'fleet_manager' || isDirector());
+    }
+
+    function isDriver() {
+      return isSignedIn() && getUserRole() == 'driver';
+    }
+
+    // 2. Collection Users (Profils et RBAC)
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isDirector());
+      allow list: if isDirector();
+      // Seul un super_admin peut créer ou modifier les rôles et permissions
+      allow create, update: if isSuperAdmin();
+      allow delete: if false; // Interdiction de supprimer des comptes directement (révocation/désactivation uniquement)
+    }
+
+    // Collection des permissions configurables des rôles
+    match /role_permissions/{roleId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin();
+    }
+
+    // Journal d'audit de sécurité : STRICTEMENT IMMUABLE
+    match /security_audit_logs/{logId} {
+      allow read: if isDirector();
+      allow create: if isSignedIn();
+      allow update, delete: if false; // Append-only immuable
+    }
+
+    // 3. Collection Vehicles (Parc automobile)
+    match /vehicles/{vehicleId} {
+      allow read: if isSignedIn();
+      allow create, update: if isFleetManager();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 4. Collection Rental Contracts (Locations)
+    match /rental_contracts/{contractId} {
+      // Un chauffeur ne peut lire que les contrats où il est affecté
+      allow read: if isSignedIn() && (
+        !isDriver() || resource.data.driverId == request.auth.uid
+      );
+      allow create, update: if isRentalAgent();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 5. Collection Reservations
+    match /reservations/{reservationId} {
+      allow read: if isSignedIn() && !isDriver();
+      allow create, update: if isRentalAgent() || isSalesAgent();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 6. Collection Sales & CRM
+    match /sales/{saleId} {
+      allow read: if isSignedIn() && !isDriver();
+      allow create, update: if isSalesAgent();
+      allow delete: if isSuperAdmin();
+    }
+
+    match /customers/{customerId} {
+      allow read: if isSignedIn() && !isDriver();
+      allow create, update: if isRentalAgent() || isSalesAgent();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 7. Collection Caisse (Sessions et Mouvements certifiés)
+    match /cash_sessions/{sessionId} {
+      allow read: if isSignedIn() && (isCashier() || isDirector());
+      allow create: if isCashier();
+      allow update: if isCashier();
+      allow delete: if false; // Immuable
+    }
+
+    // Journal des flux de caisse : STRICTEMENT IMMUABLE
+    // Interdiction totale d'update et de delete pour tout le monde (y compris admin).
+    // Les corrections se font EXCLUSIVEMENT par contre-écriture (création d'un mouvement opposé).
+    match /cash_movements/{movementId} {
+      allow read: if isSignedIn() && (isCashier() || isDirector());
+      allow create: if isCashier();
+      allow update, delete: if false;
+    }
+
+    // 8. Collection Invoices (Facturation)
+    match /invoices/{invoiceId} {
+      allow read: if isSignedIn() && !isDriver();
+      allow create, update: if isCashier() || isRentalAgent() || isSalesAgent();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 9. Collection Maintenance & Stock
+    match /maintenance/{recordId} {
+      allow read: if isSignedIn();
+      allow create, update: if isFleetManager();
+      allow delete: if isSuperAdmin();
+    }
+
+    match /stock/{itemId} {
+      allow read: if isSignedIn();
+      allow create, update: if isFleetManager();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 10. Collection Drivers
+    match /drivers/{driverId} {
+      allow read: if isSignedIn();
+      allow create, update: if isFleetManager() || isDirector();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 11. Documents & Coffre-fort
+    match /documents/{docId} {
+      // Fichiers privés réservés aux profils autorisés
+      allow read: if isSignedIn() && (
+        resource.data.isPrivate == false ||
+        isDirector() ||
+        isCashier() ||
+        isFleetManager()
+      );
+      allow create, update: if isSignedIn() && !isDriver();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 12. Journal d'Audit & Compteurs
+    match /audit_logs/{logId} {
+      allow read: if isDirector();
+      allow create: if isSignedIn();
+      allow update, delete: if false; // Append-only immuable
+    }
+
+    match /document_counters/{counterId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin();
+    }
+  }
+}
