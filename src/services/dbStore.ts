@@ -826,21 +826,21 @@ class DatabaseStore {
   public updateVehicle(id: string, updates: Partial<Vehicle>): Vehicle {
     const idx = this.state.vehicles.findIndex((v) => v.id === id);
     if (idx === -1) throw new Error('Véhicule introuvable');
-    this.state.vehicles[idx] = {
+    const updated = {
       ...this.state.vehicles[idx],
       ...updates,
       updatedAt: new Date().toISOString(),
     };
-    this.createAuditLog('UPDATE', 'vehicles', id, `Mise à jour véhicule ${this.state.vehicles[idx].licensePlate}`);
-    this.mirrorToFirestore('vehicles', id, this.state.vehicles[idx]);
+    this.state.vehicles = this.state.vehicles.map((v) => (v.id === id ? updated : v));
+    this.createAuditLog('UPDATE', 'vehicles', id, `Mise à jour véhicule ${updated.licensePlate}`);
+    this.mirrorToFirestore('vehicles', id, updated);
     this.notify();
-    return this.state.vehicles[idx];
+    return updated;
   }
 
   public deleteVehicle(id: string, reason?: string): boolean {
-    const idx = this.state.vehicles.findIndex((v) => v.id === id);
-    if (idx === -1) throw new Error('Véhicule introuvable');
-    const target = this.state.vehicles[idx];
+    const target = this.state.vehicles.find((v) => v.id === id);
+    if (!target) throw new Error('Véhicule introuvable');
 
     // Sécurité DMS : vérifier si le véhicule est en cours de location
     const activeContract = this.state.contracts.find(
@@ -852,7 +852,7 @@ class DatabaseStore {
       );
     }
 
-    this.state.vehicles.splice(idx, 1);
+    this.state.vehicles = this.state.vehicles.filter((v) => v.id !== id);
     this.createAuditLog(
       'DELETE',
       'vehicles',
@@ -882,19 +882,19 @@ class DatabaseStore {
   public updateCustomer(id: string, updates: Partial<Customer>): Customer {
     const idx = this.state.customers.findIndex((c) => c.id === id);
     if (idx === -1) throw new Error('Client introuvable');
-    this.state.customers[idx] = {
+    const updated = {
       ...this.state.customers[idx],
       ...updates,
     };
-    this.createAuditLog('UPDATE', 'crm', id, `Mise à jour fiche client ${this.state.customers[idx].fullName}`);
+    this.state.customers = this.state.customers.map((c) => (c.id === id ? updated : c));
+    this.createAuditLog('UPDATE', 'crm', id, `Mise à jour fiche client ${updated.fullName}`);
     this.notify();
-    return this.state.customers[idx];
+    return updated;
   }
 
   public deleteCustomer(id: string, reason?: string): boolean {
-    const idx = this.state.customers.findIndex((c) => c.id === id);
-    if (idx === -1) throw new Error('Client introuvable');
-    const target = this.state.customers[idx];
+    const target = this.state.customers.find((c) => c.id === id);
+    if (!target) throw new Error('Client introuvable');
 
     // Vérifier si le client a des contrats actifs
     const activeContracts = this.state.contracts.filter(
@@ -906,7 +906,7 @@ class DatabaseStore {
       );
     }
 
-    this.state.customers.splice(idx, 1);
+    this.state.customers = this.state.customers.filter((c) => c.id !== id);
     this.createAuditLog(
       'DELETE',
       'crm',
@@ -1139,39 +1139,44 @@ class DatabaseStore {
   public updateContract(id: string, updates: Partial<RentalContract>): RentalContract {
     const idx = this.state.contracts.findIndex((c) => c.id === id);
     if (idx === -1) throw new Error('Contrat introuvable');
-    this.state.contracts[idx] = {
+    const updated = {
       ...this.state.contracts[idx],
       ...updates,
       updatedAt: new Date().toISOString(),
     };
-    this.createAuditLog('UPDATE', 'rentals', id, `Modification contrat ${this.state.contracts[idx].contractNumber}`);
+    this.state.contracts = this.state.contracts.map((c) => (c.id === id ? updated : c));
+    this.createAuditLog('UPDATE', 'rentals', id, `Modification contrat ${updated.contractNumber}`);
     this.notify();
-    return this.state.contracts[idx];
+    return updated;
   }
 
   public cancelContract(id: string, reason: string): RentalContract {
     const contract = this.state.contracts.find((c) => c.id === id);
     if (!contract) throw new Error('Contrat introuvable');
 
-    contract.status = 'CANCELLED';
-    contract.penaltyReason = reason;
-    contract.updatedAt = new Date().toISOString();
+    const updated = {
+      ...contract,
+      status: 'CANCELLED' as const,
+      penaltyReason: reason,
+      updatedAt: new Date().toISOString(),
+    };
+    this.state.contracts = this.state.contracts.map((c) => (c.id === id ? updated : c));
 
     // Libérer le véhicule
     this.updateVehicle(contract.vehicleId, { status: 'AVAILABLE' });
 
     // Libérer le chauffeur si présent
     if (contract.driverId) {
-      const dIdx = this.state.drivers.findIndex((d) => d.id === contract.driverId);
-      if (dIdx !== -1) {
-        this.state.drivers[dIdx].status = 'AVAILABLE';
-        this.state.drivers[dIdx].currentAssignedVehicleId = undefined;
-      }
+      this.state.drivers = this.state.drivers.map((d) =>
+        d.id === contract.driverId
+          ? { ...d, status: 'AVAILABLE', currentAssignedVehicleId: undefined }
+          : d
+      );
     }
 
-    this.createAuditLog('UPDATE', 'rentals', id, `Annulation contrat ${contract.contractNumber}`, reason);
+    this.createAuditLog('UPDATE', 'rentals', id, `Annulation contrat ${updated.contractNumber}`, reason);
     this.notify();
-    return contract;
+    return updated;
   }
 
   // --- 4. RÉSERVATIONS ---
@@ -1232,18 +1237,18 @@ class DatabaseStore {
   public updateReservation(id: string, updates: Partial<Reservation>): Reservation {
     const res = this.state.reservations.find((r) => r.id === id);
     if (!res) throw new Error('Réservation introuvable');
-    Object.assign(res, updates);
-    this.createAuditLog('UPDATE', 'reservations', id, `Mise à jour réservation ${res.reservationNumber}`);
+    const updated = { ...res, ...updates };
+    this.state.reservations = this.state.reservations.map((r) => (r.id === id ? updated : r));
+    this.createAuditLog('UPDATE', 'reservations', id, `Mise à jour réservation ${updated.reservationNumber}`);
     this.notify();
-    return res;
+    return updated;
   }
 
   public deleteReservation(id: string, reason?: string): boolean {
-    const idx = this.state.reservations.findIndex((r) => r.id === id);
-    if (idx === -1) throw new Error('Réservation introuvable');
-    const res = this.state.reservations[idx];
-    this.state.reservations.splice(idx, 1);
-    this.createAuditLog('DELETE', 'reservations', id, `Suppression réservation ${res.reservationNumber}`, reason);
+    const target = this.state.reservations.find((r) => r.id === id);
+    if (!target) throw new Error('Réservation introuvable');
+    this.state.reservations = this.state.reservations.filter((r) => r.id !== id);
+    this.createAuditLog('DELETE', 'reservations', id, `Suppression réservation ${target.reservationNumber}`, reason);
     this.notify();
     return true;
   }
@@ -1251,7 +1256,9 @@ class DatabaseStore {
   public updateReservationStatus(id: string, status: Reservation['status']) {
     const res = this.state.reservations.find((r) => r.id === id);
     if (!res) throw new Error('Réservation introuvable');
-    res.status = status;
+    this.state.reservations = this.state.reservations.map((r) =>
+      r.id === id ? { ...r, status } : r
+    );
     this.createAuditLog('UPDATE', 'reservations', id, `Statut réservation ${res.reservationNumber} changé en ${status}`);
     this.notify();
   }
@@ -1684,17 +1691,17 @@ class DatabaseStore {
   public updateStockItem(id: string, updates: Partial<StockItem>): StockItem {
     const idx = this.state.stock.findIndex((s) => s.id === id);
     if (idx === -1) throw new Error('Article introuvable');
-    this.state.stock[idx] = { ...this.state.stock[idx], ...updates };
-    this.createAuditLog('UPDATE', 'stock', id, `Mise à jour article stock ${this.state.stock[idx].name}`);
+    const updated = { ...this.state.stock[idx], ...updates };
+    this.state.stock = this.state.stock.map((s) => (s.id === id ? updated : s));
+    this.createAuditLog('UPDATE', 'stock', id, `Mise à jour article stock ${updated.name}`);
     this.notify();
-    return this.state.stock[idx];
+    return updated;
   }
 
   public deleteStockItem(id: string, reason?: string): boolean {
-    const idx = this.state.stock.findIndex((s) => s.id === id);
-    if (idx === -1) throw new Error('Article introuvable');
-    const target = this.state.stock[idx];
-    this.state.stock.splice(idx, 1);
+    const target = this.state.stock.find((s) => s.id === id);
+    if (!target) throw new Error('Article introuvable');
+    this.state.stock = this.state.stock.filter((s) => s.id !== id);
     this.createAuditLog('DELETE', 'stock', id, `Suppression article stock ${target.name} (${target.code})`, reason);
     this.notify();
     return true;
@@ -1762,16 +1769,16 @@ class DatabaseStore {
   public updateMaintenanceRecord(id: string, updates: Partial<MaintenanceRecord>): MaintenanceRecord {
     const rec = this.state.maintenance.find((m) => m.id === id);
     if (!rec) throw new Error('Dossier de maintenance introuvable');
-    Object.assign(rec, updates);
-    this.createAuditLog('UPDATE', 'maintenance', id, `Modification dossier maintenance ${rec.recordNumber}`);
+    const updated = { ...rec, ...updates };
+    this.state.maintenance = this.state.maintenance.map((m) => (m.id === id ? updated : m));
+    this.createAuditLog('UPDATE', 'maintenance', id, `Modification dossier maintenance ${updated.recordNumber}`);
     this.notify();
-    return rec;
+    return updated;
   }
 
   public deleteMaintenanceRecord(id: string, reason?: string): boolean {
-    const idx = this.state.maintenance.findIndex((m) => m.id === id);
-    if (idx === -1) throw new Error('Dossier de maintenance introuvable');
-    const rec = this.state.maintenance[idx];
+    const rec = this.state.maintenance.find((m) => m.id === id);
+    if (!rec) throw new Error('Dossier de maintenance introuvable');
 
     // Si la maintenance n'était pas terminée, réassigner le véhicule à AVAILABLE
     if (rec.status !== 'COMPLETED') {
@@ -1781,7 +1788,7 @@ class DatabaseStore {
       }
     }
 
-    this.state.maintenance.splice(idx, 1);
+    this.state.maintenance = this.state.maintenance.filter((m) => m.id !== id);
     this.createAuditLog('DELETE', 'maintenance', id, `Suppression dossier maintenance ${rec.recordNumber}`, reason);
     this.notify();
     return true;
@@ -1958,21 +1965,21 @@ class DatabaseStore {
   public updateLead(id: string, updates: Partial<CrmLead>): CrmLead {
     const idx = this.state.leads.findIndex((l) => l.id === id);
     if (idx === -1) throw new Error('Prospect introuvable');
-    this.state.leads[idx] = {
+    const updated = {
       ...this.state.leads[idx],
       ...updates,
       updatedAt: new Date().toISOString(),
     };
-    this.createAuditLog('UPDATE', 'crm', id, `Mise à jour prospect CRM ${this.state.leads[idx].fullName} (${this.state.leads[idx].stage})`);
+    this.state.leads = this.state.leads.map((l) => (l.id === id ? updated : l));
+    this.createAuditLog('UPDATE', 'crm', id, `Mise à jour prospect CRM ${updated.fullName} (${updated.stage})`);
     this.notify();
-    return this.state.leads[idx];
+    return updated;
   }
 
   public deleteLead(id: string, reason?: string): boolean {
-    const idx = this.state.leads.findIndex((l) => l.id === id);
-    if (idx === -1) throw new Error('Prospect introuvable');
-    const target = this.state.leads[idx];
-    this.state.leads.splice(idx, 1);
+    const target = this.state.leads.find((l) => l.id === id);
+    if (!target) throw new Error('Prospect introuvable');
+    this.state.leads = this.state.leads.filter((l) => l.id !== id);
     this.createAuditLog('DELETE', 'crm', id, `Suppression prospect CRM ${target.fullName}`, reason);
     this.notify();
     return true;
@@ -2016,20 +2023,20 @@ class DatabaseStore {
   public updateDriver(id: string, updates: Partial<Driver>): Driver {
     const idx = this.state.drivers.findIndex((d) => d.id === id);
     if (idx === -1) throw new Error('Chauffeur introuvable');
-    this.state.drivers[idx] = { ...this.state.drivers[idx], ...updates };
-    this.createAuditLog('UPDATE', 'drivers', id, `Mise à jour chauffeur ${this.state.drivers[idx].fullName}`);
+    const updated = { ...this.state.drivers[idx], ...updates };
+    this.state.drivers = this.state.drivers.map((d) => (d.id === id ? updated : d));
+    this.createAuditLog('UPDATE', 'drivers', id, `Mise à jour chauffeur ${updated.fullName}`);
     this.notify();
-    return this.state.drivers[idx];
+    return updated;
   }
 
   public deleteDriver(id: string, reason?: string): boolean {
-    const idx = this.state.drivers.findIndex((d) => d.id === id);
-    if (idx === -1) throw new Error('Chauffeur introuvable');
-    const target = this.state.drivers[idx];
+    const target = this.state.drivers.find((d) => d.id === id);
+    if (!target) throw new Error('Chauffeur introuvable');
     if (target.status === 'ON_TRIP') {
       throw new Error(`Impossible de supprimer le chauffeur ${target.fullName} : il est actuellement en mission sur route.`);
     }
-    this.state.drivers.splice(idx, 1);
+    this.state.drivers = this.state.drivers.filter((d) => d.id !== id);
     this.createAuditLog('DELETE', 'drivers', id, `Suppression chauffeur ${target.fullName}`, reason);
     this.notify();
     return true;
@@ -2072,10 +2079,9 @@ class DatabaseStore {
 
   public deleteDocument(id: string): boolean {
     if (!this.state.documents) return false;
-    const idx = this.state.documents.findIndex((d) => d.id === id);
-    if (idx === -1) return false;
-    const target = this.state.documents[idx];
-    this.state.documents.splice(idx, 1);
+    const target = this.state.documents.find((d) => d.id === id);
+    if (!target) return false;
+    this.state.documents = this.state.documents.filter((d) => d.id !== id);
     this.createAuditLog('DELETE', 'documents', id, `Suppression document ${target.title}`);
     this.notify();
     return true;

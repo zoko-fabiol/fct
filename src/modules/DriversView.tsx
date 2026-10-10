@@ -205,7 +205,8 @@ export const DriversView: React.FC<DriversViewProps> = ({
       setActionAlert({ type: 'success', message: `Chauffeur ${editForm.fullName} mis à jour avec succès.` });
       setTimeout(() => setActionAlert(null), 4000);
     } catch (err: any) {
-      alert(err.message || 'Erreur');
+      setActionAlert({ type: 'error', message: err.message || 'Erreur lors de la modification' });
+      setTimeout(() => setActionAlert(null), 5000);
     }
   };
 
@@ -334,6 +335,33 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   onChange={(e) => setEditForm({ ...editForm, licenseNumber: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg outline-hidden font-mono font-bold text-blue-900"
                 />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Catégories de Permis</label>
+                <div className="flex gap-2">
+                  {['A', 'B', 'C', 'D', 'E'].map((cat) => {
+                    const isChecked = (editForm.licenseCategories || []).includes(cat);
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          const current = editForm.licenseCategories || [];
+                          const next = isChecked ? current.filter((c) => c !== cat) : [...current, cat];
+                          setEditForm({ ...editForm, licenseCategories: next.length > 0 ? next : ['B'] });
+                        }}
+                        className={`px-3 py-1 rounded-lg border font-bold text-xs cursor-pointer transition ${
+                          isChecked
+                            ? 'bg-blue-900 border-blue-900 text-white shadow-xs'
+                            : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1286,7 +1314,22 @@ export const DriversView: React.FC<DriversViewProps> = ({
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-700 font-bold group-hover:text-blue-800">
                   <span>Consulter le showroom chauffeur</span>
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <div className="flex items-center gap-2">
+                    {hasEffectivePermission(currentUser, 'drivers', 'update') && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEdit(drv);
+                        }}
+                        title="Modifier ce chauffeur"
+                        className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 transition cursor-pointer"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
                 </div>
               </div>
             );
@@ -1397,6 +1440,33 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   onChange={(e) => setDriverForm({ ...driverForm, licenseNumber: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg outline-hidden font-mono"
                 />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-bold mb-1">Catégories de Permis</label>
+                <div className="flex gap-2">
+                  {['A', 'B', 'C', 'D', 'E'].map((cat) => {
+                    const isChecked = (driverForm.licenseCategories || []).includes(cat);
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          const current = driverForm.licenseCategories || [];
+                          const next = isChecked ? current.filter((c) => c !== cat) : [...current, cat];
+                          setDriverForm({ ...driverForm, licenseCategories: next.length > 0 ? next : ['B'] });
+                        }}
+                        className={`px-3 py-1 rounded-lg border font-bold text-xs cursor-pointer transition ${
+                          isChecked
+                            ? 'bg-blue-900 border-blue-900 text-white shadow-xs'
+                            : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

@@ -38,6 +38,7 @@ import {
   Trash2,
   Send,
   Settings2,
+  Camera,
   Users,
   ShieldCheck,
   FileText,
@@ -246,15 +247,6 @@ ${vehicle.isForSale ? `*Prix de Vente :* ${formatXAF(vehicle.salePrice)}` : ''}
   const handleDeletePhotoConfirm = () => {
     if (photoToDeleteIndex === null || !vehicle) return;
     try {
-      if (vehicle.photoUrls.length <= 1) {
-        alert(
-          lang === 'fr'
-            ? 'Le véhicule doit conserver au moins une photo dans sa galerie.'
-            : 'The vehicle must keep at least one photo in its gallery.'
-        );
-        setPhotoToDeleteIndex(null);
-        return;
-      }
       const updatedPhotos = vehicle.photoUrls.filter((_, idx) => idx !== photoToDeleteIndex);
       const existingAngles =
         vehicle.photoAngles && vehicle.photoAngles.length === vehicle.photoUrls.length
@@ -395,86 +387,116 @@ ${vehicle.isForSale ? `*Prix de Vente :* ${formatXAF(vehicle.salePrice)}` : ''}
         {/* Left Column: Multi-Angle Visual Gallery (7 cols) */}
         <div className="lg:col-span-7 space-y-3">
           {/* Main High-Res Viewer */}
-          <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-[16/10] shadow-md border border-slate-850 group">
-            <img
-              src={vehicle.photoUrls[selectedPhotoIndex] || vehicle.photoUrls[0]}
-              alt={`${vehicle.brand} ${vehicle.model} - ${vehicle.photoAngles?.[selectedPhotoIndex] || angleLabels[selectedPhotoIndex] || 'Photo'}`}
-              className="w-full h-full object-cover transition duration-300 select-none"
-            />
-
-            {/* Top Badges */}
-            <div className="absolute top-3.5 left-3.5 flex items-center gap-2">
-              <span className="px-3 py-1 rounded-lg bg-slate-950/85 text-white font-bold text-xs uppercase tracking-wider backdrop-blur-md border border-white/10 shadow-sm">
-                {vehicle.brand} {vehicle.model}
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 text-white font-bold text-xs backdrop-blur-md border border-white/10">
-                {vehicle.year}
-              </span>
-            </div>
-
-            <div className="absolute top-3.5 right-3.5">
-              <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-md ${
-                  vehicle.status === 'AVAILABLE'
-                    ? 'bg-emerald-600 text-white'
-                    : vehicle.status === 'RENTED'
-                    ? 'bg-blue-600 text-white'
-                    : vehicle.status === 'MAINTENANCE'
-                    ? 'bg-amber-500 text-slate-950'
-                    : 'bg-slate-800 text-white'
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                {t.vehicleStatus[vehicle.status]}
-              </span>
-            </div>
-
-            {/* Navigation Arrows for direct sliding */}
-            {vehicle.photoUrls.length > 1 && (
+          <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-[16/10] shadow-md border border-slate-850 group flex items-center justify-center">
+            {vehicle.photoUrls.length > 0 ? (
               <>
-                <button
-                  type="button"
-                  onClick={handlePrevPhoto}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition opacity-0 group-hover:opacity-100 cursor-pointer border border-white/10"
-                  aria-label="Photo précédente"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextPhoto}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition opacity-0 group-hover:opacity-100 cursor-pointer border border-white/10"
-                  aria-label="Photo suivante"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
+                <img
+                  src={vehicle.photoUrls[selectedPhotoIndex] || vehicle.photoUrls[0]}
+                  alt={`${vehicle.brand} ${vehicle.model} - ${vehicle.photoAngles?.[selectedPhotoIndex] || angleLabels[selectedPhotoIndex] || 'Photo'}`}
+                  className="w-full h-full object-cover transition duration-300 select-none"
+                />
+
+                {/* Top Badges */}
+                <div className="absolute top-3.5 left-3.5 flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-lg bg-slate-950/85 text-white font-bold text-xs uppercase tracking-wider backdrop-blur-md border border-white/10 shadow-sm">
+                    {vehicle.brand} {vehicle.model}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 text-white font-bold text-xs backdrop-blur-md border border-white/10">
+                    {vehicle.year}
+                  </span>
+                </div>
+
+                <div className="absolute top-3.5 right-3.5">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-md ${
+                      vehicle.status === 'AVAILABLE'
+                        ? 'bg-emerald-600 text-white'
+                        : vehicle.status === 'RENTED'
+                        ? 'bg-blue-600 text-white'
+                        : vehicle.status === 'MAINTENANCE'
+                        ? 'bg-amber-500 text-slate-950'
+                        : 'bg-slate-800 text-white'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    {t.vehicleStatus[vehicle.status]}
+                  </span>
+                </div>
+
+                {/* Navigation Arrows for direct sliding */}
+                {vehicle.photoUrls.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handlePrevPhoto}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition opacity-0 group-hover:opacity-100 cursor-pointer border border-white/10"
+                      aria-label="Photo précédente"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNextPhoto}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition opacity-0 group-hover:opacity-100 cursor-pointer border border-white/10"
+                      aria-label="Photo suivante"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+
+                {/* Bottom Floating Indicators */}
+                <div className="absolute bottom-3.5 left-3.5 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-white text-xs font-semibold border border-white/10 flex items-center gap-2 shadow">
+                  <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{vehicle.photoAngles?.[selectedPhotoIndex] || angleLabels[selectedPhotoIndex] || `Vue ${selectedPhotoIndex + 1}`}</span>
+                  <span className="text-slate-400 text-[10px]">({selectedPhotoIndex + 1}/{vehicle.photoUrls.length})</span>
+                </div>
+
+                {/* Delete current photo action on main view */}
+                {canEditVehicle && vehicle.photoUrls.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPhotoToDeleteIndex(selectedPhotoIndex)}
+                    title={lang === 'fr' ? 'Supprimer cette photo de la galerie' : 'Delete this photo from gallery'}
+                    className="absolute bottom-3.5 left-44 z-10 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-700 text-white font-bold text-xs shadow-md backdrop-blur-md transition cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{lang === 'fr' ? 'Supprimer cette vue' : 'Delete angle'}</span>
+                  </button>
+                )}
+
+                {/* Plate Number watermark */}
+                <div className="absolute bottom-3.5 right-3.5 bg-white/95 px-3 py-1.5 rounded-lg font-mono font-bold text-xs text-slate-950 shadow border border-slate-300">
+                  {vehicle.licensePlate}
+                </div>
               </>
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 text-center text-slate-400 space-y-3">
+                <div className="w-16 h-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500">
+                  <Camera className="w-8 h-8" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-slate-200 text-sm">
+                    {lang === 'fr' ? 'Aucune photo dans la galerie' : 'No photos in gallery'}
+                  </h4>
+                  <p className="text-xs text-slate-500 max-w-sm">
+                    {lang === 'fr'
+                      ? 'Ajoutez des photos sous plusieurs angles (avant, cockpit, etc.) pour valoriser ce véhicule.'
+                      : 'Add photos from multiple angles to showcase this vehicle.'}
+                  </p>
+                </div>
+                {canEditVehicle && (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddPhotoModalOpen(true)}
+                    className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{lang === 'fr' ? 'Ajouter des photos' : 'Add photos'}</span>
+                  </button>
+                )}
+              </div>
             )}
-
-            {/* Bottom Floating Indicators */}
-            <div className="absolute bottom-3.5 left-3.5 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-white text-xs font-semibold border border-white/10 flex items-center gap-2 shadow">
-              <Eye className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{vehicle.photoAngles?.[selectedPhotoIndex] || angleLabels[selectedPhotoIndex] || `Vue ${selectedPhotoIndex + 1}`}</span>
-              <span className="text-slate-400 text-[10px]">({selectedPhotoIndex + 1}/{vehicle.photoUrls.length})</span>
-            </div>
-
-            {/* Delete current photo action on main view */}
-            {canEditVehicle && vehicle.photoUrls.length > 1 && (
-              <button
-                type="button"
-                onClick={() => setPhotoToDeleteIndex(selectedPhotoIndex)}
-                title={lang === 'fr' ? 'Supprimer cette photo de la galerie' : 'Delete this photo from gallery'}
-                className="absolute bottom-3.5 left-44 z-10 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-700 text-white font-bold text-xs shadow-md backdrop-blur-md transition cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{lang === 'fr' ? 'Supprimer cette vue' : 'Delete angle'}</span>
-              </button>
-            )}
-
-            {/* Plate Number watermark */}
-            <div className="absolute bottom-3.5 right-3.5 bg-white/95 px-3 py-1.5 rounded-lg font-mono font-bold text-xs text-slate-950 shadow border border-slate-300">
-              {vehicle.licensePlate}
-            </div>
           </div>
 
           {/* Thumbnails Angle Selector Strip */}
@@ -528,7 +550,7 @@ ${vehicle.isForSale ? `*Prix de Vente :* ${formatXAF(vehicle.salePrice)}` : ''}
                   </button>
 
                   {/* Bouton de suppression directe sur la vignette */}
-                  {canEditVehicle && vehicle.photoUrls.length > 1 && (
+                  {canEditVehicle && vehicle.photoUrls.length > 0 && (
                     <button
                       type="button"
                       onClick={(e) => {
