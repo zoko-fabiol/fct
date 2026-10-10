@@ -64,9 +64,14 @@ import {
 } from '../../packages/business-rules/index.ts';
 import { db, handleFirestoreError, OperationType } from './firebase.ts';
 import { indexedDbService } from './indexedDbService.ts';
-import { doc, setDoc } from 'firebase/firestore';
-
-const STORAGE_KEY = 'fct_erp_database_v1';
+import { doc, setDoc, deleteDoc } from 'firebase/firestore';
+import {
+  clearAllLocalStorage,
+  transferAllDataToFirebase,
+  loadAllFromFirebase,
+  listenToFirebaseRealtime,
+  TransferResult,
+} from './firebaseSyncEngine.ts';
 
 export interface FctDocument {
   id: string;
@@ -214,29 +219,6 @@ export interface DatabaseState {
 }
 
 function loadInitialState(): DatabaseState {
-  try {
-    if (typeof localStorage !== 'undefined') {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.vehicles && parsed.contracts) {
-          // Migration douce si champs manquants
-          return {
-            ...parsed,
-            settings: { ...initialSettings, ...(parsed.settings || {}) },
-            rolePermissions: parsed.rolePermissions || DEFAULT_ROLE_PERMISSIONS,
-            securityAuditLogs: parsed.securityAuditLogs || [],
-            stockMovements: parsed.stockMovements || initialStockMovements,
-            leads: parsed.leads || initialLeads,
-            documents: parsed.documents || initialDocuments,
-          };
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Initial storage load failed, fallback to defaults', err);
-  }
-
   return {
     settings: initialSettings,
     users: initialUsers,
@@ -298,10 +280,17 @@ class DatabaseStore {
   private state: DatabaseState;
   private listeners: Set<() => void> = new Set();
   private currentUser: UserProfile = initialUsers[0]; // Super Admin par défaut
+  private isFirebaseInitialized = false;
+  private unsubscribeRealtime?: () => void;
 
   constructor() {
+    // 1. Purge complète du LocalStorage (remplacé par Firebase Local)
+    clearAllLocalStorage();
+
+    // 2. Initialisation de l'état en mémoire
     this.state = loadInitialState();
 
+    // 3. Gestionnaires d'état réseau et synchronisation
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => {
         this.state.isOnline = true;
@@ -313,17 +302,46 @@ class DatabaseStore {
         this.state.isOnline = false;
         this.notify();
       });
+
+      // 4. Initialisation du cache local et écouteurs Firestore
+      this.initFirebasePersistence();
+    }
+  }
+
+  private async initFirebasePersistence() {
+    try {
+      // Hydratation depuis Firebase (IndexedDB local cache ou Cloud)
+      const firebaseData = await loadAllFromFirebase();
+      if (firebaseData && Object.keys(firebaseData).length > 0) {
+        this.state = {
+          ...this.state,
+          ...firebaseData,
+        };
+        this.notify();
+        console.info('[FCT Store] Données synchronisées depuis Firebase avec succès.');
+      } else {
+        // Premier lancement sans données dans Firebase : amorçage automatique
+        console.info('[FCT Store] Première initialisation : transfert automatique du dataset vers Firebase...');
+        transferAllDataToFirebase(this.state).catch((e) => console.warn('Amorçage Firebase différé :', e));
+      }
+
+      // Écouteur en temps réel pour synchronisation collaborative multi-onglets / multi-utilisateurs
+      this.unsubscribeRealtime = listenToFirebaseRealtime((partial) => {
+        this.state = {
+          ...this.state,
+          ...partial,
+        };
+        this.notify();
+      });
+
+      this.isFirebaseInitialized = true;
+    } catch (err) {
+      console.warn('[FCT Store] Initialisation Firebase différée :', err);
     }
   }
 
   private notify() {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
-      }
-    } catch (e) {
-      console.error('Storage sync error', e);
-    }
+    // Plus de sauvegarde dans LocalStorage ! Le stockage est désormais géré par Firebase.
     this.listeners.forEach((fn) => fn());
   }
 
@@ -687,6 +705,16 @@ class DatabaseStore {
     }
   }
 
+  // Suppression dans Cloud Firestore
+  public async deleteFromFirestore(collectionName: string, docId: string) {
+    if (!this.state.isOnline) return;
+    try {
+      await deleteDoc(doc(db, collectionName, docId));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `${collectionName}/${docId}`);
+    }
+  }
+
   public getSettings(): AgencySettings {
     return this.state.settings || initialSettings;
   }
@@ -860,6 +888,7 @@ class DatabaseStore {
       `Suppression véhicule ${target.brand} ${target.model} (${target.licensePlate})`,
       reason || 'Suppression manuelle depuis l’interface'
     );
+    this.deleteFromFirestore('vehicles', id);
     this.notify();
     return true;
   }
@@ -875,6 +904,7 @@ class DatabaseStore {
     };
     this.state.customers.unshift(newCust);
     this.createAuditLog('CREATE', 'crm', newCust.id, `Nouveau client ${newCust.fullName}`);
+    this.mirrorToFirestore('customers', newCust.id, newCust);
     this.notify();
     return newCust;
   }
@@ -888,6 +918,7 @@ class DatabaseStore {
     };
     this.state.customers = this.state.customers.map((c) => (c.id === id ? updated : c));
     this.createAuditLog('UPDATE', 'crm', id, `Mise à jour fiche client ${updated.fullName}`);
+    this.mirrorToFirestore('customers', id, updated);
     this.notify();
     return updated;
   }
@@ -914,6 +945,7 @@ class DatabaseStore {
       `Suppression fiche client ${target.fullName} (${target.companyName || 'Particulier'})`,
       reason || 'Suppression du répertoire'
     );
+    this.deleteFromFirestore('customers', id);
     this.notify();
     return true;
   }
@@ -1132,6 +1164,7 @@ class DatabaseStore {
     }
 
     this.createAuditLog('UPDATE', 'rentals', contractId, `Restitution véhicule contrat ${contract.contractNumber} (Pénalités: ${penaltiesXAF} XAF)`);
+    this.mirrorToFirestore('rental_contracts', contractId, contract);
     this.notify();
   }
 
@@ -1146,6 +1179,7 @@ class DatabaseStore {
     };
     this.state.contracts = this.state.contracts.map((c) => (c.id === id ? updated : c));
     this.createAuditLog('UPDATE', 'rentals', id, `Modification contrat ${updated.contractNumber}`);
+    this.mirrorToFirestore('rental_contracts', id, updated);
     this.notify();
     return updated;
   }
@@ -1175,6 +1209,7 @@ class DatabaseStore {
     }
 
     this.createAuditLog('UPDATE', 'rentals', id, `Annulation contrat ${updated.contractNumber}`, reason);
+    this.mirrorToFirestore('rental_contracts', id, updated);
     this.notify();
     return updated;
   }
@@ -1230,6 +1265,7 @@ class DatabaseStore {
     }
 
     this.createAuditLog('CREATE', 'reservations', newRes.id, `Nouvelle réservation ${newRes.reservationNumber}`);
+    this.mirrorToFirestore('reservations', newRes.id, newRes);
     this.notify();
     return newRes;
   }
@@ -1240,6 +1276,7 @@ class DatabaseStore {
     const updated = { ...res, ...updates };
     this.state.reservations = this.state.reservations.map((r) => (r.id === id ? updated : r));
     this.createAuditLog('UPDATE', 'reservations', id, `Mise à jour réservation ${updated.reservationNumber}`);
+    this.mirrorToFirestore('reservations', id, updated);
     this.notify();
     return updated;
   }
@@ -1249,6 +1286,7 @@ class DatabaseStore {
     if (!target) throw new Error('Réservation introuvable');
     this.state.reservations = this.state.reservations.filter((r) => r.id !== id);
     this.createAuditLog('DELETE', 'reservations', id, `Suppression réservation ${target.reservationNumber}`, reason);
+    this.deleteFromFirestore('reservations', id);
     this.notify();
     return true;
   }
@@ -1256,10 +1294,12 @@ class DatabaseStore {
   public updateReservationStatus(id: string, status: Reservation['status']) {
     const res = this.state.reservations.find((r) => r.id === id);
     if (!res) throw new Error('Réservation introuvable');
+    const updated = { ...res, status };
     this.state.reservations = this.state.reservations.map((r) =>
-      r.id === id ? { ...r, status } : r
+      r.id === id ? updated : r
     );
     this.createAuditLog('UPDATE', 'reservations', id, `Statut réservation ${res.reservationNumber} changé en ${status}`);
+    this.mirrorToFirestore('reservations', id, updated);
     this.notify();
   }
 
@@ -1346,6 +1386,8 @@ class DatabaseStore {
     }
 
     this.createAuditLog('CREATE', 'sales', newSale.id, `Nouvelle commande vente ${newSale.orderNumber} (${newSale.negotiatedPriceXAF} XAF)`);
+    this.mirrorToFirestore('sales', newSale.id, newSale);
+    this.mirrorToFirestore('invoices', invoice.id, invoice);
     this.notify();
     return newSale;
   }
@@ -1361,6 +1403,7 @@ class DatabaseStore {
     }
 
     this.createAuditLog('UPDATE', 'sales', id, `Vente ${sale.orderNumber} passée à l'étape ${stage}`);
+    this.mirrorToFirestore('sales', id, sale);
     this.notify();
   }
 
@@ -1376,6 +1419,7 @@ class DatabaseStore {
     };
     this.state.invoices.unshift(newInvoice);
     this.createAuditLog('CREATE', 'billing', newInvoice.id, `Création facture ${newInvoice.invoiceNumber} (${newInvoice.totalAmountXAF} XAF)`);
+    this.mirrorToFirestore('invoices', newInvoice.id, newInvoice);
     this.notify();
     return newInvoice;
   }
@@ -1404,6 +1448,7 @@ class DatabaseStore {
     };
     this.state.cashSessions.unshift(newSession);
     this.createAuditLog('CREATE', 'cash', newSession.id, `Ouverture session de caisse ${newSession.sessionNumber} avec ${openingBalanceXAF} XAF`);
+    this.mirrorToFirestore('cash_sessions', newSession.id, newSession);
     this.notify();
     return newSession;
   }
@@ -1432,6 +1477,7 @@ class DatabaseStore {
       `Clôture session caisse ${session.sessionNumber} (Compté: ${countedClosingBalanceXAF} XAF, Ecart: ${discrepancy} XAF)`,
       notes
     );
+    this.mirrorToFirestore('cash_sessions', session.id, session);
     this.notify();
     return session;
   }
@@ -1684,6 +1730,7 @@ class DatabaseStore {
     };
     this.state.stock.unshift(newItem);
     this.createAuditLog('CREATE', 'stock', newItem.id, `Nouvel article stock ${newItem.name} (${newItem.code})`);
+    this.mirrorToFirestore('stock', newItem.id, newItem);
     this.notify();
     return newItem;
   }
@@ -1694,6 +1741,7 @@ class DatabaseStore {
     const updated = { ...this.state.stock[idx], ...updates };
     this.state.stock = this.state.stock.map((s) => (s.id === id ? updated : s));
     this.createAuditLog('UPDATE', 'stock', id, `Mise à jour article stock ${updated.name}`);
+    this.mirrorToFirestore('stock', id, updated);
     this.notify();
     return updated;
   }
@@ -1703,6 +1751,7 @@ class DatabaseStore {
     if (!target) throw new Error('Article introuvable');
     this.state.stock = this.state.stock.filter((s) => s.id !== id);
     this.createAuditLog('DELETE', 'stock', id, `Suppression article stock ${target.name} (${target.code})`, reason);
+    this.deleteFromFirestore('stock', id);
     this.notify();
     return true;
   }
@@ -1745,6 +1794,8 @@ class DatabaseStore {
       `Ajustement stock ${item.name} (${qtyDelta > 0 ? '+' : ''}${qtyDelta} -> ${item.quantityInStock})`,
       reason
     );
+    this.mirrorToFirestore('stock', itemId, item);
+    this.mirrorToFirestore('stock_movements', movement.id, movement);
     this.notify();
   }
 
@@ -1762,6 +1813,7 @@ class DatabaseStore {
     this.updateVehicle(newRec.vehicleId, { status: 'MAINTENANCE' });
 
     this.createAuditLog('CREATE', 'maintenance', newRec.id, `Ouverture dossier maintenance ${newRec.recordNumber} sur ${newRec.licensePlate}`);
+    this.mirrorToFirestore('maintenance', newRec.id, newRec);
     this.notify();
     return newRec;
   }
@@ -1772,6 +1824,7 @@ class DatabaseStore {
     const updated = { ...rec, ...updates };
     this.state.maintenance = this.state.maintenance.map((m) => (m.id === id ? updated : m));
     this.createAuditLog('UPDATE', 'maintenance', id, `Modification dossier maintenance ${updated.recordNumber}`);
+    this.mirrorToFirestore('maintenance', id, updated);
     this.notify();
     return updated;
   }
@@ -1790,6 +1843,7 @@ class DatabaseStore {
 
     this.state.maintenance = this.state.maintenance.filter((m) => m.id !== id);
     this.createAuditLog('DELETE', 'maintenance', id, `Suppression dossier maintenance ${rec.recordNumber}`, reason);
+    this.deleteFromFirestore('maintenance', id);
     this.notify();
     return true;
   }
@@ -1850,6 +1904,8 @@ class DatabaseStore {
             timestamp: new Date().toISOString(),
           };
           this.state.stockMovements.unshift(movement);
+          this.mirrorToFirestore('stock', item.id, item);
+          this.mirrorToFirestore('stock_movements', movement.id, movement);
         }
       }
     }
@@ -1868,6 +1924,7 @@ class DatabaseStore {
       if (rec.mileageAtService && rec.mileageAtService > veh.mileage) {
         veh.mileage = rec.mileageAtService;
       }
+      this.mirrorToFirestore('vehicles', veh.id, veh);
     }
 
     this.createAuditLog(
@@ -1876,6 +1933,7 @@ class DatabaseStore {
       id,
       `Clôture validée maintenance ${rec.recordNumber} (${rec.totalCostXAF} XAF). Pièces déduites et véhicule rendu disponible.`
     );
+    this.mirrorToFirestore('maintenance', id, rec);
     this.notify();
     return rec;
   }
@@ -1958,6 +2016,7 @@ class DatabaseStore {
     };
     this.state.leads.unshift(newLead);
     this.createAuditLog('CREATE', 'crm', newLead.id, `Nouveau prospect CRM ${newLead.fullName} (${newLead.interestType})`);
+    this.mirrorToFirestore('leads', newLead.id, newLead);
     this.notify();
     return newLead;
   }
@@ -1972,6 +2031,7 @@ class DatabaseStore {
     };
     this.state.leads = this.state.leads.map((l) => (l.id === id ? updated : l));
     this.createAuditLog('UPDATE', 'crm', id, `Mise à jour prospect CRM ${updated.fullName} (${updated.stage})`);
+    this.mirrorToFirestore('leads', id, updated);
     this.notify();
     return updated;
   }
@@ -1981,6 +2041,7 @@ class DatabaseStore {
     if (!target) throw new Error('Prospect introuvable');
     this.state.leads = this.state.leads.filter((l) => l.id !== id);
     this.createAuditLog('DELETE', 'crm', id, `Suppression prospect CRM ${target.fullName}`, reason);
+    this.deleteFromFirestore('leads', id);
     this.notify();
     return true;
   }
@@ -2003,6 +2064,7 @@ class DatabaseStore {
     lead.updatedAt = new Date().toISOString();
 
     this.createAuditLog('UPDATE', 'crm', leadId, `Conversion du prospect ${lead.fullName} en client officiel ${customer.fullName}`);
+    this.mirrorToFirestore('leads', leadId, lead);
     this.notify();
     return customer;
   }
@@ -2016,6 +2078,7 @@ class DatabaseStore {
     };
     this.state.drivers.unshift(newDriver);
     this.createAuditLog('CREATE', 'drivers', newDriver.id, `Nouveau chauffeur ${newDriver.fullName}`);
+    this.mirrorToFirestore('drivers', newDriver.id, newDriver);
     this.notify();
     return newDriver;
   }
@@ -2026,6 +2089,7 @@ class DatabaseStore {
     const updated = { ...this.state.drivers[idx], ...updates };
     this.state.drivers = this.state.drivers.map((d) => (d.id === id ? updated : d));
     this.createAuditLog('UPDATE', 'drivers', id, `Mise à jour chauffeur ${updated.fullName}`);
+    this.mirrorToFirestore('drivers', id, updated);
     this.notify();
     return updated;
   }
@@ -2038,6 +2102,7 @@ class DatabaseStore {
     }
     this.state.drivers = this.state.drivers.filter((d) => d.id !== id);
     this.createAuditLog('DELETE', 'drivers', id, `Suppression chauffeur ${target.fullName}`, reason);
+    this.deleteFromFirestore('drivers', id);
     this.notify();
     return true;
   }
@@ -2073,6 +2138,7 @@ class DatabaseStore {
     };
     this.state.documents.unshift(created);
     this.createAuditLog('CREATE', 'documents', created.id, `Dépôt document ${created.title}`);
+    this.mirrorToFirestore('documents', created.id, created);
     this.notify();
     return created;
   }
@@ -2083,6 +2149,7 @@ class DatabaseStore {
     if (!target) return false;
     this.state.documents = this.state.documents.filter((d) => d.id !== id);
     this.createAuditLog('DELETE', 'documents', id, `Suppression document ${target.title}`);
+    this.deleteFromFirestore('documents', id);
     this.notify();
     return true;
   }
@@ -2100,11 +2167,38 @@ class DatabaseStore {
     this.notify();
   }
 
-  // Reset demo data
-  public resetToFactory() {
-    localStorage.removeItem(STORAGE_KEY);
+  // Transfert manuel vers Firebase & purge LocalStorage
+  public async transferAllToFirebase(
+    onProgress?: (step: string, current: number, total: number) => void
+  ): Promise<TransferResult> {
+    return await transferAllDataToFirebase(this.state, onProgress);
+  }
+
+  // Recharger depuis Firebase Local Cache / Cloud
+  public async reloadFromFirebase(): Promise<boolean> {
+    const data = await loadAllFromFirebase();
+    if (data && Object.keys(data).length > 0) {
+      this.state = {
+        ...this.state,
+        ...data,
+      };
+      this.notify();
+      return true;
+    }
+    return false;
+  }
+
+  // Purge de l'ancien LocalStorage
+  public clearLocalStorage(): { clearedKeys: string[]; bytesFreed: number } {
+    return clearAllLocalStorage();
+  }
+
+  // Réinitialisation d'usine
+  public async resetToFactory(): Promise<void> {
+    clearAllLocalStorage();
     this.state = loadInitialState();
     this.notify();
+    await this.transferAllToFirebase();
   }
 }
 

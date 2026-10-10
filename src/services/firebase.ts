@@ -15,11 +15,15 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   getFirestore,
   Firestore,
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
   collection,
   getDocs,
   query,
@@ -27,6 +31,7 @@ import {
   orderBy,
   runTransaction,
   serverTimestamp,
+  onSnapshot,
 } from 'firebase/firestore';
 import { UserProfile, UserRole } from '../../packages/shared-types/index.ts';
 
@@ -43,7 +48,24 @@ export const firebaseConfig = {
 // Initialisation unique de l'application Firebase
 export const app: FirebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth: Auth = getAuth(app);
-export const db: Firestore = getFirestore(app);
+
+// Initialisation Firestore avec cache local persistant (IndexedDB / Local Firebase)
+function initFirestoreInstance(): Firestore {
+  try {
+    if (typeof window !== 'undefined' && typeof indexedDB !== 'undefined') {
+      return initializeFirestore(app, {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager(),
+        }),
+      });
+    }
+  } catch (err) {
+    console.info('Firestore déjà initialisé ou environnement spécifique, fallback getFirestore()');
+  }
+  return getFirestore(app);
+}
+
+export const db: Firestore = initFirestoreInstance();
 
 // Types d'opérations et gestion des erreurs Firestore
 export enum OperationType {

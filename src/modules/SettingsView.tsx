@@ -88,6 +88,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [importJsonText, setImportJsonText] = useState('');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [transferProgress, setTransferProgress] = useState<{ step: string; current: number; total: number } | null>(null);
+  const [localStorageClearedInfo, setLocalStorageClearedInfo] = useState<{ clearedKeys: string[]; bytesFreed: number } | null>(null);
 
   // Synchronize draft when external state changes, if not dirty
   const isDirty = useMemo(() => {
@@ -208,6 +211,57 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
       );
     }
   };
+
+  const handleTransferToFirebase = async () => {
+    if (!canEdit) return;
+    setIsTransferring(true);
+    setSaveSuccessMsg(null);
+    setSaveErrorMsg(null);
+    try {
+      const purgeResult = dbStore.clearLocalStorage();
+      setLocalStorageClearedInfo(purgeResult);
+      const res = await dbStore.transferAllToFirebase((step, current, total) => {
+        setTransferProgress({ step, current, total });
+      });
+      setSaveSuccessMsg(
+        lang === 'fr'
+          ? `Transfert Firebase réussi ! ${res.totalTransferred} enregistrements synchronisés dans Firestore. LocalStorage entièrement nettoyé (${purgeResult.clearedKeys.length} clés supprimées).`
+          : `Firebase transfer successful! ${res.totalTransferred} records synced to Firestore. LocalStorage completely purged.`
+      );
+    } catch (err: unknown) {
+      setSaveErrorMsg(
+        lang === 'fr'
+          ? `Échec du transfert vers Firebase : ${err instanceof Error ? err.message : String(err)}`
+          : `Firebase transfer failed: ${err instanceof Error ? err.message : String(err)}`
+      );
+    } finally {
+      setIsTransferring(false);
+      setTransferProgress(null);
+    }
+  };
+
+  const handleReloadFromFirebase = async () => {
+    try {
+      const success = await dbStore.reloadFromFirebase();
+      if (success) {
+        setFormData({ ...dbStore.getSettings() });
+        setSaveSuccessMsg(
+          lang === 'fr'
+            ? 'Données rechargées depuis le cache local Firebase Firestore avec succès.'
+            : 'Data reloaded from Firebase Firestore local cache successfully.'
+        );
+      } else {
+        setSaveErrorMsg(
+          lang === 'fr'
+            ? 'Aucune donnée trouvée dans Firebase ou hors-ligne.'
+            : 'No data found in Firebase or offline.'
+        );
+      }
+    } catch (err: unknown) {
+      setSaveErrorMsg(err instanceof Error ? err.message : String(err));
+    }
+  };
+
 
   // Preview document numbers computed live
   const sampleYear = new Date().getFullYear();
@@ -1383,13 +1437,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
         </div>
       )}
 
-      {/* TAB I: SYNC & CLOUDINARY */}
+      {/* TAB I: SYNC & PERSISTENCE FIREBASE */}
       {activeTab === 'sync' && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
-              <Cloud className="w-4 h-4 text-cyan-600" />
-              <span>Connectivité, Hors-Ligne & Hébergement Cloudinary</span>
+              <Database className="w-4 h-4 text-emerald-600" />
+              <span>Persistance des Données FCT : Firebase Local (IndexedDB) & Firestore Cloud</span>
             </div>
             <div className="flex items-center gap-2">
               <span
@@ -1398,39 +1452,127 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 }`}
               />
               <span className="text-xs font-bold text-slate-700">
-                {state.isOnline ? 'En ligne (Connecté)' : 'Hors-ligne (Local)'}
+                {state.isOnline ? 'En ligne (Cloud Firestore fct-cmr)' : 'Hors-ligne (Firebase Local Cache)'}
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-            {/* Status overview */}
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-              <span className="font-bold text-slate-900 block">État du Cache & File d’Attente</span>
-              <div className="space-y-1 text-slate-600">
-                <div className="flex justify-between">
-                  <span>Modifications en attente de synchronisation :</span>
-                  <span className="font-bold text-slate-900">{state.syncQueue?.length || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Dernière vérification de connectivité :</span>
-                  <span className="font-bold text-slate-900">
-                    {new Date().toLocaleTimeString()}
-                  </span>
-                </div>
+          {/* Architecture overview banners */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-emerald-950 text-xs flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Moteur Principal : Local Firebase
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900 text-[10px] font-bold">
+                  IndexedDB Persistent
+                </span>
               </div>
-              <button
-                type="button"
-                onClick={() => dbStore.setOnlineStatus(true)}
-                className="w-full mt-2 py-2 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Forcer la synchronisation avec Firebase</span>
-              </button>
+              <p className="text-[11px] text-emerald-800 leading-relaxed">
+                Persistance locale offline-first ultra-rapide sans latence, synchronisée en temps réel multi-onglets et répliquée sur le projet Cloud <strong>fct-cmr</strong>.
+              </p>
             </div>
 
-            {/* Cloudinary credentials */}
+            <div className="p-4 bg-sky-50/60 rounded-xl border border-sky-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-sky-950 text-xs flex items-center gap-1.5">
+                  <Shield className="w-4 h-4 text-sky-600" />
+                  LocalStorage Navigateur
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">
+                  Désactivé & Purgé (0 Ko)
+                </span>
+              </div>
+              <p className="text-[11px] text-sky-800 leading-relaxed">
+                L'ensemble des anciennes clés de stockage ont été définitivement purgées. Plus aucune donnée FCT n'est stockée dans l'ancien LocalStorage vulnérable.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+            {/* Status overview and migration trigger */}
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+              <span className="font-bold text-slate-900 block text-xs">Synchronisation & Transfert Intégral</span>
+              
+              <div className="space-y-2 text-slate-600 bg-white p-3 rounded-lg border border-slate-200">
+                <div className="flex justify-between items-center">
+                  <span>Véhicules enregistrés :</span>
+                  <span className="font-bold text-slate-900">{state.vehicles?.length || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Clients & Comptes :</span>
+                  <span className="font-bold text-slate-900">{state.customers?.length || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Contrats de Location :</span>
+                  <span className="font-bold text-slate-900">{state.contracts?.length || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Factures & Règlements :</span>
+                  <span className="font-bold text-slate-900">{state.invoices?.length || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Mouvements Caisse Espèces :</span>
+                  <span className="font-bold text-slate-900">{state.cashMovements?.length || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Articles en Stock :</span>
+                  <span className="font-bold text-slate-900">{state.stock?.length || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Dossiers Maintenance :</span>
+                  <span className="font-bold text-slate-900">{state.maintenance?.length || 0}</span>
+                </div>
+              </div>
+
+              {isTransferring && transferProgress && (
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
+                  <div className="flex justify-between text-[11px] font-bold text-amber-900">
+                    <span>{transferProgress.step}</span>
+                    <span>{transferProgress.current} / {transferProgress.total}</span>
+                  </div>
+                  <div className="w-full bg-amber-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-amber-600 h-2 transition-all duration-300"
+                      style={{
+                        width: `${Math.round((transferProgress.current / Math.max(1, transferProgress.total)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  disabled={!canEdit || isTransferring}
+                  onClick={handleTransferToFirebase}
+                  className="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isTransferring ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isTransferring
+                      ? 'Transfert vers Firebase en cours...'
+                      : 'Transférer toutes les données vers Firebase & Purger LocalStorage'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isTransferring}
+                  onClick={handleReloadFromFirebase}
+                  className="w-full py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Database className="w-3.5 h-3.5" />
+                  <span>Recharger depuis le Cache Local Firebase</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Cloudinary credentials & Storage settings */}
             <div className="space-y-4">
+              <span className="font-bold text-slate-900 block text-xs">Coffre-fort Documents & Cloudinary</span>
               <div>
                 <label className="block text-slate-500 font-semibold mb-1">
                   Cloud Name Cloudinary
