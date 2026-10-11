@@ -1,9 +1,9 @@
 {
-  "name": "fct-website-public",
-  "version": "1.0.0",
+  "name": "fct-automobile-website",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Portail web public luxury et espace client pour Franchise Conseils Trading (FCT) Douala Automobile",
+  "description": "Portail web officiel prestige pour Franchise Conseils Trading (FCT) Automobile - Douala, Cameroun",
   "scripts": {
     "dev": "vite --port=3001 --host=0.0.0.0",
     "build": "tsc --noEmit && vite build",
@@ -14,8 +14,7 @@
     "firebase": "^13.0.0",
     "lucide-react": "^0.546.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "zod": "^4.6.5"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

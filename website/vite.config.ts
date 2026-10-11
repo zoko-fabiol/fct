@@ -6,8 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@shared-types': path.resolve(__dirname, '../packages/shared-types'),
-      '@business-rules': path.resolve(__dirname, '../packages/business-rules'),
+      '@': path.resolve(__dirname, './src'),
     },
   },
   server: {
