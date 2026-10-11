@@ -1,138 +1,142 @@
 import React, { useState } from 'react';
-import { Car, Phone, ShieldCheck, UserCheck, Menu, X, MessageSquare } from 'lucide-react';
+import { Car, Phone, ShieldCheck, UserCheck, Menu, X, MessageSquare, KeyRound, ShoppingBag, MapPin } from 'lucide-react';
+import { AppPage } from '../types/router.ts';
 import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
 
 interface NavbarProps {
-  onOpenAuth: () => void;
-  onOpenHealth: () => void;
+  currentPage: AppPage;
+  onNavigate: (page: AppPage) => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth, onOpenHealth }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const handleNav = (p: AppPage) => {
+    onNavigate(p);
+    setMobileMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <header className="fct-nav">
+    <header className="fct-navbar">
       <div className="fct-container">
         <div className="fct-nav-inner">
-          {/* Logo & Marque */}
-          <a href="#" className="fct-brand">
-            <div className="fct-logo-badge">
-              <Car size={26} color="#fbbf24" strokeWidth={2.2} />
+          {/* Logo & Identité Visuelle FCT */}
+          <button onClick={() => handleNav('home')} className="fct-brand" style={{ cursor: 'pointer' }}>
+            <div className="fct-brand-logo">
+              <Car size={24} strokeWidth={2.2} />
             </div>
-            <div className="fct-brand-text">
-              <h1>
-                FCT <span className="gold-text">Automobile</span>
-              </h1>
+            <div className="fct-brand-info" style={{ textAlign: 'left' }}>
+              <h1>FCT Automobile</h1>
               <span>Franchise Conseils Trading · Douala</span>
             </div>
-          </a>
+          </button>
 
-          {/* Navigation Links Desktop */}
+          {/* Liens de Navigation Desktop Multi-Pages */}
           <nav className="fct-nav-links">
-            <a href="#location" className="fct-nav-link">
-              Location Prestige
-            </a>
-            <a href="#vente" className="fct-nav-link">
-              Vente Certifiée
-            </a>
-            <button onClick={onOpenHealth} className="fct-nav-link" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <ShieldCheck size={16} color="#10b981" />
-              Carnet de Santé
+            <button
+              onClick={() => handleNav('home')}
+              className={`fct-nav-btn ${currentPage === 'home' ? 'active' : ''}`}
+            >
+              Accueil
             </button>
-            <a href="#services" className="fct-nav-link">
-              Services & Chauffeurs
-            </a>
-            <a href="#agence" className="fct-nav-link">
-              Notre Agence
-            </a>
+            <button
+              onClick={() => handleNav('location')}
+              className={`fct-nav-btn ${currentPage === 'location' ? 'active' : ''}`}
+            >
+              <KeyRound size={15} />
+              <span>Location</span>
+            </button>
+            <button
+              onClick={() => handleNav('vente')}
+              className={`fct-nav-btn ${currentPage === 'vente' ? 'active' : ''}`}
+            >
+              <ShoppingBag size={15} />
+              <span>Vente</span>
+            </button>
+            <button
+              onClick={() => handleNav('carnet-sante')}
+              className={`fct-nav-btn ${currentPage === 'carnet-sante' ? 'active' : ''}`}
+            >
+              <ShieldCheck size={15} color="#059669" />
+              <span>Carnet de Santé</span>
+            </button>
+            <button
+              onClick={() => handleNav('agence')}
+              className={`fct-nav-btn ${currentPage === 'agence' ? 'active' : ''}`}
+            >
+              <MapPin size={15} />
+              <span>Notre Agence</span>
+            </button>
           </nav>
 
-          {/* Actions & Contact */}
+          {/* Boutons d'Action & Espace Adhérent */}
           <div className="fct-nav-actions">
             <a
-              href={`https://wa.me/${FCT_AGENCY_INFO.whatsapp}?text=Bonjour%20FCT%20Automobile,%20je%20souhaite%20des%20renseignements%20sur%20un%20véhicule.`}
+              href={`https://wa.me/${FCT_AGENCY_INFO.whatsapp}?text=Bonjour%20FCT%20Automobile,%20je%20souhaite%20un%20renseignement%20sur%20un%20véhicule.`}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-secondary"
-              title="Discuter sur WhatsApp"
+              className="btn-emerald"
+              style={{ padding: '9px 16px', fontSize: 13 }}
             >
-              <MessageSquare size={16} color="#25D366" />
-              <span style={{ fontSize: 13 }}>WhatsApp</span>
+              <MessageSquare size={15} />
+              <span>WhatsApp</span>
             </a>
 
-            <button onClick={onOpenAuth} className="btn-gold">
-              <UserCheck size={16} />
-              <span>Espace Client</span>
+            <button
+              onClick={() => handleNav('espace-client')}
+              className={`btn-primary ${currentPage === 'espace-client' ? 'active' : ''}`}
+              style={{ padding: '9px 18px', fontSize: 13 }}
+            >
+              <UserCheck size={15} />
+              <span>Espace Adhérent</span>
             </button>
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="btn-icon-subtle fct-burger"
+              className="btn-secondary fct-burger"
+              style={{ padding: 8 }}
               aria-label="Menu"
             >
-              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
 
-        {/* Menu Mobile */}
+        {/* Menu Déroulant Mobile */}
         {mobileMenuOpen && (
-          <div className="fct-mobile-menu">
-            <a
-              href="#location"
-              className="fct-nav-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Location Prestige
-            </a>
-            <a
-              href="#vente"
-              className="fct-nav-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Vente Certifiée
-            </a>
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenHealth();
-              }}
-              className="fct-nav-link"
-              style={{ textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}
-            >
-              <ShieldCheck size={18} color="#10b981" />
-              Carnet de Santé Numérique
+          <div
+            style={{
+              padding: '16px 0',
+              borderTop: '1px solid var(--border-subtle)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}
+          >
+            <button onClick={() => handleNav('home')} className="fct-nav-btn" style={{ justifyContent: 'flex-start' }}>
+              Accueil
             </button>
-            <a
-              href="#services"
-              className="fct-nav-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Services & Chauffeurs FCT
-            </a>
-            <a
-              href="#agence"
-              className="fct-nav-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Notre Agence (Bonamoussadi)
-            </a>
-            <div style={{ paddingTop: 12, borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <a href={`tel:${FCT_AGENCY_INFO.phone1}`} className="btn-secondary">
-                <Phone size={16} color="#fbbf24" />
-                <span>Appeler : {FCT_AGENCY_INFO.phone1}</span>
-              </a>
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenAuth();
-                }}
-                className="btn-gold"
-              >
-                <UserCheck size={16} />
-                <span>Connexion Espace Client</span>
-              </button>
-            </div>
+            <button onClick={() => handleNav('location')} className="fct-nav-btn" style={{ justifyContent: 'flex-start' }}>
+              <KeyRound size={16} />
+              <span>Location de Véhicules</span>
+            </button>
+            <button onClick={() => handleNav('vente')} className="fct-nav-btn" style={{ justifyContent: 'flex-start' }}>
+              <ShoppingBag size={16} />
+              <span>Vente de Véhicules Certifiés</span>
+            </button>
+            <button onClick={() => handleNav('carnet-sante')} className="fct-nav-btn" style={{ justifyContent: 'flex-start' }}>
+              <ShieldCheck size={16} color="#059669" />
+              <span>Carnet de Santé Numérique</span>
+            </button>
+            <button onClick={() => handleNav('agence')} className="fct-nav-btn" style={{ justifyContent: 'flex-start' }}>
+              <MapPin size={16} />
+              <span>Agence Bonamoussadi</span>
+            </button>
+            <button onClick={() => handleNav('espace-client')} className="btn-primary" style={{ justifyContent: 'center', marginTop: 10 }}>
+              <UserCheck size={16} />
+              <span>Espace Adhérent Client</span>
+            </button>
           </div>
         )}
       </div>

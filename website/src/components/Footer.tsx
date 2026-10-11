@@ -1,78 +1,78 @@
 import React from 'react';
 import { Car, Phone, Mail, MapPin, ShieldCheck, Heart } from 'lucide-react';
+import { AppPage } from '../types/router.ts';
 import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
 
 interface FooterProps {
-  onOpenHealth: () => void;
+  onNavigate: (page: AppPage) => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onOpenHealth }) => {
+export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+  const handleNav = (p: AppPage) => {
+    onNavigate(p);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <footer className="fct-footer">
+    <footer className="fct-footer-light">
       <div className="fct-container">
         <div className="fct-footer-grid">
-          {/* Colonne 1 : À Propos de FCT */}
+          {/* Colonne 1 : À Propos */}
           <div className="fct-footer-col">
-            <div className="fct-brand" style={{ marginBottom: 16 }}>
-              <div className="fct-logo-badge" style={{ width: 40, height: 40 }}>
-                <Car size={22} color="#fbbf24" strokeWidth={2.2} />
+            <div className="fct-brand" style={{ marginBottom: 14 }}>
+              <div className="fct-brand-logo" style={{ width: 38, height: 38 }}>
+                <Car size={20} strokeWidth={2.2} />
               </div>
-              <div className="fct-brand-text">
-                <h1 style={{ fontSize: 18 }}>
-                  FCT <span className="gold-text">Automobile</span>
-                </h1>
+              <div className="fct-brand-info">
+                <h1 style={{ fontSize: 17 }}>FCT Automobile</h1>
                 <span style={{ fontSize: 10 }}>Franchise Conseils Trading</span>
               </div>
             </div>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 16 }}>
-              Référence automobile à Douala pour la location de 4x4, SUV et berlines VIP, la vente de véhicules
-              certifiés 110 points et le suivi numérique de santé technique.
+            <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 16 }}>
+              Société leader à Douala pour la location de SUV, 4x4 et berlines de prestige, la vente certifiée
+              en 110 points et le suivi numérique de santé technique.
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               {FCT_AGENCY_INFO.legalInfo}
             </p>
           </div>
 
-          {/* Colonne 2 : Liens Rapides */}
+          {/* Colonne 2 : Liens Location & Vente */}
           <div className="fct-footer-col">
-            <h4>Services</h4>
+            <h4>Flotte & Services</h4>
             <ul className="fct-footer-links">
-              <li><a href="#location">Location avec Chauffeur</a></li>
-              <li><a href="#location">Location sans Chauffeur</a></li>
-              <li><a href="#vente">Vente Véhicules d'Occasion Certifiés</a></li>
-              <li><button onClick={onOpenHealth} style={{ fontSize: 13, color: '#34d399', textAlign: 'left' }}>Carnet de Santé Numérique</button></li>
-              <li><a href="#services">Flottes Entreprises & LLD</a></li>
+              <li><button onClick={() => handleNav('location')}>Location avec Chauffeur</button></li>
+              <li><button onClick={() => handleNav('location')}>Location sans Chauffeur</button></li>
+              <li><button onClick={() => handleNav('vente')}>Vente de Véhicules Certifiés</button></li>
+              <li><button onClick={() => handleNav('carnet-sante')} style={{ color: 'var(--fct-green-primary)', fontWeight: 700 }}>Carnet de Santé Numérique</button></li>
+              <li><button onClick={() => handleNav('espace-client')}>Espace Adhérent Client</button></li>
             </ul>
           </div>
 
-          {/* Colonne 3 : Navigation */}
+          {/* Colonne 3 : L'Agence */}
           <div className="fct-footer-col">
             <h4>L'Entreprise</h4>
             <ul className="fct-footer-links">
-              <li><a href="#agence">Agence Bonamoussadi</a></li>
-              <li><a href="#services">Atelier Mécanique FCT Bassa</a></li>
-              <li><a href="#services">Chauffeurs Certifiés FCT</a></li>
-              <li><a href="#agence">Horaires & Accès</a></li>
+              <li><button onClick={() => handleNav('agence')}>Agence Bonamoussadi</button></li>
+              <li><button onClick={() => handleNav('agence')}>Horaires & Plan d'Accès</button></li>
               <li><a href={`https://wa.me/${FCT_AGENCY_INFO.whatsapp}`} target="_blank" rel="noopener noreferrer">Contact WhatsApp VIP</a></li>
+              <li><a href={`tel:${FCT_AGENCY_INFO.phone1}`}>Ligne Directe Douala</a></li>
             </ul>
           </div>
 
           {/* Colonne 4 : Localisation Directe */}
           <div className="fct-footer-col">
             <h4>Nous Trouver</h4>
-            <p style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 8 }}>
+            <p style={{ fontSize: 13, color: 'var(--text-main)', fontWeight: 700, marginBottom: 4 }}>
               {FCT_AGENCY_INFO.address}
             </p>
-            <p style={{ fontSize: 12, color: 'var(--gold-light)', marginBottom: 16 }}>
+            <p style={{ fontSize: 12, color: 'var(--fct-green-primary)', marginBottom: 14 }}>
               {FCT_AGENCY_INFO.landmark}
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13 }}>
-              <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>
-                {FCT_AGENCY_INFO.phone1}
-              </span>
-              <span style={{ color: 'var(--text-muted)' }}>
-                {FCT_AGENCY_INFO.email}
-              </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>
+              <span>Tél : <strong>{FCT_AGENCY_INFO.phone1}</strong></span>
+              <span>Urgences : <strong>{FCT_AGENCY_INFO.phone2}</strong></span>
+              <span style={{ color: 'var(--text-muted)' }}>{FCT_AGENCY_INFO.email}</span>
             </div>
           </div>
         </div>
@@ -83,8 +83,8 @@ export const Footer: React.FC<FooterProps> = ({ onOpenHealth }) => {
             © {new Date().getFullYear()} Franchise Conseils Trading (FCT) Automobile Douala. Tous droits réservés.
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <ShieldCheck size={14} color="#10b981" />
-            <span>Plateforme Officielle FCT Cameroun · Douala</span>
+            <ShieldCheck size={15} color="#059669" />
+            <span>Portail Officiel FCT Cameroun · RC/DLA/2020/B/1458</span>
           </div>
         </div>
       </div>

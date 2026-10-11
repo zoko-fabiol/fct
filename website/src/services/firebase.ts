@@ -18,13 +18,14 @@ import { Vehicle, BookingRequest, PurchaseRequest } from '../types/index.ts';
 import { INITIAL_VEHICLES } from '../data/defaultCatalog.ts';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDa-placeholder-web-fct-douala",
-  authDomain: "fct-cmr.firebaseapp.com",
-  projectId: "fct-cmr",
-  storageBucket: "fct-cmr.appspot.com",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abcdef123456",
+  apiKey: import.meta.env?.VITE_FIREBASE_API_KEY || 'AIzaSyDOrL2WTMbKmo4P1f0n06x9trk6eWYokTM',
+  authDomain: import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN || 'fct-cmr.firebaseapp.com',
+  projectId: import.meta.env?.VITE_FIREBASE_PROJECT_ID || 'fct-cmr',
+  storageBucket: import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET || 'fct-cmr.firebasestorage.app',
+  messagingSenderId: import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID || '11946393528',
+  appId: import.meta.env?.VITE_FIREBASE_APP_ID || '1:11946393528:web:4169d263b70ea2c4b6d94d',
 };
+
 
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const firestore = getFirestore(app);
