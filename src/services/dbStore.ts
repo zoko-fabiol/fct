@@ -36,6 +36,7 @@ import {
   UserAccountStatus,
   UserPermissionOverrides,
 } from '../../packages/shared-types/index.ts';
+import { PUBLIC_VEHICLES_COLLECTION, isVehiclePublishable, toPublicVehicle } from './publicCatalog.ts';
 import {
   initialSettings,
   initialUsers,
@@ -740,6 +741,9 @@ class DatabaseStore {
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `${collectionName}/${docId}`);
     }
+    if (collectionName === 'vehicles') {
+      await this.syncPublicVehicle(data as Vehicle);
+    }
   }
 
   // Suppression dans Cloud Firestore
@@ -749,6 +753,31 @@ class DatabaseStore {
       await deleteDoc(doc(db, collectionName, docId));
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `${collectionName}/${docId}`);
+    }
+    if (collectionName === 'vehicles') {
+      await this.unpublishPublicVehicle(docId);
+    }
+  }
+
+  // Catalogue public (site web) : projection assainie, publiée uniquement si disponible
+  private async syncPublicVehicle(vehicle: Vehicle) {
+    if (!vehicle || !vehicle.id) return;
+    if (!isVehiclePublishable(vehicle)) {
+      await this.unpublishPublicVehicle(vehicle.id);
+      return;
+    }
+    try {
+      await setDoc(doc(db, PUBLIC_VEHICLES_COLLECTION, vehicle.id), toPublicVehicle(vehicle));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `${PUBLIC_VEHICLES_COLLECTION}/${vehicle.id}`);
+    }
+  }
+
+  private async unpublishPublicVehicle(vehicleId: string) {
+    try {
+      await deleteDoc(doc(db, PUBLIC_VEHICLES_COLLECTION, vehicleId));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `${PUBLIC_VEHICLES_COLLECTION}/${vehicleId}`);
     }
   }
 

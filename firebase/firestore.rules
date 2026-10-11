@@ -23,6 +23,14 @@ service cloud.firestore {
         : null;
     }
 
+    // IMPORTANT : le site web public autorise l'inscription de clients sur ce même
+    // projet Firebase. Un simple compte authentifié n'est donc PLUS un collaborateur.
+    // Seuls les comptes disposant d'un profil `users/{uid}` (créé par un super_admin)
+    // sont considérés comme du personnel FCT.
+    function isStaff() {
+      return isSignedIn() && getUserRole() != null;
+    }
+
     function isSuperAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'clausephwandji044@gmail.com' ||
@@ -68,28 +76,35 @@ service cloud.firestore {
 
     // Collection des permissions configurables des rôles
     match /role_permissions/{roleId} {
-      allow read: if isSignedIn();
+      allow read: if isStaff();
       allow write: if isSuperAdmin();
     }
 
     // Journal d'audit de sécurité : STRICTEMENT IMMUABLE
     match /security_audit_logs/{logId} {
       allow read: if isDirector();
-      allow create: if isSignedIn();
+      allow create: if isStaff();
       allow update, delete: if false; // Append-only immuable
     }
 
-    // 3. Collection Vehicles (Parc automobile)
+    // 3. Collection Vehicles (Parc automobile) - DONNÉES INTERNES (VIN, coût d'acquisition...)
     match /vehicles/{vehicleId} {
-      allow read: if isSignedIn();
+      allow read: if isStaff();
       allow create, update: if isFleetManager();
       allow delete: if isSuperAdmin();
+    }
+
+    // 3 bis. Catalogue PUBLIC du site web : projection assainie alimentée par l'ERP.
+    // Lecture ouverte (vitrine), écriture réservée à la gestion de flotte.
+    match /public_vehicles/{vehicleId} {
+      allow read: if true;
+      allow create, update, delete: if isFleetManager();
     }
 
     // 4. Collection Rental Contracts (Locations)
     match /rental_contracts/{contractId} {
       // Un chauffeur ne peut lire que les contrats où il est affecté
-      allow read: if isSignedIn() && (
+      allow read: if isStaff() && (
         !isDriver() || resource.data.driverId == request.auth.uid
       );
       allow create, update: if isRentalAgent();
@@ -98,27 +113,97 @@ service cloud.firestore {
 
     // 5. Collection Reservations
     match /reservations/{reservationId} {
-      allow read: if isSignedIn() && !isDriver();
+      allow read: if isStaff() && !isDriver();
       allow create, update: if isRentalAgent() || isSalesAgent();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 5 bis. Demandes de réservation reçues depuis le site web (en attente de validation FCT)
+    function isValidWebBooking(d) {
+      return d.keys().hasOnly([
+          'vehicleId', 'vehicleName', 'customerName', 'customerPhone', 'customerEmail',
+          'startDate', 'endDate', 'withDriver', 'notes', 'status', 'source',
+          'estimatedTotalXAF', 'customerUid', 'createdAt'
+        ])
+        && d.keys().hasAll([
+          'vehicleId', 'vehicleName', 'customerName', 'customerPhone', 'customerEmail',
+          'startDate', 'endDate', 'withDriver', 'status', 'source', 'estimatedTotalXAF', 'createdAt'
+        ])
+        && isValidId(d.vehicleId)
+        && d.vehicleName is string && d.vehicleName.size() <= 160
+        && d.customerName is string && d.customerName.size() >= 2 && d.customerName.size() <= 120
+        && d.customerPhone is string && d.customerPhone.matches('^\\+?[0-9 ]{8,20}$')
+        && d.customerEmail is string && d.customerEmail.size() <= 160
+        && d.customerEmail.matches('^[^@ ]+@[^@ ]+\\.[^@ ]+$')
+        && d.startDate is string && d.startDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && d.endDate is string && d.endDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && d.endDate >= d.startDate
+        && d.withDriver is bool
+        && (!('notes' in d.keys()) || (d.notes is string && d.notes.size() <= 500))
+        && d.status == 'PENDING'
+        && d.source == 'WEBSITE'
+        && d.estimatedTotalXAF is int && d.estimatedTotalXAF >= 0
+        && d.createdAt is string && d.createdAt.size() <= 40
+        && (!('customerUid' in d.keys()) || (isSignedIn() && d.customerUid == request.auth.uid));
+    }
+
+    match /web_bookings/{bookingId} {
+      allow create: if isValidId(bookingId) && isValidWebBooking(request.resource.data);
+      // Un client ne lit que SES demandes ; le personnel (hors chauffeurs) lit tout.
+      allow read: if (isStaff() && !isDriver())
+        || (isSignedIn() && resource.data.get('customerUid', null) == request.auth.uid);
+      allow update: if isRentalAgent();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 5 ter. Demandes d'achat / contacts reçus depuis le site web
+    function isValidWebLead(d) {
+      return d.keys().hasOnly([
+          'vehicleId', 'vehicleName', 'fullName', 'phone', 'email', 'interestType',
+          'financingNeeded', 'notes', 'status', 'source', 'customerUid', 'createdAt'
+        ])
+        && d.keys().hasAll([
+          'vehicleId', 'vehicleName', 'fullName', 'phone', 'email', 'interestType',
+          'status', 'source', 'createdAt'
+        ])
+        && isValidId(d.vehicleId)
+        && d.vehicleName is string && d.vehicleName.size() <= 160
+        && d.fullName is string && d.fullName.size() >= 2 && d.fullName.size() <= 120
+        && d.phone is string && d.phone.matches('^\\+?[0-9 ]{8,20}$')
+        && d.email is string && d.email.size() <= 160
+        && d.email.matches('^[^@ ]+@[^@ ]+\\.[^@ ]+$')
+        && d.interestType in ['PURCHASE', 'TEST_DRIVE', 'CONTACT']
+        && (!('financingNeeded' in d.keys()) || d.financingNeeded is bool)
+        && (!('notes' in d.keys()) || (d.notes is string && d.notes.size() <= 500))
+        && d.status == 'NEW'
+        && d.source == 'WEBSITE'
+        && d.createdAt is string && d.createdAt.size() <= 40
+        && (!('customerUid' in d.keys()) || (isSignedIn() && d.customerUid == request.auth.uid));
+    }
+
+    match /web_leads/{leadId} {
+      allow create: if isValidId(leadId) && isValidWebLead(request.resource.data);
+      allow read: if isStaff() && (isSalesAgent() || isRentalAgent() || isDirector());
+      allow update: if isSalesAgent();
       allow delete: if isSuperAdmin();
     }
 
     // 6. Collection Sales & CRM
     match /sales/{saleId} {
-      allow read: if isSignedIn() && !isDriver();
+      allow read: if isStaff() && !isDriver();
       allow create, update: if isSalesAgent();
       allow delete: if isSuperAdmin();
     }
 
     match /customers/{customerId} {
-      allow read: if isSignedIn() && !isDriver();
+      allow read: if isStaff() && !isDriver();
       allow create, update: if isRentalAgent() || isSalesAgent();
       allow delete: if isSuperAdmin();
     }
 
     // 7. Collection Caisse (Sessions et Mouvements certifiés)
     match /cash_sessions/{sessionId} {
-      allow read: if isSignedIn() && (isCashier() || isDirector());
+      allow read: if isStaff() && (isCashier() || isDirector());
       allow create: if isCashier();
       allow update: if isCashier();
       allow delete: if false; // Immuable
@@ -128,34 +213,34 @@ service cloud.firestore {
     // Interdiction totale d'update et de delete pour tout le monde (y compris admin).
     // Les corrections se font EXCLUSIVEMENT par contre-écriture (création d'un mouvement opposé).
     match /cash_movements/{movementId} {
-      allow read: if isSignedIn() && (isCashier() || isDirector());
+      allow read: if isStaff() && (isCashier() || isDirector());
       allow create: if isCashier();
       allow update, delete: if false;
     }
 
     // 8. Collection Invoices (Facturation)
     match /invoices/{invoiceId} {
-      allow read: if isSignedIn() && !isDriver();
+      allow read: if isStaff() && !isDriver();
       allow create, update: if isCashier() || isRentalAgent() || isSalesAgent();
       allow delete: if isSuperAdmin();
     }
 
     // 9. Collection Maintenance & Stock
     match /maintenance/{recordId} {
-      allow read: if isSignedIn();
+      allow read: if isStaff();
       allow create, update: if isFleetManager();
       allow delete: if isSuperAdmin();
     }
 
     match /stock/{itemId} {
-      allow read: if isSignedIn();
+      allow read: if isStaff();
       allow create, update: if isFleetManager();
       allow delete: if isSuperAdmin();
     }
 
     // 10. Collection Drivers
     match /drivers/{driverId} {
-      allow read: if isSignedIn();
+      allow read: if isStaff();
       allow create, update: if isFleetManager() || isDirector();
       allow delete: if isSuperAdmin();
     }
@@ -163,29 +248,29 @@ service cloud.firestore {
     // 11. Documents & Coffre-fort
     match /documents/{docId} {
       // Fichiers privés réservés aux profils autorisés
-      allow read: if isSignedIn() && (
+      allow read: if isStaff() && (
         resource.data.isPrivate == false ||
         isDirector() ||
         isCashier() ||
         isFleetManager()
       );
-      allow create, update: if isSignedIn() && !isDriver();
+      allow create, update: if isStaff() && !isDriver();
       allow delete: if isSuperAdmin();
     }
 
     // 12. Journal d'Audit & Compteurs
     match /audit_logs/{logId} {
       allow read: if isDirector();
-      allow create: if isSignedIn();
+      allow create: if isStaff();
       allow update, delete: if false; // Append-only immuable
     }
 
     match /document_counters/{counterId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isStaff();
     }
 
     match /settings/{settingId} {
-      allow read: if isSignedIn();
+      allow read: if isStaff();
       allow write: if isSuperAdmin();
     }
   }
