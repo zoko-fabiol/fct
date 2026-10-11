@@ -15,7 +15,6 @@ import {
   Shield,
   UserCheck,
   User,
-  RotateCw,
   Building2,
   Clock,
   Menu,
@@ -27,7 +26,6 @@ interface NavbarProps {
   currentUser: UserProfile;
   lang: Language;
   onLanguageChange: (lang: Language) => void;
-  onRefresh: () => void;
   onLogout: () => void;
   onToggleMobileSidebar?: () => void;
 }
@@ -37,7 +35,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
   lang,
   onLanguageChange,
-  onRefresh,
   onLogout,
   onToggleMobileSidebar,
 }) => {
@@ -187,15 +184,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <LogOut className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Déconnexion</span>
-          </button>
-
-          {/* Refresh / Reset Data */}
-          <button
-            onClick={onRefresh}
-            title="Rafraîchir"
-            className="p-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
-          >
-            <RotateCw className="w-4 h-4" />
           </button>
         </div>
       </div>

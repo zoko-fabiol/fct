@@ -45,16 +45,19 @@ import {
   FileCheck,
   Check,
   RefreshCw,
-  Info
+  Info,
+  ShieldCheck
 } from 'lucide-react';
+import { UsersView } from './UsersView.tsx';
 
 interface SettingsViewProps {
   state: DatabaseState;
   lang: Language;
   onNavigate?: (module: AppModule, entityId?: string) => void;
+  initialTab?: SettingsTab;
 }
 
-type SettingsTab =
+export type SettingsTab =
   | 'general'
   | 'appearance'
   | 'numbering'
@@ -63,10 +66,11 @@ type SettingsTab =
   | 'maintenance'
   | 'rentals'
   | 'modules'
+  | 'users'
   | 'sync'
   | 'backup';
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavigate }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavigate, initialTab }) => {
   const { settings } = state;
   const currentUser = dbStore.getCurrentUser();
   const t = translations[lang];
@@ -75,7 +79,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
   const canEdit = hasEffectivePermission(currentUser, 'settings', 'update', state.rolePermissions);
 
   // Active category tab
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab || 'general');
+
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // Search filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,9 +98,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [importJsonText, setImportJsonText] = useState('');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [isTransferring, setIsTransferring] = useState(false);
-  const [transferProgress, setTransferProgress] = useState<{ step: string; current: number; total: number } | null>(null);
-  const [localStorageClearedInfo, setLocalStorageClearedInfo] = useState<{ clearedKeys: string[]; bytesFreed: number } | null>(null);
 
   // Synchronize draft when external state changes, if not dirty
   const isDirty = useMemo(() => {
@@ -212,34 +219,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
     }
   };
 
-  const handleTransferToFirebase = async () => {
-    if (!canEdit) return;
-    setIsTransferring(true);
-    setSaveSuccessMsg(null);
-    setSaveErrorMsg(null);
-    try {
-      const purgeResult = dbStore.clearLocalStorage();
-      setLocalStorageClearedInfo(purgeResult);
-      const res = await dbStore.transferAllToFirebase((step, current, total) => {
-        setTransferProgress({ step, current, total });
-      });
-      setSaveSuccessMsg(
-        lang === 'fr'
-          ? `Transfert Firebase réussi ! ${res.totalTransferred} enregistrements synchronisés dans Firestore. LocalStorage entièrement nettoyé (${purgeResult.clearedKeys.length} clés supprimées).`
-          : `Firebase transfer successful! ${res.totalTransferred} records synced to Firestore. LocalStorage completely purged.`
-      );
-    } catch (err: unknown) {
-      setSaveErrorMsg(
-        lang === 'fr'
-          ? `Échec du transfert vers Firebase : ${err instanceof Error ? err.message : String(err)}`
-          : `Firebase transfer failed: ${err instanceof Error ? err.message : String(err)}`
-      );
-    } finally {
-      setIsTransferring(false);
-      setTransferProgress(null);
-    }
-  };
-
   const handleReloadFromFirebase = async () => {
     try {
       const success = await dbStore.reloadFromFirebase();
@@ -318,6 +297,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
     { id: 'maintenance', label: 'Maintenance & Stock', icon: <Wrench className="w-4 h-4" /> },
     { id: 'rentals', label: 'Locations & Réservations', icon: <FileCheck className="w-4 h-4" /> },
     { id: 'modules', label: 'Gestion des Modules', icon: <Layers className="w-4 h-4" />, badge: '18' },
+    { id: 'users', label: 'Collaborateurs & Droits RBAC', icon: <ShieldCheck className="w-4 h-4 text-emerald-600" />, badge: `${state.users?.length || 0}` },
     { id: 'sync', label: 'Synchronisation & Médias', icon: <Cloud className="w-4 h-4" /> },
     { id: 'backup', label: 'Sauvegardes & Audit', icon: <Database className="w-4 h-4" /> },
   ];
@@ -1526,46 +1506,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 </div>
               </div>
 
-              {isTransferring && transferProgress && (
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-2">
-                  <div className="flex justify-between text-[11px] font-bold text-amber-900">
-                    <span>{transferProgress.step}</span>
-                    <span>{transferProgress.current} / {transferProgress.total}</span>
+              <div className="space-y-3 pt-1">
+                <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping shrink-0" />
+                  <div className="flex-1">
+                    <div className="font-bold text-emerald-950 text-xs flex items-center gap-2">
+                      <span>Synchronisation Cloud & Firestore Temps Réel Active</span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900 text-[10px] font-black uppercase">
+                        Zero-Latency
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800 leading-tight mt-1">
+                      Toutes les données, écritures de caisse, contrats et pièces sont synchronisés automatiquement et en continu en tâche de fond. Aucun transfert manuel n'est requis.
+                    </p>
                   </div>
-                  <div className="w-full bg-amber-200 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-amber-600 h-2 transition-all duration-300"
-                      style={{
-                        width: `${Math.round((transferProgress.current / Math.max(1, transferProgress.total)) * 100)}%`,
-                      }}
-                    />
-                  </div>
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                 </div>
-              )}
-
-              <div className="space-y-2 pt-1">
-                <button
-                  type="button"
-                  disabled={!canEdit || isTransferring}
-                  onClick={handleTransferToFirebase}
-                  className="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isTransferring ? 'animate-spin' : ''}`} />
-                  <span>
-                    {isTransferring
-                      ? 'Transfert vers Firebase en cours...'
-                      : 'Transférer toutes les données vers Firebase & Purger LocalStorage'}
-                  </span>
-                </button>
 
                 <button
                   type="button"
-                  disabled={isTransferring}
                   onClick={handleReloadFromFirebase}
-                  className="w-full py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold transition flex items-center justify-center gap-2 cursor-pointer border border-slate-200"
                 >
                   <Database className="w-3.5 h-3.5" />
-                  <span>Recharger depuis le Cache Local Firebase</span>
+                  <span>Actualiser depuis le Cache Local Firebase</span>
                 </button>
               </div>
             </div>
@@ -1613,6 +1577,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TAB I: UTILISATEURS & DROITS RBAC */}
+      {activeTab === 'users' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-2 sm:p-4 lg:p-6 overflow-hidden">
+          <UsersView state={state} lang={lang} onNavigate={onNavigate} />
         </div>
       )}
 

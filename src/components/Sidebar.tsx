@@ -100,7 +100,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { id: 'documents', icon: FolderLock },
         { id: 'notifications', icon: BellRing },
-        { id: 'users', icon: ShieldCheck },
         { id: 'settings', icon: Settings },
         { id: 'audit', icon: History },
         { id: 'help', icon: HelpCircle },
@@ -114,6 +113,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
     return hasPermission(currentUserRole, moduleId, 'read', rolePermissions);
   };
+
+  const totalSidebarItemsCount = sections.reduce(
+    (acc, sec) => acc + sec.items.length,
+    0
+  );
 
   const authorizedModulesCount = sections.reduce(
     (acc, sec) =>
@@ -133,7 +137,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {t.rbac.activeRoleBadge}
               </span>
               <span className="text-[10px] text-emerald-400 font-bold">
-                {authorizedModulesCount}/18
+                {authorizedModulesCount}/{totalSidebarItemsCount}
               </span>
             </div>
             <div className="font-bold text-white truncate text-xs">{t.roles[currentUserRole]}</div>

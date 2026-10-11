@@ -221,7 +221,8 @@ export const CashView: React.FC<CashViewProps> = ({
       });
       setTimeout(() => setActionAlert(null), 5000);
     } catch (err: any) {
-      alert(err.message);
+      setActionAlert({ type: 'error', message: err.message || 'Erreur lors de la contre-passation' });
+      setTimeout(() => setActionAlert(null), 6000);
     }
   };
 
@@ -236,7 +237,8 @@ export const CashView: React.FC<CashViewProps> = ({
       });
       setTimeout(() => setActionAlert(null), 4000);
     } catch (err: any) {
-      alert(err.message);
+      setActionAlert({ type: 'error', message: err.message || 'Erreur lors de l’ouverture de caisse' });
+      setTimeout(() => setActionAlert(null), 6000);
     }
   };
 
@@ -255,7 +257,8 @@ export const CashView: React.FC<CashViewProps> = ({
       });
       setTimeout(() => setActionAlert(null), 5000);
     } catch (err: any) {
-      alert(err.message);
+      setActionAlert({ type: 'error', message: err.message || 'Erreur lors de la clôture de caisse' });
+      setTimeout(() => setActionAlert(null), 6000);
     }
   };
 

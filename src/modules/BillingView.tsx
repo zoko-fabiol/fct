@@ -178,7 +178,8 @@ export const BillingView: React.FC<BillingViewProps> = ({
 
       handlePrintInvoice(created);
     } catch (err: any) {
-      alert(err.message || 'Erreur lors de la création de la facture.');
+      setActionAlert({ type: 'error', message: err.message || 'Erreur lors de la création de la facture.' });
+      setTimeout(() => setActionAlert(null), 6000);
     }
   };
 

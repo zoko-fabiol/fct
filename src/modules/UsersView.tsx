@@ -291,6 +291,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
   };
 
   const [showSaveImpactModal, setShowSaveImpactModal] = useState(false);
+  const [showResetRoleModal, setShowResetRoleModal] = useState(false);
+  const [pendingRoleSwitch, setPendingRoleSwitch] = useState<UserRole | null>(null);
   const impactedUsersCount = state.users.filter((u) => u.role === selectedRole).length;
 
   const handleSaveRolePermissions = () => {
@@ -304,17 +306,17 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
     }
   };
 
-  const handleResetRoleDefault = () => {
-    if (confirm(`Voulez-vous vraiment rétablir les permissions par défaut officielles FCT pour le rôle "${t.roles[selectedRole]}" ?`)) {
-      try {
-        dbStore.resetRolePermissionsToDefault(selectedRole);
-        const resetMatrix = dbStore.getRolePermissionsMatrix()[selectedRole];
-        setDraftRolePermissions(JSON.parse(JSON.stringify(resetMatrix)));
-        setIsDraftDirty(false);
-        showAlert(`Permissions par défaut rétablies pour le rôle "${t.roles[selectedRole]}".`);
-      } catch (err: any) {
-        showAlert(err.message || 'Erreur', 'error');
-      }
+  const handleConfirmResetRoleDefault = () => {
+    try {
+      dbStore.resetRolePermissionsToDefault(selectedRole);
+      const resetMatrix = dbStore.getRolePermissionsMatrix()[selectedRole];
+      setDraftRolePermissions(JSON.parse(JSON.stringify(resetMatrix)));
+      setIsDraftDirty(false);
+      setShowResetRoleModal(false);
+      showAlert(`Permissions par défaut rétablies pour le rôle "${t.roles[selectedRole]}".`);
+    } catch (err: any) {
+      setShowResetRoleModal(false);
+      showAlert(err.message || 'Erreur', 'error');
     }
   };
 
@@ -398,7 +400,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
   const handleExportAuditCSV = () => {
     const logs = filteredSecurityLogs;
     if (logs.length === 0) {
-      alert('Aucun événement à exporter.');
+      showAlert(lang === 'fr' ? 'Aucun événement à exporter.' : 'No security events to export.', 'warning');
       return;
     }
     const headers = ['ID', 'Date/Heure', 'Auteur', 'Rôle Auteur', 'Type Action', 'Cible', 'Rôle Cible', 'Résumé', 'Détails'];
@@ -857,7 +859,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
               {/* Rétablir les valeurs par défaut */}
               {currentUser.role === 'super_admin' && (
                 <button
-                  onClick={handleResetRoleDefault}
+                  onClick={() => setShowResetRoleModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold transition cursor-pointer"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
@@ -876,9 +878,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                     key={r.id}
                     onClick={() => {
                       if (isDraftDirty) {
-                        if (!confirm('Vous avez des modifications non enregistrées pour ce rôle. Voulez-vous continuer sans sauvegarder ?')) {
-                          return;
-                        }
+                        setPendingRoleSwitch(r.id);
+                        return;
                       }
                       setSelectedRole(r.id);
                     }}
@@ -2147,6 +2148,77 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
           onConfirm={handleConfirmDeleteUser}
           onCancel={() => setDeleteConfirmUser(null)}
         />
+      )}
+
+      {/* Modal Rétablissement des Droits par Défaut FCT */}
+      {showResetRoleModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-slate-200">
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-amber-600" />
+              <span>Rétablir les Permissions d'Origine</span>
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Voulez-vous vraiment rétablir les permissions par défaut officielles FCT pour le rôle{' '}
+              <strong className="text-slate-900">{t.roles[selectedRole]}</strong> ? Toutes les modifications locales sur ce rôle seront réinitialisées.
+            </p>
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setShowResetRoleModal(false)}
+                className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmResetRoleDefault}
+                className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-xs cursor-pointer"
+              >
+                Confirmer &amp; Rétablir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Changement de Rôle avec Brouillon non Sauvegardé */}
+      {pendingRoleSwitch && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-slate-200">
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-rose-600" />
+              <span>Modifications Non Enregistrées</span>
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Vous avez des modifications non enregistrées pour le rôle{' '}
+              <strong className="text-slate-900">{t.roles[selectedRole]}</strong>. Souhaitez-vous continuer sans sauvegarder ?
+            </p>
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setPendingRoleSwitch(null)}
+                className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
+              >
+                Continuer l'Édition
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const targetRole = pendingRoleSwitch;
+                  setPendingRoleSwitch(null);
+                  setIsDraftDirty(false);
+                  const matrix = dbStore.getRolePermissionsMatrix()[targetRole];
+                  setDraftRolePermissions(JSON.parse(JSON.stringify(matrix)));
+                  setSelectedRole(targetRole);
+                }}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-xs cursor-pointer"
+              >
+                Ignorer &amp; Basculer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -32,7 +32,6 @@ import { DriversView } from './modules/DriversView.tsx';
 import { DocumentsView } from './modules/DocumentsView.tsx';
 import { NotificationsView } from './modules/NotificationsView.tsx';
 import { ReportsView } from './modules/ReportsView.tsx';
-import { UsersView } from './modules/UsersView.tsx';
 import { SettingsView } from './modules/SettingsView.tsx';
 import { AuditSyncView } from './modules/AuditSyncView.tsx';
 import { HelpCenterView } from './modules/HelpCenterView.tsx';
@@ -224,14 +223,43 @@ export default function App() {
   }, [currentModule, activeShowroomVehicle?.id]);
 
   const [contextEntityId, setContextEntityId] = useState<string | null>(null);
+  const [settingsTab, setSettingsTab] = useState<
+    | 'general'
+    | 'appearance'
+    | 'numbering'
+    | 'finance'
+    | 'fleet'
+    | 'maintenance'
+    | 'rentals'
+    | 'modules'
+    | 'users'
+    | 'sync'
+    | 'backup'
+  >('general');
 
   // Sidebar / Navigation Module selection with optional context entity ID
   const handleNavigate = (module: AppModule, entityId?: string) => {
+    if (module === 'users') {
+      if (!currentUser || !hasEffectivePermission(currentUser, 'users', 'read', state.rolePermissions)) {
+        return;
+      }
+      setActiveShowroomVehicle(null);
+      setContextEntityId(entityId || null);
+      setSettingsTab('users');
+      setCurrentModule('settings');
+      setIsMobileSidebarOpen(false);
+      scrollToTop();
+      return;
+    }
+
     if (!currentUser || !hasEffectivePermission(currentUser, module, 'read', state.rolePermissions)) {
       return;
     }
     setActiveShowroomVehicle(null);
     setContextEntityId(entityId || null);
+    if (module === 'settings' && !entityId) {
+      setSettingsTab('general');
+    }
     setCurrentModule(module);
     setIsMobileSidebarOpen(false);
     scrollToTop();
@@ -269,11 +297,6 @@ export default function App() {
 
   const handleOpenPrintModal = (data: DocumentPrintData) => {
     setPrintDocData(data);
-  };
-
-  const handleRefresh = () => {
-    setState({ ...dbStore.getState() });
-    setCurrentUser(dbStore.getCurrentUser());
   };
 
   // Find vehicle for active showroom view
@@ -321,7 +344,6 @@ export default function App() {
         currentUser={currentUser}
         lang={lang}
         onLanguageChange={handleLanguageChange}
-        onRefresh={handleRefresh}
         onLogout={handleLogout}
         onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
       />
@@ -518,10 +540,10 @@ export default function App() {
                 <ReportsView state={state} lang={lang} />
               )}
               {currentModule === 'users' && (
-                <UsersView state={state} lang={lang} onNavigate={handleNavigate} />
+                <SettingsView state={state} lang={lang} onNavigate={handleNavigate} initialTab="users" />
               )}
               {currentModule === 'settings' && (
-                <SettingsView state={state} lang={lang} onNavigate={handleNavigate} />
+                <SettingsView state={state} lang={lang} onNavigate={handleNavigate} initialTab={settingsTab} />
               )}
               {currentModule === 'audit' && (
                 <AuditSyncView state={state} lang={lang} />

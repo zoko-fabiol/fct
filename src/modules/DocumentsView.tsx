@@ -61,6 +61,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
   const [docTab, setDocTab] = useState<'DETAILS' | 'ENTITY' | 'AUDIT'>('DETAILS');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [viewerDoc, setViewerDoc] = useState<any | null>(null);
+  const [actionAlert, setActionAlert] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null);
   const [newDocForm, setNewDocForm] = useState({
     title: '',
     category: 'VEHICLE_GREY_CARD',
@@ -95,6 +96,11 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
       };
       dbStore.addDocument(created as any);
       setIsUploadModalOpen(false);
+      setActionAlert({
+        type: 'success',
+        message: `Document "${created.title}" indexé avec succès dans le coffre-fort.`,
+      });
+      setTimeout(() => setActionAlert(null), 4000);
       setNewDocForm({
         title: '',
         category: 'VEHICLE_GREY_CARD',
@@ -108,7 +114,11 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
         expiryDate: '',
       });
     } catch (err: any) {
-      alert(err.message || 'Erreur lors du dépôt');
+      setActionAlert({
+        type: 'error',
+        message: err.message || 'Erreur lors du dépôt du document',
+      });
+      setTimeout(() => setActionAlert(null), 6000);
     }
   };
 
@@ -442,6 +452,35 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
         )}
       </div>
 
+      {/* Action Alert Banner */}
+      {actionAlert && (
+        <div
+          className={`p-3 rounded-xl border text-xs flex items-center justify-between shadow-xs transition ${
+            actionAlert.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+              : actionAlert.type === 'error'
+              ? 'bg-rose-50 border-rose-200 text-rose-900'
+              : 'bg-amber-50 border-amber-200 text-amber-900'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {actionAlert.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+            )}
+            <span className="font-semibold">{actionAlert.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionAlert(null)}
+            className="p-1 hover:bg-black/5 rounded-lg text-slate-500 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Cloudinary Architecture Notice */}
       <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-900/10 to-emerald-900/10 border border-blue-200/80 text-xs text-slate-700 flex items-start gap-3 shadow-2xs">
         <ShieldAlert className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
@@ -616,9 +655,23 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                         <Eye className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => alert(`Téléchargement sécurisé : ${doc.title}`)}
+                        onClick={() => {
+                          const fileUrl = (doc as any).fileUrl;
+                          if (fileUrl) {
+                            const a = window.document.createElement('a');
+                            a.href = fileUrl;
+                            a.download = doc.title;
+                            a.target = '_blank';
+                            a.rel = 'noreferrer';
+                            window.document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                          } else {
+                            setViewerDoc(doc);
+                          }
+                        }}
                         className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer inline-flex items-center"
-                        title="Télécharger"
+                        title="Télécharger / Visualiser"
                       >
                         <Download className="w-3.5 h-3.5" />
                       </button>
