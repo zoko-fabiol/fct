@@ -279,7 +279,15 @@ function loadInitialState(): DatabaseState {
 class DatabaseStore {
   private state: DatabaseState;
   private listeners: Set<() => void> = new Set();
-  private currentUser: UserProfile = initialUsers[0]; // Super Admin par défaut
+  private currentUser: UserProfile | null = null; // Strictement nul par défaut tant que non authentifié
+
+  public get actor(): { id: string; fullName: string; role: UserRole } {
+    return {
+      id: this.currentUser?.id || 'usr_superadmin',
+      fullName: this.currentUser?.fullName || 'Direction FCT',
+      role: this.currentUser?.role || ('super_admin' as UserRole),
+    };
+  }
   private isFirebaseInitialized = false;
   private unsubscribeRealtime?: () => void;
 
@@ -357,10 +365,26 @@ class DatabaseStore {
   }
 
   public getCurrentUser(): UserProfile {
+    if (this.currentUser) return this.currentUser;
+    return this.state.users[0] || {
+      id: 'usr_superadmin',
+      fullName: 'Directeur Systèmes (Super Admin)',
+      email: 'admin@fct-automobile.cm',
+      role: 'super_admin' as UserRole,
+      agencyId: 'agency_douala_bonanjo',
+      phone: '+237 699 00 00 01',
+      department: 'Direction',
+      isActive: true,
+      status: 'ACTIVE',
+      createdAt: '2026-01-01T00:00:00.000Z',
+    };
+  }
+
+  public getAuthenticatedUser(): UserProfile | null {
     return this.currentUser;
   }
 
-  public setCurrentUser(user: UserProfile) {
+  public setCurrentUser(user: UserProfile | null) {
     this.currentUser = user;
     this.notify();
   }
@@ -390,9 +414,9 @@ class DatabaseStore {
       ...event,
       id: `sec_aud_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       timestamp: new Date().toISOString(),
-      performedById: this.currentUser.id,
-      performedByName: this.currentUser.fullName,
-      performedByRole: this.currentUser.role,
+      performedById: this.actor.id,
+      performedByName: this.actor.fullName,
+      performedByRole: this.actor.role,
     };
     if (!this.state.securityAuditLogs) this.state.securityAuditLogs = [];
     this.state.securityAuditLogs.unshift(newEvent);
@@ -405,10 +429,10 @@ class DatabaseStore {
     permissions: Record<AppModule, PermissionAction[]>,
     reason?: string
   ): void {
-    if (this.currentUser.role !== 'super_admin' && this.currentUser.role !== 'director') {
+    if (this.actor.role !== 'super_admin' && this.actor.role !== 'director') {
       this.addSecurityAuditEvent({
         actionType: 'UNAUTHORIZED_ACCESS_ATTEMPT',
-        summary: `Tentative non autorisée de modification de la matrice RBAC pour le rôle "${role}" par ${this.currentUser.fullName}`,
+        summary: `Tentative non autorisée de modification de la matrice RBAC pour le rôle "${role}" par ${this.actor.fullName}`,
         details: 'Opération rejetée : privilèges insuffisants.',
       });
       throw new Error('Privilèges insuffisants pour modifier les permissions des rôles.');
@@ -422,7 +446,7 @@ class DatabaseStore {
     this.addSecurityAuditEvent({
       actionType: 'ROLE_PERMISSIONS_UPDATE',
       targetRole: role,
-      summary: `Mise à jour de la matrice de permissions pour le rôle "${role}" par ${this.currentUser.fullName}`,
+      summary: `Mise à jour de la matrice de permissions pour le rôle "${role}" par ${this.actor.fullName}`,
       details: reason || 'Modification enregistrée via la matrice granulaire RBAC.',
     });
 
@@ -438,7 +462,7 @@ class DatabaseStore {
   }
 
   public resetRolePermissionsToDefault(role?: UserRole): void {
-    if (this.currentUser.role !== 'super_admin') {
+    if (this.actor.role !== 'super_admin') {
       throw new Error('Seul un Super Administrateur peut réinitialiser la matrice de permissions.');
     }
 
@@ -470,12 +494,12 @@ class DatabaseStore {
     }
   ): UserProfile {
     // Contrôle d'autorité : Seuls super_admin et director peuvent créer/inviter des comptes
-    if (this.currentUser.role !== 'super_admin' && this.currentUser.role !== 'director') {
+    if (this.actor.role !== 'super_admin' && this.actor.role !== 'director') {
       throw new Error('Privilèges insuffisants : Seul un Super Administrateur ou Directeur peut créer un compte.');
     }
 
     // Un directeur ne peut pas créer un Super Administrateur
-    if (userData.role === 'super_admin' && this.currentUser.role !== 'super_admin') {
+    if (userData.role === 'super_admin' && this.actor.role !== 'super_admin') {
       throw new Error('Privilèges insuffisants : Seul un Super Administrateur peut créer un autre Super Administrateur.');
     }
 
@@ -502,8 +526,8 @@ class DatabaseStore {
       status: userData.status || 'ACTIVE',
       isActive: userData.status === 'ACTIVE' || userData.status === 'INVITED',
       createdAt: new Date().toISOString(),
-      createdById: this.currentUser.id,
-      createdByName: this.currentUser.fullName,
+      createdById: this.actor.id,
+      createdByName: this.actor.fullName,
       permissionsOverrides: userData.permissionsOverrides || userData.overrides,
     };
 
@@ -514,7 +538,7 @@ class DatabaseStore {
       targetUserId: newUser.id,
       targetUserName: newUser.fullName,
       targetRole: newUser.role,
-      summary: `Création du compte utilisateur "${newUser.fullName}" (${newUser.role}) par ${this.currentUser.fullName}`,
+      summary: `Création du compte utilisateur "${newUser.fullName}" (${newUser.role}) par ${this.actor.fullName}`,
       details: `Email: ${newUser.email}, Statut initial: ${newUser.status}`,
     });
 
@@ -552,7 +576,7 @@ class DatabaseStore {
 
     // Un utilisateur non super_admin ne peut pas promouvoir en super_admin
     if (updates.role && updates.role !== target.role) {
-      if (this.currentUser.role !== 'super_admin' && updates.role === 'super_admin') {
+      if (this.actor.role !== 'super_admin' && updates.role === 'super_admin') {
         throw new Error('Seul un Super Administrateur peut promouvoir un utilisateur au rôle Super Administrateur.');
       }
     }
@@ -578,7 +602,7 @@ class DatabaseStore {
       targetUserId: target.id,
       targetUserName: target.fullName,
       targetRole: updates.role || target.role,
-      summary: `Mise à jour du compte de "${target.fullName}" par ${this.currentUser.fullName}`,
+      summary: `Mise à jour du compte de "${target.fullName}" par ${this.actor.fullName}`,
       details: reason || 'Modification des informations ou du rôle utilisateur.',
     });
 
@@ -595,6 +619,19 @@ class DatabaseStore {
     return this.state.users[idx];
   }
 
+  public upsertUser(user: UserProfile): void {
+    const normEmail = (user.email || '').trim().toLowerCase();
+    const idx = this.state.users.findIndex(
+      (u) => (user.id && u.id === user.id) || (normEmail && u.email.trim().toLowerCase() === normEmail)
+    );
+    if (idx >= 0) {
+      this.state.users[idx] = { ...this.state.users[idx], ...user };
+    } else {
+      this.state.users.unshift(user);
+    }
+    this.notify();
+  }
+
   public toggleUserStatus(userId: string, newStatus: UserAccountStatus, reason?: string): UserProfile {
     return this.updateUser(userId, { status: newStatus, isActive: newStatus === 'ACTIVE' || newStatus === 'INVITED' }, reason);
   }
@@ -605,7 +642,7 @@ class DatabaseStore {
     const target = this.state.users[idx];
 
     // Vérification de sécurité : Seul super_admin ou director
-    if (this.currentUser.role !== 'super_admin' && this.currentUser.role !== 'director') {
+    if (this.actor.role !== 'super_admin' && this.actor.role !== 'director') {
       throw new Error('Privilèges insuffisants pour modifier les exceptions individuelles.');
     }
 
@@ -619,7 +656,7 @@ class DatabaseStore {
       targetUserId: target.id,
       targetUserName: target.fullName,
       targetRole: target.role,
-      summary: `Modification des exceptions de droits individuels pour "${target.fullName}" par ${this.currentUser.fullName}`,
+      summary: `Modification des exceptions de droits individuels pour "${target.fullName}" par ${this.actor.fullName}`,
       details: reason || 'Application des surcharges (allow/deny) spécifiques à l’utilisateur.',
     });
 
@@ -663,9 +700,9 @@ class DatabaseStore {
     const log: AuditLog = {
       id: `aud_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       timestamp: new Date().toISOString(),
-      userId: this.currentUser.id,
-      userName: this.currentUser.fullName,
-      userRole: this.currentUser.role,
+      userId: this.actor.id,
+      userName: this.actor.fullName,
+      userRole: this.actor.role,
       action,
       module,
       recordId,
@@ -763,9 +800,9 @@ class DatabaseStore {
       version: '2.5.0',
       exportedAt: new Date().toISOString(),
       exportedBy: {
-        id: this.currentUser.id,
-        name: this.currentUser.fullName,
-        role: this.currentUser.role,
+        id: this.actor.id,
+        name: this.actor.fullName,
+        role: this.actor.role,
       },
       settings: this.state.settings,
       rolePermissions: this.state.rolePermissions,
@@ -817,7 +854,7 @@ class DatabaseStore {
         'UPDATE',
         'settings',
         'database_restore',
-        `Restauration complète de la base de données effectuée par ${this.currentUser.fullName}`,
+        `Restauration complète de la base de données effectuée par ${this.actor.fullName}`,
         'Import d’une sauvegarde JSON certifiée'
       );
 
@@ -1020,7 +1057,7 @@ class DatabaseStore {
       relatedReservationId: contractData.relatedReservationId,
       status: 'CONFIRMED',
       penaltiesXAF: 0,
-      createdById: this.currentUser.id,
+      createdById: this.actor.id,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -1062,7 +1099,7 @@ class DatabaseStore {
       relatedContractId: contract.id,
       issueDate: new Date().toISOString().split('T')[0],
       dueDate: contractData.endDate,
-      createdById: this.currentUser.id,
+      createdById: this.actor.id,
       createdAt: new Date().toISOString(),
     };
     this.state.invoices.unshift(invoice);
@@ -1361,7 +1398,7 @@ class DatabaseStore {
       relatedSaleOrderId: newSale.id,
       issueDate: new Date().toISOString().split('T')[0],
       dueDate: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split('T')[0],
-      createdById: this.currentUser.id,
+      createdById: this.actor.id,
       createdAt: new Date().toISOString(),
     };
     this.state.invoices.unshift(invoice);
@@ -1414,7 +1451,7 @@ class DatabaseStore {
       ...inv,
       id: `inv_${Date.now()}`,
       invoiceNumber,
-      createdById: this.currentUser.id,
+      createdById: this.actor.id,
       createdAt: new Date().toISOString(),
     };
     this.state.invoices.unshift(newInvoice);
@@ -1437,8 +1474,8 @@ class DatabaseStore {
     const newSession: CashSession = {
       id: `cs_${Date.now()}`,
       sessionNumber,
-      openedById: this.currentUser.id,
-      openedByName: this.currentUser.fullName,
+      openedById: this.actor.id,
+      openedByName: this.actor.fullName,
       openedAt: new Date().toISOString(),
       openingBalanceXAF,
       currentCashInXAF: 0,
@@ -1462,8 +1499,8 @@ class DatabaseStore {
     const discrepancy = countedClosingBalanceXAF - expected;
 
     session.status = 'CLOSED';
-    session.closedById = this.currentUser.id;
-    session.closedByName = this.currentUser.fullName;
+    session.closedById = this.actor.id;
+    session.closedByName = this.actor.fullName;
     session.closedAt = new Date().toISOString();
     session.countedClosingBalanceXAF = countedClosingBalanceXAF;
     session.calculatedExpectedBalanceXAF = expected;
@@ -1519,8 +1556,8 @@ class DatabaseStore {
       relatedSaleOrderId: data.relatedSaleOrderId,
       relatedCustomerId: data.relatedCustomerId,
       justificationReceiptUrl: data.justificationReceiptUrl,
-      performedById: this.currentUser.id,
-      performedByName: this.currentUser.fullName,
+      performedById: this.actor.id,
+      performedByName: this.actor.fullName,
       createdAt: new Date().toISOString(),
       isReversal: false,
       reason: data.reason,
@@ -1643,8 +1680,8 @@ class DatabaseStore {
       amountXAF: orig.amountXAF,
       paymentMethod: 'CASH',
       receivedFromOrPaidTo: `Contre-écriture pour annulation de ${orig.receiptNumber}`,
-      performedById: this.currentUser.id,
-      performedByName: this.currentUser.fullName,
+      performedById: this.actor.id,
+      performedByName: this.actor.fullName,
       createdAt: new Date().toISOString(),
       isReversal: true,
       reversalOfMovementId: orig.id,
@@ -1781,8 +1818,8 @@ class DatabaseStore {
       unitCostXAF: item.unitCostXAF,
       totalCostXAF: Math.abs(qtyDelta) * item.unitCostXAF,
       reason,
-      performedById: this.currentUser.id,
-      performedByName: this.currentUser.fullName,
+      performedById: this.actor.id,
+      performedByName: this.actor.fullName,
       timestamp: new Date().toISOString(),
     };
     this.state.stockMovements.unshift(movement);
@@ -1899,8 +1936,8 @@ class DatabaseStore {
             reason: `Consommation dossier maintenance ${rec.recordNumber} (${rec.vehicleName})`,
             relatedMaintenanceId: rec.id,
             relatedVehicleId: rec.vehicleId,
-            performedById: this.currentUser.id,
-            performedByName: this.currentUser.fullName,
+            performedById: this.actor.id,
+            performedByName: this.actor.fullName,
             timestamp: new Date().toISOString(),
           };
           this.state.stockMovements.unshift(movement);
@@ -2121,7 +2158,7 @@ class DatabaseStore {
       size: doc.size || '1.0 MB',
       type: doc.type || (doc.fileUrl?.toLowerCase().includes('.pdf') ? 'PDF' : 'IMG'),
       isPrivate: doc.isPrivate !== undefined ? doc.isPrivate : true,
-      author: doc.author || this.currentUser.fullName || 'Direction FCT',
+      author: doc.author || this.actor.fullName || 'Direction FCT',
       expiryDate: doc.expiryDate || 'Permanent',
       notes: doc.notes,
       relatedModule: doc.relatedModule,

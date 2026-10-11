@@ -7,12 +7,14 @@
 import React, { useState, useEffect } from 'react';
 import { dbStore, DatabaseState } from './services/dbStore.ts';
 import { Language, translations } from './services/i18n.ts';
-import { AppModule, Vehicle } from '../packages/shared-types/index.ts';
+import { AppModule, Vehicle, UserProfile } from '../packages/shared-types/index.ts';
 import { hasPermission, hasEffectivePermission } from '../packages/business-rules/index.ts';
 import { Navbar } from './components/Navbar.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
 import { DocumentModal, DocumentPrintData } from './components/DocumentModal.tsx';
-import { AuthModal } from './components/AuthModal.tsx';
+import { AppLoader } from './components/auth/AppLoader.tsx';
+import { LoginView } from './components/auth/LoginView.tsx';
+import { authService } from './services/firebase.ts';
 
 // 18 Feature Modules + Showroom
 import { DashboardView } from './modules/DashboardView.tsx';
@@ -39,7 +41,8 @@ import { WifiOff, ShieldAlert, ArrowLeft, LayoutDashboard, ShieldCheck } from 'l
 
 export default function App() {
   const [state, setState] = useState<DatabaseState>(dbStore.getState());
-  const [currentUser, setCurrentUser] = useState(dbStore.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(dbStore.getCurrentUser());
+  const [authLoading, setAuthLoading] = useState(true);
 
   // Persistent Language FR / EN
   const [lang, setLang] = useState<Language>(() => {
@@ -65,7 +68,6 @@ export default function App() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const [printDocData, setPrintDocData] = useState<DocumentPrintData | null>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Main scrollable container ref to guarantee opening at the very top
   const mainContentRef = React.useRef<HTMLElement>(null);
@@ -77,17 +79,84 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
-  // Subscribe to DB changes & current user changes
+  // Surveillance de la session Firebase & synchronisation temps réel
   useEffect(() => {
+    const unsubAuth = authService.onAuthChanged(async (firebaseUser) => {
+      try {
+        if (!firebaseUser) {
+          dbStore.setCurrentUser(null);
+          setCurrentUser(null);
+        } else {
+          const userEmail = (firebaseUser.email || '').trim().toLowerCase();
+          const currentState = dbStore.getState();
+          let matched: UserProfile | null | undefined = currentState.users.find(
+            (u) => u.email.trim().toLowerCase() === userEmail || u.id === firebaseUser.uid
+          );
+          if (!matched) {
+            matched = await authService.fetchUserProfile(firebaseUser.uid);
+          }
+          if (!matched) {
+            matched = await authService.fetchUserProfileByEmail(userEmail);
+          }
+          const isSuperAdmin =
+            userEmail === 'clausephwandji044@gmail.com' ||
+            userEmail === 'rapidetravel2@gmail.com' ||
+            userEmail === 'admin@fct-automobile.cm';
+
+          if (!matched && isSuperAdmin) {
+            matched = {
+              id: firebaseUser.uid,
+              email: userEmail,
+              fullName:
+                firebaseUser.displayName ||
+                (userEmail.startsWith('clause')
+                  ? 'Claus Ephwandji (Super Admin & Direction)'
+                  : 'Directeur Général (Super Admin)'),
+              firstName: userEmail.startsWith('clause') ? 'Claus' : 'Directeur',
+              lastName: userEmail.startsWith('clause') ? 'Ephwandji' : 'Général',
+              phone: '+237 699 00 11 22',
+              jobTitle: 'Super Administrateur & Directeur Général',
+              role: 'super_admin',
+              status: 'ACTIVE',
+              isActive: true,
+              createdAt: new Date().toISOString(),
+            };
+            await authService.syncUserProfile(matched);
+            dbStore.upsertUser(matched);
+          }
+
+          if (matched && matched.isActive && matched.status !== 'SUSPENDED' && matched.status !== 'DISABLED') {
+            dbStore.setCurrentUser(matched);
+            setCurrentUser(matched);
+          } else {
+            await authService.logout();
+            dbStore.setCurrentUser(null);
+            setCurrentUser(null);
+          }
+        }
+      } catch (err) {
+        console.warn('Erreur vérification session Firebase:', err);
+        dbStore.setCurrentUser(null);
+        setCurrentUser(null);
+      } finally {
+        setAuthLoading(false);
+      }
+    });
+
     const unsubscribe = dbStore.subscribe(() => {
       setState({ ...dbStore.getState() });
       setCurrentUser(dbStore.getCurrentUser());
     });
-    return unsubscribe;
+
+    return () => {
+      unsubAuth();
+      unsubscribe();
+    };
   }, []);
 
   // Strict RBAC synchronization: when role or overrides change, verify permission for currentModule
   useEffect(() => {
+    if (!currentUser) return;
     const isAllowed =
       currentModule === 'showroom'
         ? hasEffectivePermission(currentUser, 'vehicles', 'read', state.rolePermissions)
@@ -133,7 +202,7 @@ export default function App() {
 
   // Sidebar / Navigation Module selection with optional context entity ID
   const handleNavigate = (module: AppModule, entityId?: string) => {
-    if (!hasEffectivePermission(currentUser, module, 'read', state.rolePermissions)) {
+    if (!currentUser || !hasEffectivePermission(currentUser, module, 'read', state.rolePermissions)) {
       return;
     }
     setActiveShowroomVehicle(null);
@@ -149,7 +218,7 @@ export default function App() {
 
   // Open Showroom page for a vehicle (opens full page at top with multi-angle photos & sharing)
   const handleOpenShowroom = (vehicle: Vehicle) => {
-    if (!hasPermission(currentUser.role, 'vehicles', 'read')) {
+    if (!currentUser || !hasPermission(currentUser.role, 'vehicles', 'read')) {
       return;
     }
     setActiveShowroomVehicle(vehicle);
@@ -188,7 +257,36 @@ export default function App() {
       ? activeShowroomVehicle || state.vehicles[0]
       : null;
 
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (e) {
+      console.warn('Erreur déconnexion:', e);
+    } finally {
+      dbStore.setCurrentUser(null);
+      setCurrentUser(null);
+    }
+  };
+
   const t = translations[lang];
+
+  // 1. Écran de démarrage / Splash Screen FCT
+  if (authLoading) {
+    return <AppLoader message="Initialisation sécurisée de l'écosystème FCT..." />;
+  }
+
+  // 2. Vue de connexion plein écran si non authentifié
+  if (!currentUser) {
+    return (
+      <LoginView
+        onLoginSuccess={(user) => {
+          dbStore.setCurrentUser(user);
+          setCurrentUser(user);
+        }}
+        lang={lang}
+      />
+    );
+  }
 
   return (
     <div className="h-screen w-screen flex flex-col bg-slate-50 text-slate-800 overflow-hidden">
@@ -199,7 +297,7 @@ export default function App() {
         lang={lang}
         onLanguageChange={handleLanguageChange}
         onRefresh={handleRefresh}
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
         onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
       />
 
@@ -258,7 +356,7 @@ export default function App() {
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 flex items-center justify-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 <span>
-                  {t.rbac.activeRoleBadge} <strong>{t.roles[currentUser.role]}</strong>
+                  {t.rbac.activeRoleBadge} <strong>{t.roles[currentUser.role as keyof typeof t.roles] || currentUser.role}</strong>
                 </span>
               </div>
               <div className="pt-2">
@@ -413,15 +511,6 @@ export default function App() {
 
       {/* Official FCT Document Print Modal */}
       <DocumentModal data={printDocData} onClose={() => setPrintDocData(null)} />
-
-      {/* Firebase Authentication & RBAC Switcher Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        currentUser={currentUser}
-        state={state}
-        lang={lang}
-      />
     </div>
   );
 }

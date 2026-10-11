@@ -55,6 +55,22 @@ export function validateUploadFile(file: { name: string; size: number }): string
   if (!ext || FORBIDDEN_EXTENSIONS.includes(ext) || !ALLOWED_EXTENSIONS.includes(ext)) {
     return `Type de fichier non autorisé (.${ext || '?'}). Formats acceptés : PDF, JPG, PNG, WEBP, Word, Excel.`;
   }
+
+  // Contrôle anti-traversal et caractères nuls
+  if (file.name.includes('\0') || file.name.includes('..')) {
+    return `Nom de fichier invalide ou suspect détecté.`;
+  }
+
+  // Contrôle des doubles extensions dangereuses (ex: exploit.php.png, malware.exe.pdf)
+  const segments = file.name.toLowerCase().split('.');
+  if (segments.length > 2) {
+    const dangerousSubExts = ['php', 'exe', 'sh', 'bat', 'cmd', 'js', 'mjs', 'vbs', 'html', 'htm', 'dll'];
+    const hasDangerous = segments.slice(1, -1).some((s) => dangerousSubExts.includes(s));
+    if (hasDangerous) {
+      return `Double extension suspecte détectée dans « ${file.name} ». Fichier rejeté pour des raisons de sécurité FCT.`;
+    }
+  }
+
   if (file.size > MAX_FILE_SIZE) {
     return `Le fichier « ${file.name} » dépasse la limite de 25 Mo (${(file.size / (1024 * 1024)).toFixed(1)} Mo).`;
   }
@@ -83,7 +99,17 @@ export function buildUploadFormData(
     formData.append('file', file);
   }
   formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
-  formData.append('folder', options.folder || 'fct_automobile/documents');
+
+  // Isolation stricte de l'arborescence Cloudinary dans fct_automobile/
+  let targetFolder = (options.folder || 'fct_automobile/documents').replace(/\\/g, '/');
+  if (targetFolder.includes('..')) {
+    targetFolder = 'fct_automobile/documents';
+  }
+  if (!targetFolder.startsWith('fct_automobile')) {
+    targetFolder = `fct_automobile/${targetFolder.replace(/^\/+/, '')}`;
+  }
+  formData.append('folder', targetFolder);
+
   if (options.context && Object.keys(options.context).length > 0) {
     const ctx = Object.entries(options.context)
       .map(([k, v]) => `${k}=${String(v).replace(/[|=]/g, ' ')}`)

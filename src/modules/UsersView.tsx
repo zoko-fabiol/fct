@@ -6,6 +6,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { dbStore, DatabaseState } from '../services/dbStore.ts';
+import { authService } from '../services/firebase.ts';
 import { Language, translations } from '../services/i18n.ts';
 import {
   UserProfile,
@@ -183,6 +184,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
         role: 'sales_agent',
         status: 'ACTIVE',
       });
+      // Synchronisation immédiate vers Firebase Firestore
+      authService.syncUserProfile(newUser).catch((e) => console.warn('Sync Firestore collaborateur différée:', e));
       showAlert(`Compte collaborateur "${newUser.fullName}" créé avec succès.`);
     } catch (err: any) {
       showAlert(err.message || 'Erreur lors de la création du compte', 'error');
@@ -204,6 +207,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
       });
       setIsEditModalOpen(false);
       if (selectedUser?.id === updated.id) setSelectedUser(updated);
+      // Synchronisation vers Firebase Firestore
+      authService.syncUserProfile(updated).catch((e) => console.warn('Sync Firestore collaborateur différée:', e));
       showAlert(`Profil de "${updated.fullName}" mis à jour avec succès.`);
     } catch (err: any) {
       showAlert(err.message || 'Erreur de modification', 'error');

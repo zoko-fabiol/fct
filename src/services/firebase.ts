@@ -9,6 +9,8 @@ import {
   getAuth,
   Auth,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut,
   sendPasswordResetEmail,
   onAuthStateChanged,
@@ -110,8 +112,15 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
  */
 export const authService = {
   async login(email: string, pass: string): Promise<FirebaseUser> {
-    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    const cred = await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), pass);
     return cred.user;
+  },
+
+  async loginWithGoogle(): Promise<FirebaseUser> {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
   },
 
   async logout(): Promise<void> {
@@ -119,7 +128,7 @@ export const authService = {
   },
 
   async requestPasswordReset(email: string): Promise<void> {
-    await sendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(auth, email.trim().toLowerCase());
   },
 
   onAuthChanged(callback: (user: FirebaseUser | null) => void) {
@@ -134,6 +143,20 @@ export const authService = {
       }
     } catch (e) {
       handleFirestoreError(e, OperationType.GET, `users/${uid}`);
+    }
+    return null;
+  },
+
+  async fetchUserProfileByEmail(email: string): Promise<UserProfile | null> {
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const q = query(collection(db, 'users'), where('email', '==', normalizedEmail));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        return snap.docs[0].data() as UserProfile;
+      }
+    } catch (e) {
+      handleFirestoreError(e, OperationType.LIST, `users[email=${email}]`);
     }
     return null;
   },

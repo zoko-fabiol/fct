@@ -19,6 +19,7 @@ import {
   Building2,
   Clock,
   Menu,
+  LogOut,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -27,7 +28,7 @@ interface NavbarProps {
   lang: Language;
   onLanguageChange: (lang: Language) => void;
   onRefresh: () => void;
-  onOpenAuthModal: () => void;
+  onLogout: () => void;
   onToggleMobileSidebar?: () => void;
 }
 
@@ -37,19 +38,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   lang,
   onLanguageChange,
   onRefresh,
-  onOpenAuthModal,
+  onLogout,
   onToggleMobileSidebar,
 }) => {
   const t = translations[lang];
   const pendingSyncCount = state.syncQueue.filter((q) => q.status === 'PENDING').length;
   const activeSession = state.cashSessions.find((s) => s.status === 'OPEN');
-
-  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedUser = state.users.find((u) => u.id === e.target.value);
-    if (selectedUser) {
-      dbStore.setCurrentUser(selectedUser);
-    }
-  };
 
   const toggleOnline = () => {
     dbStore.setOnlineStatus(!state.isOnline);
@@ -171,31 +165,28 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
-          {/* RBAC Role Switcher (Live Testing) */}
-          <div className="flex items-center bg-slate-800/90 rounded-md border border-slate-700 px-2 py-1 gap-1.5">
-            <Shield className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-slate-400 hidden sm:inline">{t.role}:</span>
-            <select
-              value={currentUser.id}
-              onChange={handleRoleChange}
-              className="bg-transparent text-white font-medium focus:outline-none cursor-pointer pr-1"
-            >
-              {state.users.map((u) => (
-                <option key={u.id} value={u.id} className="bg-slate-900 text-white">
-                  {t.roles[u.role as UserRole]} - {u.fullName.split(' ')[0]}
-                </option>
-              ))}
-            </select>
+          {/* Collaborateur Authentifié & Rôle RBAC */}
+          <div className="flex items-center bg-slate-800/90 rounded-lg border border-slate-700/80 px-2.5 py-1 gap-2 text-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+            <div className="max-w-[130px] sm:max-w-[200px] truncate">
+              <span className="font-bold text-white truncate block">
+                {currentUser.fullName}
+              </span>
+            </div>
+            <span className="hidden md:inline px-1.5 py-0.5 rounded bg-blue-900/90 text-[10px] text-blue-200 font-bold uppercase shrink-0">
+              {t.roles[currentUser.role]}
+            </span>
           </div>
 
-          {/* Authentification & Profil */}
+          {/* Déconnexion de la session Firebase */}
           <button
-            onClick={onOpenAuthModal}
-            title="Connexion Firebase & Gestion du profil"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-700/80 hover:bg-emerald-600 text-white font-medium transition cursor-pointer"
+            type="button"
+            onClick={onLogout}
+            title="Se déconnecter de la plateforme"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-800/60 text-rose-200 hover:text-white font-bold text-xs transition cursor-pointer"
           >
-            <User className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Session Auth</span>
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Déconnexion</span>
           </button>
 
           {/* Refresh / Reset Data */}

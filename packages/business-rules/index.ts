@@ -467,12 +467,12 @@ export function getPermissionOrigin(
  * Vérification des permissions effectives d'un utilisateur connecté
  */
 export function hasEffectivePermission(
-  user: UserProfile,
+  user: UserProfile | null | undefined,
   module: AppModule,
   action: PermissionAction,
   customMatrix?: Record<UserRole, Record<AppModule, PermissionAction[]>>
 ): boolean {
-  if (!user.isActive || user.status === 'DISABLED' || user.status === 'SUSPENDED') {
+  if (!user || !user.isActive || user.status === 'DISABLED' || user.status === 'SUSPENDED') {
     return false;
   }
   const effective = calculateEffectivePermissions(user, customMatrix);
