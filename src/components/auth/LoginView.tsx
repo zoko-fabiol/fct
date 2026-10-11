@@ -4,7 +4,7 @@
  * Franchise Conseils Trading - Douala, Cameroun
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { authService } from '../../services/firebase.ts';
 import { dbStore } from '../../services/dbStore.ts';
 import { UserProfile, UserRole } from '../../../packages/shared-types/index.ts';
@@ -42,6 +42,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Sécurité Anti-Brute-force
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutSeconds((s) => Math.max(0, s - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutSeconds]);
 
   // Synchronise ou vérifie le compte Firebase avec la base des collaborateurs FCT
   const resolveUserProfile = async (
@@ -139,6 +151,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
   // Connexion Classique : E-mail + Mot de passe
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (lockoutSeconds > 0) {
+      setErrorMessage(`Sécurité FCT : Protection anti-brute-force active. Veuillez patienter encore ${lockoutSeconds} seconde(s).`);
+      return;
+    }
     if (!email.trim() || !password) {
       setErrorMessage("Veuillez renseigner votre adresse e-mail et votre mot de passe.");
       return;
@@ -161,22 +177,33 @@ export const LoginView: React.FC<LoginViewProps> = ({
       }
 
       dbStore.setCurrentUser(profile);
+      setFailedAttempts(0);
+      setLockoutSeconds(0);
       setSuccessMessage(`Bienvenue, ${profile.fullName} !`);
       setTimeout(() => {
         onLoginSuccess(profile);
       }, 400);
     } catch (err: any) {
       console.warn("Échec connexion email FCT:", err);
-      if (
+      const nextFailures = failedAttempts + 1;
+      setFailedAttempts(nextFailures);
+
+      if (nextFailures >= 5) {
+        setLockoutSeconds(120);
+        setErrorMessage("Sécurité FCT : 5 tentatives échouées. Verrouillage de sécurité temporaire pendant 2 minutes.");
+      } else if (nextFailures >= 3) {
+        setLockoutSeconds(30);
+        setErrorMessage("Sécurité FCT : 3 tentatives échouées. Verrouillage de sécurité temporaire pendant 30 secondes.");
+      } else if (
         err.code === 'auth/invalid-credential' ||
         err.code === 'auth/wrong-password' ||
         err.code === 'auth/user-not-found'
       ) {
-        setErrorMessage("Identifiants incorrects. Vérifiez votre adresse e-mail et votre mot de passe.");
+        setErrorMessage(`Identifiants incorrects. (${nextFailures}/3 tentatives autorisées).`);
       } else if (err.code === 'auth/too-many-requests') {
-        setErrorMessage("Trop de tentatives infructueuses. Veuillez patienter quelques instants ou réinitialiser votre mot de passe.");
+        setErrorMessage("Trop de requêtes. Veuillez patienter ou réinitialiser votre mot de passe.");
       } else if (err.code === 'auth/network-request-failed') {
-        setErrorMessage("Erreur de connexion réseau. Vérifiez votre accès Internet.");
+        setErrorMessage("Erreur réseau. Vérifiez votre connexion Internet.");
       } else {
         setErrorMessage(err.message || "Impossible de se connecter à la plateforme.");
       }
@@ -395,11 +422,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
             {/* Bouton de soumission */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || lockoutSeconds > 0}
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#0a264a] to-[#0f3460] hover:from-[#0d315f] hover:to-[#123e72] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
             >
               {isLoading ? (
                 <span>Connexion sécurisée en cours...</span>
+              ) : lockoutSeconds > 0 ? (
+                <span>Formulaire verrouillé ({lockoutSeconds}s)</span>
               ) : (
                 <>
                   <span>Accéder à la Plateforme FCT</span>

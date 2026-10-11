@@ -4,7 +4,7 @@
  * Franchise Conseils Trading - Douala, Cameroun (Carrefour Santa Barbara, Bonamoussadi)
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import { dbStore } from '../src/services/dbStore.ts';
 import {
   hasPermission,
@@ -17,6 +17,34 @@ import {
 import { UserProfile, UserRole, AppModule } from '../packages/shared-types/index.ts';
 
 describe('Module Utilisateurs, Rôles, Permissions & Sécurité RBAC (18 Scénarios Obligatoires)', () => {
+  beforeAll(() => {
+    const adminUser = dbStore.getUsers().find((u) => u.role === 'super_admin' && u.isActive);
+    if (adminUser) {
+      dbStore.setCurrentUser(adminUser);
+    }
+    const rolesNeeded: UserRole[] = [
+      'director',
+      'accountant_cashier',
+      'rental_agent',
+      'sales_agent',
+      'fleet_manager',
+      'driver',
+      'viewer',
+    ];
+    rolesNeeded.forEach((role) => {
+      if (!dbStore.getUsers().find((u) => u.role === role)) {
+        dbStore.addUser({
+          fullName: `Fixture Test ${role}`,
+          email: `fixture.${role}@fct-test.cm`,
+          phone: '+237 600 00 00 00',
+          role,
+          status: 'ACTIVE',
+          isActive: true,
+        });
+      }
+    });
+  });
+
   beforeEach(() => {
     // S'assurer d'avoir l'utilisateur Super Admin actif comme utilisateur courant pour administrer
     const adminUser = dbStore.getUsers().find((u) => u.role === 'super_admin' && u.isActive);
@@ -75,7 +103,7 @@ describe('Module Utilisateurs, Rôles, Permissions & Sécurité RBAC (18 Scénar
     expect(() => {
       dbStore.addUser({
         fullName: 'Doublon Test',
-        email: '  RAPIDETRAVEL2@GMAIL.COM  ', // Déjà le Super Admin
+        email: '  CLAUSEPHWANDJI044@GMAIL.COM  ', // Déjà le Super Admin
         phone: '+237 699 00 00 00',
         role: 'sales_agent',
         status: 'ACTIVE',

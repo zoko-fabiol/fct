@@ -2237,6 +2237,107 @@ class DatabaseStore {
     this.notify();
     await this.transferAllToFirebase();
   }
+
+  /**
+   * PURGE DE SÉCURITÉ DE PRODUCTION (ZERO-TRUST / CLEAN SLATE)
+   * Réservée exclusivement au Super Administrateur (Claus Ephwandji).
+   * Élimine toutes les données factices de simulation, faux comptes de tests,
+   * fausses écritures et remet l'ERP dans son état de production réel certifié.
+   */
+  public async purgeAllMockDataForProduction(): Promise<{
+    clearedContracts: number;
+    clearedInvoices: number;
+    clearedCashMovements: number;
+    clearedReservations: number;
+    clearedSales: number;
+    clearedMaintenance: number;
+  }> {
+    if (this.actor.role !== 'super_admin') {
+      throw new Error("Seul le Super Administrateur peut exécuter la purge de bascule en production.");
+    }
+
+    const counts = {
+      clearedContracts: this.state.contracts.length,
+      clearedInvoices: this.state.invoices.length,
+      clearedCashMovements: this.state.cashMovements.length,
+      clearedReservations: this.state.reservations.length,
+      clearedSales: this.state.sales.length,
+      clearedMaintenance: this.state.maintenance.length,
+    };
+
+    // 1. Ne conserver que le Super Administrateur authentique
+    const verifiedAdmin = this.state.users.find(
+      (u) => u.email.trim().toLowerCase() === 'clausephwandji044@gmail.com' || u.role === 'super_admin'
+    ) || {
+      id: 'usr_superadmin',
+      fullName: 'Claus Ephwandji (Super Admin & Direction)',
+      email: 'clausephwandji044@gmail.com',
+      role: 'super_admin' as UserRole,
+      agencyId: 'agency_douala_bonamoussadi',
+      phone: '+237 699 00 11 22',
+      department: 'Direction Générale',
+      jobTitle: 'Super Administrateur & Directeur Général',
+      isActive: true,
+      status: 'ACTIVE' as const,
+      createdAt: new Date().toISOString(),
+    };
+
+    this.state.users = [verifiedAdmin];
+    this.currentUser = verifiedAdmin;
+
+    // 2. Vider les transactions factices de test
+    this.state.contracts = [];
+    this.state.invoices = [];
+    this.state.cashSessions = [];
+    this.state.cashMovements = [];
+    this.state.reservations = [];
+    this.state.sales = [];
+    this.state.leads = [];
+    this.state.maintenance = [];
+    this.state.stockMovements = [];
+    this.state.documents = [];
+    this.state.drivers = [];
+    this.state.customers = [];
+
+    // 3. Nettoyer les URLs d'images factices sur les véhicules existants
+    this.state.vehicles = this.state.vehicles.map((v) => ({
+      ...v,
+      photoUrls: (v.photoUrls || []).filter((u) => !u.includes('unsplash.com')),
+      status: 'AVAILABLE',
+    }));
+
+    // 4. Compteurs officiels remis à 0 pour démarrer proprement
+    this.state.documentCounters = {
+      CTR: 0,
+      FAC: 0,
+      REC: 0,
+      COM: 0,
+      RES: 0,
+      MNT: 0,
+      CS: 0,
+    };
+
+    // 5. Journalisation d'audit de sécurité immuable
+    this.addSecurityAuditEvent({
+      actionType: 'ROLE_PERMISSIONS_UPDATE',
+      summary: `Bascule en production certifiée FCT effectuée par ${this.actor.fullName}`,
+      details: 'Purge intégrale des données de simulation et mise en service de la base de production.',
+    });
+
+    this.createAuditLog(
+      'UPDATE',
+      'settings',
+      'production_go_live',
+      'Bascule en production et purge des données de simulation',
+      `Purge exécutée par ${this.actor.fullName} (${this.actor.id})`
+    );
+
+    // 6. Synchroniser immédiatement la base propre dans Firebase
+    await transferAllDataToFirebase(this.state);
+    this.notify();
+
+    return counts;
+  }
 }
 
 export const dbStore = new DatabaseStore();

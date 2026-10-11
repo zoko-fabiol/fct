@@ -22,6 +22,104 @@ describe('Refonte UI/UX & Parcours de Suivi Intégré (FCT ERP & CRM)', () => {
     if (!activeSession) {
       dbStore.openCashSession(500000);
     }
+
+    let state = dbStore.getState();
+    if (state.vehicles.length === 0) {
+      dbStore.addVehicle({
+        vin: 'VF7TESTSCENARIO01',
+        licensePlate: 'LT-8841-CE',
+        brand: 'Toyota',
+        model: 'Prado TX',
+        year: 2022,
+        category: 'SUV',
+        transmission: 'AUTOMATIQUE',
+        fuel: 'DIESEL',
+        seats: 7,
+        mileage: 48500,
+        acquisitionCost: 38000000,
+        rentalDailyRate: 85000,
+        securityDepositRate: 350000,
+        salePrice: 42000000,
+        isForRent: true,
+        isForSale: true,
+        status: 'AVAILABLE',
+        currentLocation: 'Agence Douala',
+        color: 'Blanc',
+        photoUrls: [],
+        documentsCount: 4,
+        nextTechnicalInspectionDate: '2027-02-15',
+        insuranceExpiryDate: '2026-12-31',
+      });
+    }
+
+    state = dbStore.getState();
+    const veh = state.vehicles[0];
+
+    if (state.stock.length === 0) {
+      dbStore.addStockItem({
+        code: 'STK-OIL-5W30',
+        name: 'Huile Moteur 5W30 Synthèse',
+        category: 'LUBRIFIANT',
+        quantityInStock: 24,
+        unitCostXAF: 35000,
+        minThresholdAlert: 5,
+        unit: 'Litre',
+        supplier: 'TotalEnergies Cameroun',
+        locationBin: 'Rayon A-01',
+      });
+    }
+
+    state = dbStore.getState();
+    const stk = state.stock[0];
+
+    if (state.maintenance.length === 0 && veh && stk) {
+      dbStore.addMaintenanceRecord({
+        vehicleId: veh.id,
+        vehicleName: `${veh.brand} ${veh.model}`,
+        licensePlate: veh.licensePlate,
+        type: 'PREVENTIVE',
+        description: 'Vidange générale et changement filtre',
+        mileageAtService: veh.mileage,
+        totalCostXAF: 55000,
+        laborCostXAF: 20000,
+        garageName: 'Garage Partenaire Akwa',
+        status: 'COMPLETED',
+        startDate: '2026-10-01',
+        completionDate: '2026-10-02',
+        partsUsed: [
+          {
+            stockItemId: stk.id,
+            name: stk.name,
+            quantity: 1,
+            unitPriceXAF: stk.unitCostXAF,
+            totalXAF: stk.unitCostXAF,
+          },
+        ],
+      });
+    }
+
+    if (state.drivers.length === 0) {
+      dbStore.addDriver({
+        fullName: 'Eric Ngassa',
+        phone: '+237 670 11 22 33',
+        licenseNumber: 'PC-2018-99441',
+        licenseCategories: ['B'],
+        licenseExpiryDate: '2028-05-14',
+        medicalExamExpiryDate: '2028-05-14',
+        status: 'AVAILABLE',
+      });
+    }
+
+    if (!dbStore.getUsers().find((u) => u.role === 'driver')) {
+      dbStore.addUser({
+        fullName: 'Eric Ngassa (Chauffeur)',
+        email: 'driver.test@fct-test.cm',
+        phone: '+237 670 11 22 33',
+        role: 'driver',
+        status: 'ACTIVE',
+        isActive: true,
+      });
+    }
   });
 
   it('1. Bilan de santé du véhicule calculé à partir des données réelles', () => {

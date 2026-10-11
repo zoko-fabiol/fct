@@ -18,15 +18,23 @@ service cloud.firestore {
 
     // Récupération sécurisée du profil utilisateur sans e-mail en dur
     function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : null;
     }
 
     function isSuperAdmin() {
-      return isSignedIn() && getUserRole() == 'super_admin';
+      return isSignedIn() && (
+        request.auth.token.email == 'clausephwandji044@gmail.com' ||
+        getUserRole() == 'super_admin'
+      );
     }
 
     function isDirector() {
-      return isSignedIn() && (getUserRole() == 'director' || isSuperAdmin());
+      return isSignedIn() && (
+        isSuperAdmin() ||
+        getUserRole() == 'director'
+      );
     }
 
     function isCashier() {

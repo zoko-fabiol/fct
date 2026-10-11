@@ -419,6 +419,7 @@ export interface MaintenanceRecord {
   startDate: string;
   completionDate?: string;
   technicianNotes?: string;
+  invoiceAttachmentUrl?: string;
 }
 
 export interface Driver {
@@ -432,6 +433,8 @@ export interface Driver {
   status: 'AVAILABLE' | 'ON_TRIP' | 'LEAVE';
   currentAssignedVehicleId?: string;
   rating: number; // 1 to 5
+  licenseDocumentUrl?: string;
+  medicalCertificateUrl?: string;
 }
 
 export interface DocumentRecord {

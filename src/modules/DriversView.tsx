@@ -669,11 +669,17 @@ export const DriversView: React.FC<DriversViewProps> = ({
                 {assignedVehicle ? (
                   <div className="space-y-3">
                     <div className="aspect-video rounded-xl overflow-hidden bg-slate-900 relative">
-                      <img
-                        src={assignedVehicle.photoUrls[0] || 'https://images.unsplash.com/photo-1594502184342-2e12f877aa73?auto=format&fit=crop&w=1200&q=80'}
-                        alt={assignedVehicle.model}
-                        className="w-full h-full object-cover"
-                      />
+                      {assignedVehicle.photoUrls && assignedVehicle.photoUrls[0] ? (
+                        <img
+                          src={assignedVehicle.photoUrls[0]}
+                          alt={assignedVehicle.model}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 text-slate-500">
+                          <Car className="w-10 h-10 opacity-50" />
+                        </div>
+                      )}
                       <div className="absolute top-2 left-2 px-2.5 py-1 rounded bg-black/70 text-white font-mono font-bold text-xs">
                         {assignedVehicle.licensePlate}
                       </div>
@@ -753,15 +759,21 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   <div>Expiration : <strong>{selectedDriver.licenseExpiryDate}</strong></div>
                 </div>
                 <div className="pt-2 flex items-center gap-2">
-                  <a
-                    href="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex-1 text-center py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center justify-center gap-1.5"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Consulter le scan</span>
-                  </a>
+                  {selectedDriver.licenseDocumentUrl ? (
+                    <a
+                      href={selectedDriver.licenseDocumentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 text-center py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Consulter le scan</span>
+                    </a>
+                  ) : (
+                    <span className="flex-1 text-center py-2 rounded-lg bg-slate-50 text-slate-400 text-xs italic">
+                      Scan de permis non fourni
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -784,15 +796,21 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   <div>Validité jusqu'au : <strong>{selectedDriver.medicalExamExpiryDate}</strong></div>
                 </div>
                 <div className="pt-2 flex items-center gap-2">
-                  <a
-                    href="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex-1 text-center py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center justify-center gap-1.5"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Consulter le certificat</span>
-                  </a>
+                  {selectedDriver.medicalCertificateUrl ? (
+                    <a
+                      href={selectedDriver.medicalCertificateUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 text-center py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Consulter le certificat</span>
+                    </a>
+                  ) : (
+                    <span className="flex-1 text-center py-2 rounded-lg bg-slate-50 text-slate-400 text-xs italic">
+                      Certificat médical non téléversé
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -903,12 +921,19 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   </div>
                 </div>
 
-                <div className="aspect-[21/9] rounded-2xl overflow-hidden bg-slate-900">
-                  <img
-                    src={assignedVehicle.photoUrls[0] || 'https://images.unsplash.com/photo-1594502184342-2e12f877aa73?auto=format&fit=crop&w=1200&q=80'}
-                    alt={assignedVehicle.model}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="aspect-[21/9] rounded-2xl overflow-hidden bg-slate-900 flex items-center justify-center">
+                  {assignedVehicle.photoUrls && assignedVehicle.photoUrls[0] ? (
+                    <img
+                      src={assignedVehicle.photoUrls[0]}
+                      alt={assignedVehicle.model}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-slate-500 py-8">
+                      <Car className="w-12 h-12 opacity-50 mb-2" />
+                      <span className="text-xs font-mono">{assignedVehicle.licensePlate} — {assignedVehicle.brand} {assignedVehicle.model}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

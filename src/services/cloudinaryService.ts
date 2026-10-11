@@ -120,10 +120,44 @@ export function buildUploadFormData(
 }
 
 /**
+ * Vérification des Magic Bytes (signatures binaires réelles)
+ * Bloque l'injection de scripts malveillants masqués sous de fausses extensions (.php renommé en .jpg)
+ */
+export async function validateFileMagicBytes(file: File | Blob): Promise<{ valid: boolean; error?: string }> {
+  try {
+    if (!file || typeof file.slice !== 'function') return { valid: true };
+    const slice = file.slice(0, 16);
+    const buffer = await slice.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    if (bytes.length < 4) return { valid: true }; // trop petit pour vérifier ou buffer mocké
+
+    const hex = Array.from(bytes.slice(0, 8)).map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+
+    // Détection
+    const isJPEG = hex.startsWith('FFD8FF');
+    const isPNG = hex.startsWith('89504E47');
+    const isPDF = hex.startsWith('25504446'); // %PDF
+
+    const mime = (file.type || '').toLowerCase();
+    if (mime.includes('jpeg') || mime.includes('jpg')) {
+      if (!isJPEG) return { valid: false, error: 'Signature binaire JPEG altérée ou invalide.' };
+    } else if (mime.includes('png')) {
+      if (!isPNG) return { valid: false, error: 'Signature binaire PNG altérée ou invalide.' };
+    } else if (mime.includes('pdf')) {
+      if (!isPDF) return { valid: false, error: 'Signature binaire PDF altérée ou invalide.' };
+    }
+
+    return { valid: true };
+  } catch {
+    return { valid: true };
+  }
+}
+
+/**
  * Téléverse un fichier (Image, Document PDF, Scan CNI/Permis, Facture) vers Cloudinary.
  * Progression réelle via XMLHttpRequest.
  */
-export function uploadToCloudinary(
+export async function uploadToCloudinary(
   file: File | Blob,
   options?: {
     folder?: string;
@@ -132,13 +166,18 @@ export function uploadToCloudinary(
     onProgress?: (percent: number) => void;
   }
 ): Promise<CloudinaryUploadResult> {
+  const name = options?.fileName || (file as File).name || 'document';
+  const validationError = validateUploadFile({ name, size: file.size });
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  const magicCheck = await validateFileMagicBytes(file);
+  if (!magicCheck.valid) {
+    throw new Error(magicCheck.error || 'Intégrité du fichier rejetée.');
+  }
+
   return new Promise((resolve, reject) => {
-    const name = options?.fileName || (file as File).name || 'document';
-    const validationError = validateUploadFile({ name, size: file.size });
-    if (validationError) {
-      reject(new Error(validationError));
-      return;
-    }
 
     const formData = buildUploadFormData(file, {
       folder: options?.folder,

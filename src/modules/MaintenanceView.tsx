@@ -816,15 +816,21 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                   <div>Montant : <strong>{formatXAF(selectedRecord.totalCostXAF)}</strong></div>
                 </div>
                 <div className="pt-2 flex items-center gap-2">
-                  <a
-                    href="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex-1 text-center py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center justify-center gap-1.5"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Consulter le scan</span>
-                  </a>
+                  {selectedRecord.invoiceAttachmentUrl ? (
+                    <a
+                      href={selectedRecord.invoiceAttachmentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 text-center py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Consulter le scan</span>
+                    </a>
+                  ) : (
+                    <span className="flex-1 text-center py-2 rounded-lg bg-slate-50 text-slate-400 text-xs italic">
+                      Scan de réparation non téléversé
+                    </span>
+                  )}
                 </div>
               </div>
 
