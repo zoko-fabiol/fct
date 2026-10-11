@@ -1,10 +1,16 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   getFirestore,
+  Firestore,
   collection,
   onSnapshot,
   addDoc,
   serverTimestamp,
+  doc,
+  setDoc,
 } from 'firebase/firestore';
 import {
   getAuth,
@@ -15,7 +21,6 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import { Vehicle, BookingRequest, PurchaseRequest } from '../types/index.ts';
-import { INITIAL_VEHICLES } from '../data/defaultCatalog.ts';
 
 const firebaseConfig = {
   apiKey: import.meta.env?.VITE_FIREBASE_API_KEY || 'AIzaSyDOrL2WTMbKmo4P1f0n06x9trk6eWYokTM',
@@ -26,87 +31,187 @@ const firebaseConfig = {
   appId: import.meta.env?.VITE_FIREBASE_APP_ID || '1:11946393528:web:4169d263b70ea2c4b6d94d',
 };
 
+// Initialisation unique Firebase App
+export const app: FirebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-export const firestore = getFirestore(app);
+// Initialisation Firestore avec persistance locale Firebase IndexedDB (remplacement strict de LocalStorage)
+function initWebsiteFirestore(): Firestore {
+  try {
+    if (typeof window !== 'undefined' && typeof indexedDB !== 'undefined') {
+      return initializeFirestore(app, {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager(),
+        }),
+      });
+    }
+  } catch (err) {
+    console.info('[FCT Website] Firestore déjà initialisé ou environnement sans IndexedDB, fallback getFirestore()');
+  }
+  return getFirestore(app);
+}
+
+export const firestore: Firestore = initWebsiteFirestore();
 export const auth = getAuth(app);
 export { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword };
 export type { FirebaseUser };
 
+// Purge automatique des clés LocalStorage résiduelles (remplacé par Firebase Local IndexedDB)
+if (typeof localStorage !== 'undefined') {
+  try {
+    const keysToRemove = ['fct_local_bookings', 'fct_local_leads', 'fct_website_cache'];
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+  } catch {
+    // Ignore
+  }
+}
+
 /**
- * Abonnement temps réel au catalogue public
- * Fallback immédiat et robuste sur INITIAL_VEHICLES si Firestore est vide ou non connecté
+ * Abonnement en temps réel aux VRAIS véhicules de la base de données Firestore.
+ * Zéro fausse donnée : si la base contient 2 véhicules, on n'affiche que ces 2 véhicules.
+ * Si la base est vide, on retourne une liste vide [] (pas de catalogue factice hardcodé).
  */
 export function subscribePublicVehicles(
   onUpdate: (vehicles: Vehicle[]) => void
 ): () => void {
   try {
+    // Écoute en temps réel de la collection principale `vehicles` synchronisée par l'ERP
     const unsubscribe = onSnapshot(
-      collection(firestore, 'public_vehicles'),
+      collection(firestore, 'vehicles'),
       (snapshot) => {
-        if (!snapshot.empty) {
-          const list: Vehicle[] = snapshot.docs.map((doc) => ({
-            ...(doc.data() as Vehicle),
-            id: doc.id,
-          }));
-          onUpdate(list);
-        } else {
-          // Utilise le catalogue officiel FCT pré-enregistré
-          onUpdate(INITIAL_VEHICLES);
-        }
+        const list: Vehicle[] = snapshot.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            brand: data.brand || '',
+            model: data.model || '',
+            year: Number(data.year) || new Date().getFullYear(),
+            category: data.category || 'SUV',
+            transmission: data.transmission || 'AUTOMATIQUE',
+            fuel: data.fuel || 'DIESEL',
+            seats: Number(data.seats) || 5,
+            mileage: Number(data.mileage) || 0,
+            rentalDailyRate: Number(data.rentalDailyRate) || 0,
+            securityDepositRate: Number(data.securityDepositRate) || 0,
+            salePrice: Number(data.salePrice) || 0,
+            isForRent: data.isForRent !== false,
+            isForSale: Boolean(data.isForSale),
+            status: data.status || 'AVAILABLE',
+            currentLocation: data.currentLocation || 'Agence FCT Bonamoussadi',
+            color: data.color || 'Non spécifié',
+            photoUrls: Array.isArray(data.photoUrls) ? data.photoUrls : [],
+            description: data.description || '',
+            features: Array.isArray(data.features) ? data.features : [],
+            engineDisplacement: data.engineDisplacement,
+            horsepower: data.horsepower,
+            conditionGrade: data.conditionGrade,
+            licensePlate: data.licensePlate,
+          } as Vehicle;
+        });
+
+        // Filtrer les véhicules archivés ou inactifs si nécessaire
+        onUpdate(list);
       },
       (err) => {
-        console.warn('[FCT Website] Firestore snapshot fallback:', err.message);
-        onUpdate(INITIAL_VEHICLES);
+        console.warn('[FCT Website] Écoute Firestore temps réel :', err.message);
+        // Ne jamais injecter de fausses données en cas d'erreur
+        onUpdate([]);
       }
     );
     return unsubscribe;
   } catch (err) {
-    console.warn('[FCT Website] Utilisation du catalogue local FCT :', err);
-    onUpdate(INITIAL_VEHICLES);
+    console.error('[FCT Website] Erreur initialisation abonnement Firestore :', err);
+    onUpdate([]);
     return () => {};
   }
 }
 
 /**
- * Envoi d'une demande de réservation vers Firestore (web_bookings)
+ * Envoi d'une réservation vers Firestore en temps réel.
+ * Alimente à la fois `reservations` (pour notification immédiate de l'ERP FCT sans F5)
+ * et `web_bookings` (pour le suivi du site public).
+ * Aucune écriture dans LocalStorage ! Tout passe par Firebase.
  */
 export async function submitBooking(booking: BookingRequest): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
-    const docRef = await addDoc(collection(firestore, 'web_bookings'), {
+    const bookingDocId = `res_web_${Date.now()}`;
+    const reservationNumber = `RES-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    // 1. Écriture pour le module Réservations de l'ERP
+    await setDoc(doc(firestore, 'reservations', bookingDocId), {
+      id: bookingDocId,
+      reservationNumber,
+      customerId: 'cust_web_direct',
+      customerName: booking.clientName,
+      customerPhone: booking.clientPhone,
+      customerEmail: booking.clientEmail || '',
+      vehicleId: booking.vehicleId,
+      vehicleName: booking.vehicleName,
+      startDate: booking.startDate,
+      endDate: booking.endDate,
+      durationDays: booking.totalDays,
+      dailyRate: booking.dailyRate,
+      driverOptionIncluded: booking.withDriver,
+      destination: booking.destination,
+      totalAmountEstimated: booking.totalAmount,
+      depositAmount: booking.depositAmount,
+      advancePayment: 0,
+      status: 'PENDING',
+      notes: booking.notes ? `[Site Web] ${booking.notes}` : '[Site Web] Réservation en ligne',
+      createdAt: new Date().toISOString(),
+      source: 'WEBSITE',
+    });
+
+    // 2. Écriture pour le suivi web
+    await setDoc(doc(firestore, 'web_bookings', bookingDocId), {
       ...booking,
+      reservationNumber,
       createdAt: serverTimestamp(),
       status: 'PENDING',
       source: 'WEBSITE',
     });
-    return { success: true, id: docRef.id };
-  } catch (err) {
-    console.warn('[FCT Website] Booking fallback storage:', err);
-    // Sauvegarde locale de secours pour ne pas perdre la demande client
-    const existing = JSON.parse(localStorage.getItem('fct_local_bookings') || '[]');
-    existing.push({ ...booking, id: 'local_' + Date.now(), createdAt: new Date().toISOString() });
-    localStorage.setItem('fct_local_bookings', JSON.stringify(existing));
-    return { success: true, id: 'fct_local_' + Date.now() };
+
+    return { success: true, id: bookingDocId };
+  } catch (err: any) {
+    console.error('[FCT Website] Erreur écriture réservation Firestore :', err);
+    return { success: false, error: err?.message || 'Erreur lors de la réservation en ligne.' };
   }
 }
 
 /**
- * Envoi d'une demande d'achat / devis proforma vers Firestore (web_leads)
+ * Envoi d'une demande d'achat / devis proforma vers Firestore en temps réel.
+ * Alimente `leads` (ERP CRM) et `web_leads`.
+ * Zéro LocalStorage.
  */
 export async function submitPurchaseLead(lead: PurchaseRequest): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
-    const docRef = await addDoc(collection(firestore, 'web_leads'), {
+    const leadDocId = `lead_web_${Date.now()}`;
+
+    // 1. Écriture dans le CRM de l'ERP
+    await setDoc(doc(firestore, 'leads', leadDocId), {
+      id: leadDocId,
+      fullName: lead.clientName,
+      phone: lead.clientPhone,
+      email: lead.clientEmail || '',
+      vehicleInterest: lead.vehicleName,
+      vehicleId: lead.vehicleId,
+      financingNeeded: lead.financingNeeded,
+      status: 'NEW',
+      notes: lead.notes ? `[Site Web Devis] ${lead.notes}` : '[Site Web Devis] Demande de facture proforma',
+      createdAt: new Date().toISOString(),
+      source: 'WEBSITE_SALES',
+    });
+
+    // 2. Écriture dans web_leads
+    await setDoc(doc(firestore, 'web_leads', leadDocId), {
       ...lead,
       createdAt: serverTimestamp(),
       status: 'NEW',
       source: 'WEBSITE',
     });
-    return { success: true, id: docRef.id };
-  } catch (err) {
-    console.warn('[FCT Website] Lead fallback storage:', err);
-    const existing = JSON.parse(localStorage.getItem('fct_local_leads') || '[]');
-    existing.push({ ...lead, id: 'local_' + Date.now(), createdAt: new Date().toISOString() });
-    localStorage.setItem('fct_local_leads', JSON.stringify(existing));
-    return { success: true, id: 'fct_lead_' + Date.now() };
+
+    return { success: true, id: leadDocId };
+  } catch (err: any) {
+    console.error('[FCT Website] Erreur écriture devis Firestore :', err);
+    return { success: false, error: err?.message || 'Erreur lors de la demande de devis.' };
   }
 }

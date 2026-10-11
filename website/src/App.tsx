@@ -15,19 +15,20 @@ import { subscribePublicVehicles } from './services/firebase.ts';
 import { CheckCircle2 } from 'lucide-react';
 
 export default function App() {
-  const [vehicles, setVehicles] = useState<Vehicle[]>(INITIAL_VEHICLES);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [route, setRoute] = useState<RouteState>({ page: 'home' });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Synchronisation base de données Firestore en direct
+  // Synchronisation base de données Firestore en direct (Zéro fausse donnée)
   useEffect(() => {
     const unsubscribe = subscribePublicVehicles((data) => {
-      if (data && data.length > 0) {
-        setVehicles(data);
-      }
+      setVehicles(data || []);
+      setIsLoading(false);
     });
     return () => unsubscribe();
   }, []);
+
 
   // Gestion du routage par hash URL pour l'historique du navigateur
   useEffect(() => {
@@ -78,8 +79,8 @@ export default function App() {
 
   // Trouver le véhicule sélectionné pour le Showroom dédié
   const selectedVehicle = route.vehicleId
-    ? vehicles.find((v) => v.id === route.vehicleId) || vehicles[0]
-    : vehicles[0];
+    ? vehicles.find((v) => v.id === route.vehicleId) || vehicles[0] || null
+    : vehicles[0] || null;
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-page)' }}>
@@ -113,13 +114,28 @@ export default function App() {
         )}
 
         {route.page === 'showroom' && (
-          <VehicleShowroomPage
-            vehicle={selectedVehicle}
-            onBack={() => navigate('location')}
-            onNavigateToHealth={(plate) => navigate('carnet-sante', undefined, plate)}
-            onToast={(msg) => showToast(msg)}
-          />
+          selectedVehicle ? (
+            <VehicleShowroomPage
+              vehicle={selectedVehicle}
+              onBack={() => navigate('location')}
+              onNavigateToHealth={(plate) => navigate('carnet-sante', undefined, plate)}
+              onToast={(msg) => showToast(msg)}
+            />
+          ) : (
+            <div style={{ padding: '80px 20px', textAlign: 'center' }}>
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--fct-blue-dark)' }}>
+                Aucun véhicule sélectionné ou disponible
+              </h3>
+              <p style={{ color: 'var(--text-sub)', marginTop: 8 }}>
+                Le catalogue en ligne est synchronisé en direct avec l'agence.
+              </p>
+              <button onClick={() => navigate('location')} className="btn-primary" style={{ marginTop: 20 }}>
+                Retour au catalogue
+              </button>
+            </div>
+          )
         )}
+
 
         {route.page === 'carnet-sante' && (
           <HealthPassportPage

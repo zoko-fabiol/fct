@@ -806,8 +806,20 @@ img {
   gap: 12px;
 }
 
-/* Responsive */
+/* Responsive & Mobile First Enhancements */
+.fct-burger {
+  display: none !important;
+}
+
 @media (max-width: 1024px) {
+  .fct-nav-links {
+    display: none;
+  }
+  .fct-burger {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+  }
   .fct-hero-grid {
     grid-template-columns: 1fr;
     gap: 36px;
@@ -824,14 +836,37 @@ img {
 }
 
 @media (max-width: 768px) {
-  .fct-nav-links {
+  .fct-nav-actions a.btn-emerald span,
+  .fct-nav-actions button.btn-primary span {
     display: none;
+  }
+  .fct-nav-actions a.btn-emerald,
+  .fct-nav-actions button.btn-primary {
+    padding: 8px 10px !important;
+  }
+  .fct-brand-info span {
+    display: none;
+  }
+  .fct-brand-info h1 {
+    font-size: 15px;
   }
   .fct-stats-bar-light {
     grid-template-columns: 1fr 1fr;
+    gap: 16px;
   }
   .fct-hero-text h1 {
-    font-size: 32px;
+    font-size: 28px;
+    line-height: 1.25;
+  }
+  .fct-hero-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+  .fct-hero-actions a,
+  .fct-hero-actions button {
+    width: 100%;
+    justify-content: center;
   }
   .fct-specs-grid-full {
     grid-template-columns: 1fr;
@@ -842,4 +877,16 @@ img {
   .fct-footer-grid {
     grid-template-columns: 1fr;
   }
+  .fct-catalog-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .fct-search-box {
+    width: 100%;
+  }
+  .fct-search-input {
+    width: 100%;
+  }
 }
+

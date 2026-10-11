@@ -11,6 +11,7 @@ import { Vehicle, VehicleCategory, VehicleStatus, UserRole } from '../../package
 import { formatXAF, hasPermission } from '../../packages/business-rules/index.ts';
 import { VehicleSchema } from '../../packages/validation/index.ts';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal.tsx';
+import { CloudinaryUploadDropzone } from '../components/ui/CloudinaryUploadDropzone.tsx';
 import { summarizeText } from '../services/textUtils.ts';
 import {
   Car,
@@ -175,7 +176,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
     status: 'AVAILABLE' as VehicleStatus,
     currentLocation: 'Agence FCT Bonamoussadi',
     color: 'Noir Métallisé',
-    photoUrls: [],
+    photoUrls: [] as string[],
     nextTechnicalInspectionDate: '2027-01-01',
     insuranceExpiryDate: '2027-01-01',
   });
@@ -321,12 +322,23 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
             className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg hover:border-emerald-500/50 transition cursor-pointer flex flex-col justify-between group"
           >
             {/* Vehicle Image & Badges */}
-            <div className="relative h-44 bg-slate-100 overflow-hidden">
-              <img
-                src={vehicle.photoUrls[0] || 'https://placehold.co/600x400/png?text=Photo+Vehicule'}
-                alt={`${vehicle.brand} ${vehicle.model}`}
-                className="w-full h-full object-cover"
-              />
+            <div className="relative h-44 bg-slate-900 overflow-hidden flex items-center justify-center">
+              {vehicle.photoUrls && vehicle.photoUrls[0] ? (
+                <img
+                  src={vehicle.photoUrls[0]}
+                  alt={`${vehicle.brand} ${vehicle.model}`}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-400 gap-2 p-4 text-center select-none">
+                  <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                    <Car className="w-6 h-6 text-slate-300" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-200">{vehicle.brand} {vehicle.model}</span>
+                  <span className="text-[10px] text-slate-400 font-medium">FCT Automobile Douala</span>
+                </div>
+              )}
               <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
                 <span className="px-2 py-0.5 rounded bg-blue-900/90 text-white font-bold text-[10px] tracking-wide uppercase">
                   {vehicle.category}
@@ -613,6 +625,40 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                 </div>
               </div>
 
+              {/* Photo Upload & Gallery */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                  <span>Photos du Véhicule (Cloudinary)</span>
+                  <span className="text-[10px] text-slate-500 font-normal">
+                    {newVehicle.photoUrls.length} photo(s)
+                  </span>
+                </div>
+                {newVehicle.photoUrls.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {newVehicle.photoUrls.map((url, idx) => (
+                      <div key={idx} className="relative w-16 h-12 rounded-lg overflow-hidden border border-slate-300 shrink-0 group">
+                        <img src={url} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setNewVehicle({ ...newVehicle, photoUrls: newVehicle.photoUrls.filter((_, i) => i !== idx) })}
+                          className="absolute inset-0 bg-rose-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <CloudinaryUploadDropzone
+                  folder="fct_automobile/vehicles"
+                  label="Ajouter une photo (Cloudinary)"
+                  accept="image/*"
+                  onUploadSuccess={(url) => {
+                    setNewVehicle((prev) => ({ ...prev, photoUrls: [...prev.photoUrls, url] }));
+                  }}
+                />
+              </div>
+
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                 <button
                   type="button"
@@ -807,6 +853,46 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                     className="w-full p-2 rounded border border-slate-300"
                   />
                 </div>
+              </div>
+
+              {/* Photo Upload & Gallery for Edit */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                  <span>Galerie Photos du Véhicule (Cloudinary)</span>
+                  <span className="text-[10px] text-slate-500 font-normal">
+                    {(editingVehicle.photoUrls || []).length} photo(s)
+                  </span>
+                </div>
+                {(editingVehicle.photoUrls || []).length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {(editingVehicle.photoUrls || []).map((url, idx) => (
+                      <div key={idx} className="relative w-16 h-12 rounded-lg overflow-hidden border border-slate-300 shrink-0 group">
+                        <img src={url} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setEditingVehicle({
+                            ...editingVehicle,
+                            photoUrls: (editingVehicle.photoUrls || []).filter((_, i) => i !== idx)
+                          })}
+                          className="absolute inset-0 bg-rose-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <CloudinaryUploadDropzone
+                  folder="fct_automobile/vehicles"
+                  label="Ajouter une photo (Cloudinary)"
+                  accept="image/*"
+                  onUploadSuccess={(url) => {
+                    setEditingVehicle((prev) => prev ? {
+                      ...prev,
+                      photoUrls: [...(prev.photoUrls || []), url]
+                    } : prev);
+                  }}
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">

@@ -36,7 +36,7 @@ export const INITIAL_VEHICLES: Vehicle[] = [
     status: 'AVAILABLE',
     currentLocation: 'Agence FCT Bonamoussadi',
     color: 'Blanc Nacré',
-    photoUrls: [],
+    photoUrls: ['https://res.cloudinary.com/c58pcgcp/image/upload/v1791746448/fct_automobile/vehicles/toyota_prado_txl.jpg'],
     description: 'Le SUV tout-terrain de prestige par excellence à Douala. 7 places spacieuses en cuir raffiné, climatisation tri-zone tropicalisée, transmission 4x4 permanente et confort absolu pour vos voyages (Douala, Yaoundé, Kribi, Ouest).',
     features: [
       'Transmission intégrale 4x4 permanente avec boîte courte/longue',
@@ -68,7 +68,7 @@ export const INITIAL_VEHICLES: Vehicle[] = [
     status: 'AVAILABLE',
     currentLocation: 'Agence FCT Bonamoussadi',
     color: 'Gris Métallisé',
-    photoUrls: [],
+    photoUrls: ['https://res.cloudinary.com/c58pcgcp/image/upload/v1791746477/fct_automobile/vehicles/toyota_hilux_revo.jpg'],
     description: 'Le titan incontournable pour les missions de terrain, les entreprises, les chantiers et les routes exigeantes au Cameroun. Benne haute résistance, suspension tout-terrain renforcée et blocage de différentiel.',
     features: [
       'Transmission 4x4 enclenchable avec blocage différentiel',
@@ -100,7 +100,7 @@ export const INITIAL_VEHICLES: Vehicle[] = [
     status: 'AVAILABLE',
     currentLocation: 'Showroom VIP Bonamoussadi',
     color: 'Noir Obsidienne',
-    photoUrls: [],
+    photoUrls: ['https://res.cloudinary.com/c58pcgcp/image/upload/v1791746500/fct_automobile/vehicles/mitsubishi_pajero_sport.jpg'],
     description: 'Le summum du raffinement VIP chez FCT Douala. Motorisation 6 cylindres Turbo EQ Boost, suspension pneumatique AIRMATIC ultra-confort, toit panoramique ouvrant et système audio surround Burmester.',
     features: [
       'Moteur 6 cylindres en ligne Turbo 367 ch + EQ Boost',
@@ -132,7 +132,7 @@ export const INITIAL_VEHICLES: Vehicle[] = [
     status: 'AVAILABLE',
     currentLocation: 'Agence FCT Bonamoussadi',
     color: 'Noir Diamant',
-    photoUrls: [],
+    photoUrls: ['https://res.cloudinary.com/c58pcgcp/image/upload/v1791746500/fct_automobile/vehicles/mitsubishi_pajero_sport.jpg'],
     description: 'L’équilibre parfait entre franchissement 4x4 redoutable (système Super Select 4WD-II) et grand confort familial 7 places. Boîte automatique 8 vitesses avec palettes au volant et toit ouvrant.',
     features: [
       'Système Super Select 4WD-II avec 4 modes tout-terrain',
@@ -164,7 +164,7 @@ export const INITIAL_VEHICLES: Vehicle[] = [
     status: 'AVAILABLE',
     currentLocation: 'Agence FCT Bonamoussadi',
     color: 'Bleu Céleste',
-    photoUrls: [],
+    photoUrls: ['https://res.cloudinary.com/c58pcgcp/image/upload/v1791746448/fct_automobile/vehicles/toyota_prado_txl.jpg'],
     description: 'Le SUV urbain moderne par excellence pour vos déplacements à Douala. Motorisation hybride auto-rechargeable très économique en carburant dans les embouteillages, boîte e-CVT souple et aides à la conduite.',
     features: [
       'Motorisation hybride auto-rechargeable ultra-économique',
