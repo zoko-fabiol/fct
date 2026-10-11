@@ -826,6 +826,13 @@ img {
   }
   .fct-catalog-layout {
     grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .fct-filters-sidebar {
+    position: static !important;
+    top: auto !important;
+    width: 100%;
+    margin-bottom: 0;
   }
   .fct-showroom-grid {
     grid-template-columns: 1fr;
@@ -887,6 +894,53 @@ img {
   }
   .fct-search-input {
     width: 100%;
+  }
+
+  /* Filtres Mobiles en Puces Compactes et Zéro Chevauchement */
+  .fct-filters-sidebar {
+    position: static !important;
+    top: auto !important;
+    padding: 16px;
+    gap: 14px;
+    border-radius: var(--radius-md);
+  }
+  .fct-filter-group h4 {
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .fct-filter-options {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .fct-filter-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 9999px;
+    background: #ffffff;
+    justify-content: center;
+    gap: 6px;
+  }
+  .fct-filter-btn.active {
+    background: var(--fct-blue-primary);
+    color: #ffffff;
+    border-color: var(--fct-blue-primary);
+  }
+  .fct-vehicles-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .fct-vehicle-card-light {
+    border-radius: var(--radius-md);
+  }
+  .fct-card-image-wrap {
+    height: 195px;
+  }
+  .fct-card-content {
+    padding: 16px;
+    gap: 12px;
   }
 }
 

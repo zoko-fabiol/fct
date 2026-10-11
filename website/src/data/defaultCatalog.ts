@@ -100,7 +100,7 @@ export const INITIAL_VEHICLES: Vehicle[] = [
     status: 'AVAILABLE',
     currentLocation: 'Showroom VIP Bonamoussadi',
     color: 'Noir Obsidienne',
-    photoUrls: ['https://res.cloudinary.com/c58pcgcp/image/upload/v1791746500/fct_automobile/vehicles/mitsubishi_pajero_sport.jpg'],
+    photoUrls: ['https://res.cloudinary.com/c58pcgcp/image/upload/v1791762151/fct_automobile/vehicles/mercedes_gle_450.jpg'],
     description: 'Le summum du raffinement VIP chez FCT Douala. Motorisation 6 cylindres Turbo EQ Boost, suspension pneumatique AIRMATIC ultra-confort, toit panoramique ouvrant et système audio surround Burmester.',
     features: [
       'Moteur 6 cylindres en ligne Turbo 367 ch + EQ Boost',
@@ -164,7 +164,7 @@ export const INITIAL_VEHICLES: Vehicle[] = [
     status: 'AVAILABLE',
     currentLocation: 'Agence FCT Bonamoussadi',
     color: 'Bleu Céleste',
-    photoUrls: ['https://res.cloudinary.com/c58pcgcp/image/upload/v1791746448/fct_automobile/vehicles/toyota_prado_txl.jpg'],
+    photoUrls: ['https://res.cloudinary.com/c58pcgcp/image/upload/v1791762158/fct_automobile/vehicles/toyota_corolla_cross.jpg'],
     description: 'Le SUV urbain moderne par excellence pour vos déplacements à Douala. Motorisation hybride auto-rechargeable très économique en carburant dans les embouteillages, boîte e-CVT souple et aides à la conduite.',
     features: [
       'Motorisation hybride auto-rechargeable ultra-économique',
