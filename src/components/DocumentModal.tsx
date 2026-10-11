@@ -139,7 +139,7 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({ data, onClose }) =
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden text-slate-800 my-4 flex flex-col max-h-[95vh]">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden text-slate-800 my-auto flex flex-col max-h-[calc(100dvh-2rem)]">
         {/* BARRE D'ACTIONS SUPÉRIEURE (NON IMPRIMÉE) */}
         <div className="no-print bg-gradient-to-r from-[#0a1e36] to-[#0f2a4a] text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 shrink-0">
           <div className="flex items-center gap-2.5 font-bold text-xs sm:text-sm">
@@ -268,7 +268,7 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({ data, onClose }) =
             </div>
 
             {/* BLOC CLIENT ET CONTEXTE */}
-            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200/90 grid grid-cols-2 gap-4 text-xs">
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200/90 grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-4 text-xs">
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                   Client / Destinataire
@@ -295,8 +295,8 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({ data, onClose }) =
             </div>
 
             {/* TABLEAU DES LIGNES (AVEC EN-TÊTE RÉPÉTÉ SUR SAUT DE PAGE) */}
-            <div className="overflow-hidden border border-slate-200 rounded-xl">
-              <table className="w-full text-xs text-left border-collapse">
+            <div className="overflow-x-auto border border-slate-200 rounded-xl">
+              <table className="w-full min-w-[480px] print:min-w-full text-xs text-left border-collapse">
                 <thead className="bg-[#0f2a4a] text-white">
                   <tr>
                     <th className="py-2.5 px-3.5 font-bold">Désignation</th>
@@ -382,7 +382,7 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({ data, onClose }) =
 
             {/* BAS DU DOCUMENT : SIGNATURES, CACHET ET QR CODE DE SÉCURITÉ */}
             <div className="pt-4 border-t-2 border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-6">
-              <div className="grid grid-cols-2 gap-8 text-center text-xs flex-1 w-full">
+              <div className="grid grid-cols-2 print:grid-cols-2 gap-4 sm:gap-8 text-center text-xs flex-1 w-full">
                 <div>
                   <div className="font-bold text-slate-800 mb-10">
                     {data.signatureRole1 || 'Pour le Client (Bon pour accord)'}

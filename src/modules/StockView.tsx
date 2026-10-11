@@ -413,7 +413,7 @@ export const StockView: React.FC<StockViewProps> = ({
                   <PackageCheck className="w-4 h-4 text-emerald-600" />
                   <span>Gestion des Volumes &amp; Emplacement</span>
                 </h3>
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <div className="text-[10px] text-slate-400 font-bold uppercase">Quantité physique en stock</div>
                     <div className="font-black text-lg text-slate-900 mt-1">{selectedItemDetail.quantityInStock} {selectedItemDetail.unit}</div>
@@ -440,7 +440,7 @@ export const StockView: React.FC<StockViewProps> = ({
                   <DollarSign className="w-4 h-4 text-blue-900" />
                   <span>Valorisation Comptable &amp; Approvisionnement</span>
                 </h3>
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <div className="text-[10px] text-slate-400 font-bold uppercase">Prix d’achat unitaire HT</div>
                     <div className="font-black text-lg text-slate-900 mt-1">{formatXAF(selectedItemDetail.unitCostXAF)}</div>
@@ -451,7 +451,7 @@ export const StockView: React.FC<StockViewProps> = ({
                       {formatXAF(selectedItemDetail.quantityInStock * selectedItemDetail.unitCostXAF)}
                     </div>
                   </div>
-                  <div className="col-span-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <div className="sm:col-span-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                     <div className="text-[10px] text-slate-400 font-bold uppercase">Fournisseur partenaire</div>
                     <div className="font-bold text-sm text-slate-900 mt-1">{selectedItemDetail.supplier} (Douala)</div>
                   </div>
@@ -577,7 +577,8 @@ export const StockView: React.FC<StockViewProps> = ({
               </div>
             ) : (
               <div className="border border-slate-200 rounded-xl overflow-hidden">
-                <table className="w-full text-xs text-left">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left min-w-[600px]">
                   <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                     <tr>
                       <th className="py-3 px-4">Date &amp; Heure</th>
@@ -617,6 +618,7 @@ export const StockView: React.FC<StockViewProps> = ({
                   </tbody>
                 </table>
               </div>
+            </div>
             )}
           </div>
         )}
@@ -699,8 +701,8 @@ export const StockView: React.FC<StockViewProps> = ({
 
         {/* MODAL AJOUT DOCUMENT STOCK */}
         {isAddDocModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 text-slate-800 space-y-4">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-base font-bold text-slate-900">Rattacher un Document à la Pièce</h3>
                 <button
@@ -724,7 +726,7 @@ export const StockView: React.FC<StockViewProps> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-slate-600 font-bold mb-1">Catégorie</label>
                     <select
@@ -1163,8 +1165,8 @@ export const StockView: React.FC<StockViewProps> = ({
 
       {/* Adjust Stock Quantity Modal */}
       {isAdjustModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-slate-800 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <ArrowUpDown className="w-5 h-5 text-blue-900" />
               <span>Ajustement de Stock &amp; Mouvement</span>
@@ -1246,15 +1248,15 @@ export const StockView: React.FC<StockViewProps> = ({
 
       {/* Add New Item Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 text-slate-800 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <Plus className="w-5 h-5 text-emerald-600" />
               <span>Créer une Référence Pièce</span>
             </h3>
 
             <form onSubmit={handleCreateItem} className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 font-bold mb-1">Code Référence *</label>
                   <input
@@ -1296,7 +1298,7 @@ export const StockView: React.FC<StockViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-slate-700 font-bold mb-1">Stock Initial</label>
                   <input
@@ -1326,7 +1328,7 @@ export const StockView: React.FC<StockViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 font-bold mb-1">Coût Unitaire (XAF) *</label>
                   <input
@@ -1381,8 +1383,8 @@ export const StockView: React.FC<StockViewProps> = ({
 
       {/* Edit Item Modal */}
       {isEditModalOpen && editingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 text-slate-800 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <Pencil className="w-5 h-5 text-blue-900" />
               <span>Modifier la Pièce {editingItem.code}</span>
@@ -1400,7 +1402,7 @@ export const StockView: React.FC<StockViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 font-bold mb-1">Seuil Min. Alerte</label>
                   <input
@@ -1421,7 +1423,7 @@ export const StockView: React.FC<StockViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 font-bold mb-1">Emplacement</label>
                   <input

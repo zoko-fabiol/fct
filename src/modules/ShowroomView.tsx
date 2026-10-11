@@ -609,7 +609,7 @@ ${vehicle.isForSale ? `*Prix de Vente :* ${formatXAF(vehicle.salePrice)}` : ''}
             </div>
 
             {/* Quick Specs Quick-View Matrix */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-2.5">
                 <Fuel className="w-4 h-4 text-blue-600 shrink-0" />
                 <div>
@@ -750,8 +750,8 @@ ${vehicle.isForSale ? `*Prix de Vente :* ${formatXAF(vehicle.salePrice)}` : ''}
 
       {/* Modal: Ajouter des Photos Multi-Angles au Showroom */}
       {isAddPhotoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col p-6 text-slate-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[calc(100dvh-2rem)] my-auto flex flex-col p-4 sm:p-6 text-slate-900">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
               <div className="flex items-center gap-2.5">
@@ -829,21 +829,23 @@ ${vehicle.isForSale ? `*Prix de Vente :* ${formatXAF(vehicle.salePrice)}` : ''}
                     {pendingPhotos.map((item, pIndex) => (
                       <div
                         key={item.id}
-                        className="flex items-center gap-3 p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs hover:border-emerald-400 transition"
+                        className="flex flex-col sm:flex-row sm:items-center gap-3 p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs hover:border-emerald-400 transition"
                       >
-                        <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 font-bold text-[10px] flex items-center justify-center shrink-0">
-                          #{pIndex + 1}
-                        </span>
-                        <img
-                          src={item.url}
-                          alt={`Aperçu ${pIndex + 1}`}
-                          className="w-16 h-12 object-cover rounded-lg border border-slate-200 shrink-0 bg-slate-100"
-                        />
+                        <div className="flex items-center gap-3">
+                          <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 font-bold text-[10px] flex items-center justify-center shrink-0">
+                            #{pIndex + 1}
+                          </span>
+                          <img
+                            src={item.url}
+                            alt={`Aperçu ${pIndex + 1}`}
+                            className="w-16 h-12 object-cover rounded-lg border border-slate-200 shrink-0 bg-slate-100"
+                          />
+                        </div>
                         <div className="flex-1 min-w-0 space-y-1">
                           <label className="block text-[10px] font-bold text-slate-500 uppercase">
                             {lang === 'fr' ? 'Angle de vue individuel :' : 'Individual Camera Angle:'}
                           </label>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5">
                             <select
                               value={item.angle}
                               onChange={(e) => handleUpdatePendingAngle(item.id, e.target.value)}
@@ -863,7 +865,7 @@ ${vehicle.isForSale ? `*Prix de Vente :* ${formatXAF(vehicle.salePrice)}` : ''}
                               value={item.angle}
                               placeholder={lang === 'fr' ? 'Personnalisé...' : 'Custom...'}
                               onChange={(e) => handleUpdatePendingAngle(item.id, e.target.value)}
-                              className="w-32 p-1.5 rounded-lg border border-slate-200 text-[11px] text-slate-700 bg-white"
+                              className="w-full sm:w-32 p-1.5 rounded-lg border border-slate-200 text-[11px] text-slate-700 bg-white"
                               title={lang === 'fr' ? 'Personnaliser le libellé de l\'angle' : 'Customize angle label'}
                             />
                           </div>
@@ -923,8 +925,8 @@ ${vehicle.isForSale ? `*Prix de Vente :* ${formatXAF(vehicle.salePrice)}` : ''}
 
       {/* Modal: Confirmation de Suppression de Photo */}
       {photoToDeleteIndex !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-slate-900 space-y-4 animate-scaleUp">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-4 sm:p-6 text-slate-900 space-y-4 animate-scaleUp my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>

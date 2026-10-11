@@ -108,10 +108,10 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-fadeIn overflow-y-auto">
       <div
-        className={`relative w-full bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200 ${
-          isFullscreen ? 'h-full max-h-full' : 'max-w-5xl max-h-[92vh] h-[85vh]'
+        className={`relative w-full bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200 my-auto ${
+          isFullscreen ? 'h-full max-h-full' : 'max-w-5xl max-h-[calc(100dvh-1.5rem)] h-[88vh]'
         }`}
       >
         {/* BARRE SUPÉRIEURE - ACTIONS PRINCIPALES */}
@@ -391,7 +391,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-800">
                 <div>
                   <label className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1 mb-0.5">
                     <Calendar className="w-3 h-3 text-slate-400" /> Date d'ajout

@@ -283,7 +283,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
       {/* Reservations Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+          <table className="w-full min-w-[750px] text-xs text-left">
             <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
               <tr>
                 <th className="py-3 px-4">N° Réservation</th>
@@ -402,8 +402,8 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
 
       {/* Convert to Contract Modal */}
       {isConvertModalOpen && convertingRes && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-slate-800 space-y-4 my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <KeyRound className="w-5 h-5 text-blue-900" />
@@ -482,8 +482,8 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
 
       {/* New Reservation Modal */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 text-slate-800 space-y-4 my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-emerald-600" />
@@ -534,7 +534,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Date de début *</label>
                   <input
@@ -557,7 +557,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Acompte versé en espèces (XAF) *</label>
                   <input

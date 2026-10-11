@@ -624,7 +624,8 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 </div>
               ) : (
                 <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
-                  <table className="w-full text-left text-xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs min-w-[700px]">
                     <thead className="bg-[#0f2a4a] text-white uppercase text-[10px] tracking-wider">
                       <tr>
                         <th className="py-3 px-4">N° Contrat</th>
@@ -673,6 +674,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     </tbody>
                   </table>
                 </div>
+              </div>
               )}
             </div>
           )}
@@ -775,7 +777,8 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 </div>
               ) : (
                 <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
-                  <table className="w-full text-left text-xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs min-w-[700px]">
                     <thead className="bg-[#0f2a4a] text-white uppercase text-[10px] tracking-wider">
                       <tr>
                         <th className="py-3 px-4">N° Facture</th>
@@ -826,6 +829,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     </tbody>
                   </table>
                 </div>
+              </div>
               )}
             </div>
           )}
@@ -855,8 +859,8 @@ export const CrmView: React.FC<CrmViewProps> = ({
 
         {/* Modal d'ajout de document client */}
         {isAddDocModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-slate-800 space-y-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                   <Upload className="w-5 h-5 text-purple-600" />
@@ -981,7 +985,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-slate-700 font-bold mb-1">Téléphone *</label>
                     <input
@@ -1427,8 +1431,8 @@ export const CrmView: React.FC<CrmViewProps> = ({
 
       {/* Add New Customer Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 text-slate-800 space-y-4 my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Plus className="w-5 h-5 text-emerald-600" />
@@ -1501,7 +1505,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Téléphone *</label>
                   <input
@@ -1526,7 +1530,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">NIU Fiscal (Cameroun)</label>
                   <input
@@ -1583,8 +1587,8 @@ export const CrmView: React.FC<CrmViewProps> = ({
 
       {/* Add New Lead Modal */}
       {isNewLeadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-slate-800 space-y-4 my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-blue-900" />
@@ -1619,7 +1623,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Téléphone *</label>
                   <input
@@ -1643,7 +1647,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Catégorie souhaitée</label>
                   <select

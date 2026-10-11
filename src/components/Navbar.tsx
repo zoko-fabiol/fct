@@ -99,7 +99,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center flex-wrap gap-2.5 text-xs">
           {/* Caisse Status Badge */}
           <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${
+            className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full border text-[11px] sm:text-xs shrink-0 ${
               activeSession
                 ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
                 : 'bg-rose-950/80 border-rose-500/50 text-rose-200'
@@ -110,8 +110,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 activeSession ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
               }`}
             />
-            <span className="font-medium">
+            <span className="font-medium hidden sm:inline">
               {activeSession ? `${t.activeSession} (${activeSession.sessionNumber})` : t.noActiveSession}
+            </span>
+            <span className="font-medium sm:hidden">
+              {activeSession ? 'Caisse Ouverte' : 'Caisse Fermée'}
             </span>
           </div>
 

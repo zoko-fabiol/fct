@@ -287,8 +287,8 @@ export const DriversView: React.FC<DriversViewProps> = ({
   const renderSharedModals = () => (
     <>
       {isEditDriverModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 text-slate-800 space-y-4 animate-scaleUp">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto animate-scaleUp">
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-blue-900" />
@@ -364,7 +364,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-600 font-bold mb-1">Expiration Permis</label>
                   <input
@@ -385,7 +385,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-600 font-bold mb-1">Statut d'activité</label>
                   <select
@@ -948,7 +948,8 @@ export const DriversView: React.FC<DriversViewProps> = ({
               </div>
             ) : (
               <div className="border border-slate-200 rounded-xl overflow-hidden">
-                <table className="w-full text-xs text-left">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left min-w-[600px]">
                   <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                     <tr>
                       <th className="py-3 px-4">N° Contrat</th>
@@ -988,14 +989,15 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   </tbody>
                 </table>
               </div>
+            </div>
             )}
           </div>
         )}
 
         {/* MODAL AJOUT DOCUMENT CHAUFFEUR */}
         {isAddDocModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 text-slate-800 space-y-4">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-base font-bold text-slate-900">Rattacher un Document au Chauffeur</h3>
                 <button
@@ -1019,7 +1021,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-slate-600 font-bold mb-1">Type de Document</label>
                     <select
@@ -1089,8 +1091,8 @@ export const DriversView: React.FC<DriversViewProps> = ({
 
         {/* MODAL ASSIGNATION VÉHICULE */}
         {isAssignVehicleModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-slate-800 space-y-4">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-base font-bold text-slate-900">Affecter un Véhicule au Chauffeur</h3>
                 <button
@@ -1337,7 +1339,8 @@ export const DriversView: React.FC<DriversViewProps> = ({
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
-          <table className="w-full text-xs text-left">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left min-w-[700px]">
             <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
               <tr>
                 <th className="py-3 px-4">Chauffeur</th>
@@ -1393,13 +1396,14 @@ export const DriversView: React.FC<DriversViewProps> = ({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
       {/* Modals Formulaires */}
       {isNewDriverModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-slate-800 space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="text-base font-bold text-slate-900">Enregistrer un Chauffeur</h3>
               <button onClick={() => setIsNewDriverModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer">
@@ -1469,7 +1473,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-600 font-bold mb-1">Expiration Permis</label>
                   <input

@@ -168,10 +168,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onSelectModule(item.id);
                         onCloseMobile?.();
                       }}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition cursor-pointer ${
+                      className={`w-full flex items-center justify-between px-3 py-2.5 sm:py-2 min-h-[40px] sm:min-h-[36px] rounded-lg text-xs font-medium transition cursor-pointer ${
                         isActive
                           ? 'bg-blue-900/60 text-white font-semibold border-l-4 border-emerald-500 shadow-sm'
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white active:bg-slate-800'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">

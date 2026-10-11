@@ -1467,7 +1467,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   </div>
 
                   <div className="border border-slate-200 rounded-xl overflow-hidden">
-                    <table className="w-full text-xs text-left">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs text-left min-w-[650px]">
                       <thead className="bg-slate-100 uppercase text-[10px] text-slate-700">
                         <tr>
                           <th className="py-2.5 px-3">Module</th>
@@ -1510,6 +1511,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                         })}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1669,8 +1671,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
       {/* MODAL CRÉATION / INVITATION UTILISATEUR                   */}
       {/* ========================================================= */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full p-4 sm:p-6 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-emerald-600" />
@@ -1685,7 +1687,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
             </div>
 
             <form onSubmit={handleCreateUserSubmit} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="font-bold text-slate-700">Prénom *</label>
                   <input
@@ -1723,7 +1725,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 <p className="text-[10px] text-slate-400">Normalisé en minuscules, vérification anti-doublon stricte.</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="font-bold text-slate-700">Téléphone *</label>
                   <input
@@ -1747,7 +1749,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="font-bold text-slate-700">Rôle Principal *</label>
                   <select
@@ -1802,8 +1804,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
       {/* MODAL MODIFICATION UTILISATEUR                            */}
       {/* ========================================================= */}
       {isEditModalOpen && editingUser && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full p-4 sm:p-6 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-blue-600" />
@@ -1818,7 +1820,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
             </div>
 
             <form onSubmit={handleEditUserSubmit} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="font-bold text-slate-700">Prénom</label>
                   <input
@@ -1850,7 +1852,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="font-bold text-slate-700">Téléphone</label>
                   <input
@@ -1912,8 +1914,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
       {/* MODAL GESTION DES SURCHARGES (ALLOW / DENY)               */}
       {/* ========================================================= */}
       {overrideModalUser && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full p-6 space-y-4 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full p-4 sm:p-6 space-y-4 my-auto max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
               <div>
                 <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
@@ -2026,8 +2028,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
       {/* MODAL SUSPENSION / RÉACTIVATION STATUT                   */}
       {/* ========================================================= */}
       {statusTargetUser && statusTargetAction && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-4 sm:p-6 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
             <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-600" />
               <span>
@@ -2086,8 +2088,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
 
       {/* Modal Confirmation de sauvegarde avec aperçu d'impact */}
       {showSaveImpactModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-4 sm:p-6 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-600" />
               <span>Confirmation de la Matrice RBAC</span>

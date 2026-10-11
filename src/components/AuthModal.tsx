@@ -246,7 +246,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <span>Sélection Rapide des Profils RBAC (Recette &amp; Démonstration) :</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
             {state.users.map((u) => {
               const isCurrent = currentUser.id === u.id;
               return (

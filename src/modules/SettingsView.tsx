@@ -560,7 +560,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block text-slate-500 font-semibold mb-1">Ville</label>
                   <input
@@ -674,7 +674,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                     {formData.address} ({formData.landmark}), {formData.city}, {formData.country}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-700/50">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-700/50">
                   <div>
                     <span className="text-slate-400 block text-[11px]">RCCM :</span>
                     <span className="font-mono text-emerald-300 font-bold">{formData.commercialRegistry}</span>
@@ -718,7 +718,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             {/* Theme */}
             <div className="space-y-2">
               <label className="block text-slate-700 font-bold">Thème Visuel</label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { value: 'light', label: 'Clair', desc: 'Bureau standard' },
                   { value: 'dark', label: 'Sombre', desc: 'Contraste élevé' },
@@ -745,7 +745,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             {/* Language */}
             <div className="space-y-2">
               <label className="block text-slate-700 font-bold">Langue Principale de l’Application</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { code: 'fr', label: 'Français (Cameroun)', flag: '🇨🇲' },
                   { code: 'en', label: 'English (UK / US)', flag: '🇬🇧' },
@@ -772,7 +772,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             {/* Display Density */}
             <div className="space-y-2">
               <label className="block text-slate-700 font-bold">Densité d’Affichage des Tableaux</label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { value: 'compact', label: 'Compacte', desc: 'Max données' },
                   { value: 'comfortable', label: 'Confortable', desc: 'Équilibrée' },
@@ -799,7 +799,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             {/* Date & Time display */}
             <div className="space-y-3">
               <label className="block text-slate-700 font-bold">Format Date & Fuseau Horaire</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <span className="text-slate-400 block text-[11px] mb-1">Format de date</span>
                   <select
@@ -1701,7 +1701,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full min-w-[550px] text-left text-xs">
                   <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                     <tr>
                       <th className="py-2.5 px-3">Date & Heure</th>
@@ -1735,8 +1735,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
       {/* MODAL: RESET CONFIRMATION */}
       {isResetConfirmOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
               <AlertTriangle className="w-6 h-6" />
             </div>
@@ -1770,8 +1770,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
       {/* MODAL: IMPORT BACKUP JSON */}
       {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
                 <Upload className="w-4 h-4 text-emerald-600" />
