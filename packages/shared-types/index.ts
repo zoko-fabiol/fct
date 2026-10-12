@@ -61,6 +61,11 @@ export interface UserProfile {
   role: UserRole;
   status: UserAccountStatus;
   isActive: boolean;
+  agencyId?: string;
+  department?: string;
+  securityPin?: string; // Code PIN optionnel stocké dans Firestore
+  autoLockTimeoutMinutes?: number;
+  autoLockEnabled?: boolean;
   avatarUrl?: string;
   createdAt?: string;
   createdById?: string;

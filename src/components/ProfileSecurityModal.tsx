@@ -69,14 +69,15 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
       setEmail(currentUser.email || '');
       setPhone(currentUser.phone || '+237 699 45 88 12');
 
-      const savedPin = localStorage.getItem(`fct_user_pin_${currentUser.id}`) || '1234';
-      const savedTimeout = localStorage.getItem(`fct_lock_timeout_${currentUser.id}`);
-      const savedEnabled = localStorage.getItem(`fct_autolock_enabled_${currentUser.id}`);
+      // Le code PIN provient directement du profil Firestore du collaborateur (aucun PIN par défaut)
+      const firestorePin = currentUser.securityPin || '';
+      const firesetTimeout = currentUser.autoLockTimeoutMinutes || 5;
+      const firesetEnabled = currentUser.autoLockEnabled ?? Boolean(currentUser.securityPin);
 
-      setPin(savedPin);
-      setConfirmPin(savedPin);
-      if (savedTimeout) setLockTimeoutMinutes(Number(savedTimeout));
-      if (savedEnabled !== null) setAutoLockEnabled(savedEnabled === 'true');
+      setPin(firestorePin);
+      setConfirmPin(firestorePin);
+      setLockTimeoutMinutes(firesetTimeout);
+      setAutoLockEnabled(firesetEnabled);
     }
   }, [currentUser, isOpen]);
 
@@ -120,6 +121,33 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
 
   const handleSavePinSettings = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Le PIN est optionnel : si le champ est vide, on désactive le code PIN
+    if (!pin.trim()) {
+      try {
+        dbStore.updateUser(
+          currentUser.id,
+          {
+            securityPin: undefined,
+            autoLockEnabled: false,
+            autoLockTimeoutMinutes: lockTimeoutMinutes,
+          },
+          'Suppression du code PIN optionnel (Stocké sur Firestore)'
+        );
+        setPin('');
+        setConfirmPin('');
+        setAutoLockEnabled(false);
+        setAlert({
+          type: 'success',
+          message: 'Code PIN supprimé avec succès. Votre compte ne requiert aucun code PIN.',
+        });
+        setTimeout(() => setAlert(null), 3500);
+      } catch (err: any) {
+        setAlert({ type: 'error', message: err.message || 'Erreur lors de la suppression du PIN.' });
+      }
+      return;
+    }
+
     if (!/^\d{4}$/.test(pin)) {
       setAlert({ type: 'error', message: 'Le code PIN doit comporter exactement 4 chiffres décimaux.' });
       return;
@@ -129,15 +157,48 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
       return;
     }
 
-    localStorage.setItem(`fct_user_pin_${currentUser.id}`, pin);
-    localStorage.setItem(`fct_lock_timeout_${currentUser.id}`, lockTimeoutMinutes.toString());
-    localStorage.setItem(`fct_autolock_enabled_${currentUser.id}`, autoLockEnabled.toString());
+    try {
+      dbStore.updateUser(
+        currentUser.id,
+        {
+          securityPin: pin,
+          autoLockEnabled,
+          autoLockTimeoutMinutes: lockTimeoutMinutes,
+        },
+        'Mise à jour du code PIN de sécurité sur Firestore'
+      );
 
-    setAlert({
-      type: 'success',
-      message: `Code PIN et verrouillage automatique (${lockTimeoutMinutes} min) enregistrés avec succès.`,
-    });
-    setTimeout(() => setAlert(null), 3500);
+      setAlert({
+        type: 'success',
+        message: `Code PIN enregistré avec succès sur Firestore (Verrouillage auto: ${lockTimeoutMinutes} min).`,
+      });
+      setTimeout(() => setAlert(null), 3500);
+    } catch (err: any) {
+      setAlert({ type: 'error', message: err.message || 'Erreur lors de l’enregistrement du PIN.' });
+    }
+  };
+
+  const handleRemovePin = () => {
+    try {
+      dbStore.updateUser(
+        currentUser.id,
+        {
+          securityPin: undefined,
+          autoLockEnabled: false,
+        },
+        'Désactivation du code PIN sur Firestore'
+      );
+      setPin('');
+      setConfirmPin('');
+      setAutoLockEnabled(false);
+      setAlert({
+        type: 'success',
+        message: 'Code PIN désactivé. La plateforme ne vous demandera aucun code PIN.',
+      });
+      setTimeout(() => setAlert(null), 3500);
+    } catch (err: any) {
+      setAlert({ type: 'error', message: err.message || 'Erreur lors de la désactivation du PIN.' });
+    }
   };
 
   return (
@@ -366,26 +427,37 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
           {/* TAB 3: CODE PIN & INACTIVITÉ */}
           {activeTab === 'PIN' && (
             <form onSubmit={handleSavePinSettings} className="space-y-4 text-xs">
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-950 space-y-1">
-                <div className="font-bold flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>Protection contre l'inactivité en agence</span>
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-950 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Sécurité PIN Cloud (Firestore)</span>
+                  </div>
+                  {currentUser.securityPin ? (
+                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+                      PIN Actif sur Firestore
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">
+                      Aucun PIN (Optionnel)
+                    </span>
+                  )}
                 </div>
                 <p className="text-[11px] text-emerald-800 leading-relaxed">
-                  Lorsque votre écran reste inactif pendant la durée choisie, la plateforme se verrouille automatiquement. Vous pourrez la déverrouiller instantanément en tapant votre Code PIN à 4 chiffres.
+                  Le Code PIN est <strong>optionnel</strong> et stocké de manière sécurisée sur votre profil <strong>Firestore</strong>. Aucun PIN n'est imposé par défaut. Il vous permet de reverrouiller rapidement votre session sans retaper votre mot de passe complet.
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Code PIN personnel (4 chiffres)</label>
+                  <label className="block text-slate-700 font-bold mb-1">Code PIN (4 chiffres, optionnel)</label>
                   <input
                     type="password"
                     maxLength={4}
                     inputMode="numeric"
                     value={pin}
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    placeholder="1234"
+                    placeholder="••••"
                     className="w-full p-2.5 rounded-xl border border-slate-200 text-center font-mono font-bold tracking-widest text-base focus:outline-emerald-500"
                   />
                 </div>
@@ -397,7 +469,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
                     inputMode="numeric"
                     value={confirmPin}
                     onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    placeholder="1234"
+                    placeholder="••••"
                     className="w-full p-2.5 rounded-xl border border-slate-200 text-center font-mono font-bold tracking-widest text-base focus:outline-emerald-500"
                   />
                 </div>
@@ -440,17 +512,33 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
               </div>
 
               <div className="flex items-center justify-between pt-3 border-t">
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleSavePinSettings(new Event('submit') as any);
-                    onLockNow();
-                  }}
-                  className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-xs cursor-pointer text-xs"
-                >
-                  <Lock className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Verrouiller Maintenant</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (pin && pin.length === 4) {
+                        handleSavePinSettings(new Event('submit') as any);
+                      }
+                      onLockNow();
+                    }}
+                    className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-xs cursor-pointer text-xs"
+                    title="Verrouiller immédiatement la session"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Verrouiller</span>
+                  </button>
+
+                  {currentUser.securityPin && (
+                    <button
+                      type="button"
+                      onClick={handleRemovePin}
+                      className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs cursor-pointer border border-rose-200 transition"
+                      title="Supprimer le code PIN"
+                    >
+                      Supprimer le PIN
+                    </button>
+                  )}
+                </div>
 
                 <div className="flex gap-2">
                   <button
@@ -465,7 +553,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    <span>Enregistrer le PIN</span>
+                    <span>{pin ? 'Enregistrer le PIN' : 'Valider'}</span>
                   </button>
                 </div>
               </div>

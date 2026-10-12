@@ -72,14 +72,15 @@ export default function App() {
   const [isSessionLocked, setIsSessionLocked] = useState(false);
   const [isProfileSecurityOpen, setIsProfileSecurityOpen] = useState(false);
 
-  // Sécurité Inactivité Dynamique & Code PIN FCT
+  // Sécurité Inactivité Dynamique & Code PIN FCT (Préférences Firestore)
   useEffect(() => {
     if (!currentUser || isSessionLocked) return;
 
-    const isEnabled = localStorage.getItem(`fct_autolock_enabled_${currentUser.id}`) !== 'false';
+    // Verrouillage automatique : actif uniquement si expressément activé ou si un PIN Firestore existe
+    const isEnabled = currentUser.autoLockEnabled ?? Boolean(currentUser.securityPin);
     if (!isEnabled) return;
 
-    const savedMinutes = Number(localStorage.getItem(`fct_lock_timeout_${currentUser.id}`)) || 5;
+    const savedMinutes = currentUser.autoLockTimeoutMinutes || 5;
     const INACTIVITY_MS = savedMinutes * 60 * 1000;
 
     let timer = setTimeout(() => {

@@ -121,3 +121,41 @@ describe('FCT — Moteur d\'Exportation Excel (.xlsx)', () => {
     }).not.toThrow();
   });
 });
+
+describe('FCT — Sécurité Code PIN Cloud (Firestore) & Caractère Optionnel', () => {
+  it('par défaut, les utilisateurs n\'ont aucun code PIN obligatoire configuré', () => {
+    const users = dbStore.getUsers();
+    expect(users.length).toBeGreaterThan(0);
+    // Le premier utilisateur (Super Admin ou autre) ne doit pas avoir de code PIN hardcodé '1234'
+    const superAdmin = users[0];
+    expect(superAdmin.securityPin).toBeUndefined();
+  });
+
+  it('permet à un utilisateur de définir son code PIN de sécurité (stocké sur UserProfile)', () => {
+    const user = dbStore.getUsers()[0];
+    const updated = dbStore.setUserPin(user.id, '8492');
+
+    expect(updated.securityPin).toBe('8492');
+
+    const inStore = dbStore.getUsers().find((u) => u.id === user.id);
+    expect(inStore?.securityPin).toBe('8492');
+  });
+
+  it('permet de supprimer / désactiver le code PIN à tout moment (PIN optionnel)', () => {
+    const user = dbStore.getUsers()[0];
+    // On efface le PIN en passant undefined
+    const updated = dbStore.setUserPin(user.id, undefined);
+
+    expect(updated.securityPin).toBeUndefined();
+
+    const inStore = dbStore.getUsers().find((u) => u.id === user.id);
+    expect(inStore?.securityPin).toBeUndefined();
+  });
+
+  it('ignore les formats invalides et ne définit aucun PIN si non conforme (ex: 2 chiffres)', () => {
+    const user = dbStore.getUsers()[0];
+    const updated = dbStore.setUserPin(user.id, '12');
+
+    expect(updated.securityPin).toBeUndefined();
+  });
+});

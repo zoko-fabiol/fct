@@ -53,6 +53,8 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
     return () => clearInterval(interval);
   }, []);
 
+  const hasPinConfigured = Boolean(currentUser.securityPin && currentUser.securityPin.length === 4);
+
   const handleKeyPress = useCallback((digit: string) => {
     setErrorMsg(null);
     setEnteredPin((prev) => (prev.length < 4 ? prev + digit : prev));
@@ -64,9 +66,15 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
   }, []);
 
   const handleVerifyPin = useCallback(() => {
-    const storedPin = localStorage.getItem(`fct_user_pin_${currentUser.id}`) || '1234';
+    // Si aucun PIN n'est configuré sur Firestore, on déverrouille directement
+    if (!currentUser.securityPin) {
+      setEnteredPin('');
+      setErrorMsg(null);
+      onUnlock();
+      return;
+    }
 
-    if (enteredPin === storedPin) {
+    if (enteredPin === currentUser.securityPin) {
       setEnteredPin('');
       setErrorMsg(null);
       onUnlock();
@@ -78,7 +86,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
         setEnteredPin('');
       }, 700);
     }
-  }, [enteredPin, currentUser.id, onUnlock]);
+  }, [enteredPin, currentUser.securityPin, onUnlock]);
 
   // Écoute des touches du clavier physique
   useEffect(() => {
@@ -156,72 +164,96 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
           <span>Session Verrouillée • {currentUser.role}</span>
         </div>
 
-        {/* Dots PIN */}
-        <div
-          className={`flex items-center gap-4 my-6 ${
-            isShaking ? 'animate-bounce text-rose-500' : ''
-          }`}
-        >
-          {[0, 1, 2, 3].map((index) => {
-            const isFilled = enteredPin.length > index;
-            return (
-              <div
-                key={index}
-                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
-                  isFilled
-                    ? 'bg-emerald-400 border-emerald-400 scale-125 shadow-[0_0_12px_rgba(52,211,153,0.8)]'
-                    : 'border-slate-500 bg-transparent'
-                }`}
-              />
-            );
-          })}
-        </div>
+        {hasPinConfigured ? (
+          <>
+            {/* Dots PIN */}
+            <div
+              className={`flex items-center gap-4 my-6 ${
+                isShaking ? 'animate-bounce text-rose-500' : ''
+              }`}
+            >
+              {[0, 1, 2, 3].map((index) => {
+                const isFilled = enteredPin.length > index;
+                return (
+                  <div
+                    key={index}
+                    className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+                      isFilled
+                        ? 'bg-emerald-400 border-emerald-400 scale-125 shadow-[0_0_12px_rgba(52,211,153,0.8)]'
+                        : 'border-slate-500 bg-transparent'
+                    }`}
+                  />
+                );
+              })}
+            </div>
 
-        {/* Message d'erreur */}
-        {errorMsg && (
-          <div className="text-xs text-rose-400 font-bold mb-3 flex items-center gap-1.5 animate-pulse">
-            <ShieldAlert className="w-4 h-4" />
-            <span>{errorMsg}</span>
+            {/* Message d'erreur */}
+            {errorMsg && (
+              <div className="text-xs text-rose-400 font-bold mb-3 flex items-center gap-1.5 animate-pulse">
+                <ShieldAlert className="w-4 h-4" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            {/* Pavé Numérique */}
+            <div className="grid grid-cols-3 gap-3 w-64 max-w-full">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
+                <button
+                  key={digit}
+                  type="button"
+                  onClick={() => handleKeyPress(digit)}
+                  className="h-14 rounded-2xl bg-white/5 hover:bg-white/15 active:bg-emerald-500/20 active:scale-95 border border-white/10 text-xl font-bold text-white transition flex items-center justify-center shadow-xs cursor-pointer"
+                >
+                  {digit}
+                </button>
+              ))}
+
+              {/* Touche Vide ou Déverrouiller */}
+              <div className="flex items-center justify-center">
+                <div className="text-[10px] text-slate-500 font-medium">PIN: 4 ch.</div>
+              </div>
+
+              {/* Touche 0 */}
+              <button
+                type="button"
+                onClick={() => handleKeyPress('0')}
+                className="h-14 rounded-2xl bg-white/5 hover:bg-white/15 active:bg-emerald-500/20 active:scale-95 border border-white/10 text-xl font-bold text-white transition flex items-center justify-center shadow-xs cursor-pointer"
+              >
+                0
+              </button>
+
+              {/* Touche Effacer */}
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="h-14 rounded-2xl bg-white/5 hover:bg-rose-500/20 active:scale-95 border border-white/10 text-slate-300 hover:text-white transition flex items-center justify-center cursor-pointer"
+                title="Effacer"
+              >
+                <Delete className="w-5 h-5" />
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="my-8 text-center space-y-4 max-w-xs">
+            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-2">
+              <div className="text-xs font-bold text-slate-200">
+                Aucun Code PIN Configuré (Optionnel)
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Votre compte n'a aucun code PIN obligatoire. Vous pouvez déverrouiller immédiatement votre session en un clic.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onUnlock}
+              className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-98 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 cursor-pointer transition"
+            >
+              <Unlock className="w-4 h-4" />
+              <span>Déverrouiller la Station</span>
+            </button>
           </div>
         )}
-
-        {/* Pavé Numérique */}
-        <div className="grid grid-cols-3 gap-3 w-64 max-w-full">
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
-            <button
-              key={digit}
-              type="button"
-              onClick={() => handleKeyPress(digit)}
-              className="h-14 rounded-2xl bg-white/5 hover:bg-white/15 active:bg-emerald-500/20 active:scale-95 border border-white/10 text-xl font-bold text-white transition flex items-center justify-center shadow-xs cursor-pointer"
-            >
-              {digit}
-            </button>
-          ))}
-
-          {/* Touche Vide ou Déverrouiller */}
-          <div className="flex items-center justify-center">
-            <div className="text-[10px] text-slate-500 font-medium">PIN: 4 ch.</div>
-          </div>
-
-          {/* Touche 0 */}
-          <button
-            type="button"
-            onClick={() => handleKeyPress('0')}
-            className="h-14 rounded-2xl bg-white/5 hover:bg-white/15 active:bg-emerald-500/20 active:scale-95 border border-white/10 text-xl font-bold text-white transition flex items-center justify-center shadow-xs cursor-pointer"
-          >
-            0
-          </button>
-
-          {/* Touche Effacer */}
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="h-14 rounded-2xl bg-white/5 hover:bg-rose-500/20 active:scale-95 border border-white/10 text-slate-300 hover:text-white transition flex items-center justify-center cursor-pointer"
-            title="Effacer"
-          >
-            <Delete className="w-5 h-5" />
-          </button>
-        </div>
       </div>
 
       {/* Footer : Déconnexion de secours */}

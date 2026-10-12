@@ -524,9 +524,22 @@ class DatabaseStore {
       reason
     );
 
+    if (this.currentUser && this.currentUser.id === userId) {
+      this.currentUser = this.state.users[idx];
+    }
+
     this.mirrorToFirestore('users', userId, this.state.users[idx]);
     this.notify();
     return this.state.users[idx];
+  }
+
+  public setUserPin(userId: string, pin?: string): UserProfile {
+    const sanitizedPin = pin && pin.trim().length === 4 ? pin.trim() : undefined;
+    return this.updateUser(
+      userId,
+      { securityPin: sanitizedPin },
+      sanitizedPin ? 'Configuration du code PIN de sécurité sur Firestore' : 'Suppression du code PIN de sécurité sur Firestore'
+    );
   }
 
   public upsertUser(user: UserProfile): void {
