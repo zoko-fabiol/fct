@@ -145,7 +145,10 @@ export default function App() {
         )}
 
         {route.page === 'espace-client' && (
-          <ClientPortalPage onToast={(msg) => showToast(msg)} />
+          <ClientPortalPage
+            onToast={(msg) => showToast(msg)}
+            onNavigate={(p) => navigate(p)}
+          />
         )}
 
         {route.page === 'agence' && <AgencyPage />}
