@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { formatXAF } from '../../../packages/business-rules/index.ts';
 import { Banknote, Coins, RotateCcw, Calculator } from 'lucide-react';
+import { Language, translations } from '../../services/i18n.ts';
 
 export interface DenominationBreakdown {
   b10000: number;
@@ -69,13 +70,16 @@ interface CashDenominationGridProps {
   onTotalChange?: (total: number, summary: string) => void;
   expectedBalanceXAF?: number;
   showDiscrepancy?: boolean;
+  lang?: Language;
 }
 
 export const CashDenominationGrid: React.FC<CashDenominationGridProps> = ({
   onTotalChange,
   expectedBalanceXAF,
   showDiscrepancy = false,
+  lang = 'fr',
 }) => {
+  const t = translations[lang];
   const [breakdown, setBreakdown] = useState<DenominationBreakdown>(INITIAL_BREAKDOWN);
 
   const total = calculateTotalBreakdown(breakdown);
@@ -106,16 +110,16 @@ export const CashDenominationGrid: React.FC<CashDenominationGridProps> = ({
       <div className="flex items-center justify-between pb-2 border-b border-slate-200">
         <div className="flex items-center gap-1.5 text-xs font-black text-slate-800">
           <Calculator className="w-4 h-4 text-blue-700" />
-          <span>Billetage de Caisse Physique (BEAC / CEMAC)</span>
+          <span>{t.cashPage.denominationTitle}</span>
         </div>
         <button
           type="button"
           onClick={handleReset}
           className="text-[11px] text-slate-500 hover:text-slate-700 font-bold flex items-center gap-1 cursor-pointer transition"
-          title="Remettre les compteurs à zéro"
+          title={t.cashPage.resetCounters}
         >
           <RotateCcw className="w-3 h-3" />
-          <span>Réinitialiser</span>
+          <span>{t.cashPage.resetCounters}</span>
         </button>
       </div>
 
@@ -123,6 +127,13 @@ export const CashDenominationGrid: React.FC<CashDenominationGridProps> = ({
         {DENOMINATIONS.map((d) => {
           const qty = breakdown[d.key] || 0;
           const subtotal = qty * d.value;
+          const label =
+            d.key === 'b500'
+              ? `500 FCFA (${t.cashPage.noteBillet})`
+              : d.key === 'c500'
+              ? `500 FCFA (${t.cashPage.coinPiece})`
+              : d.label;
+
           return (
             <div
               key={d.key}
@@ -134,7 +145,7 @@ export const CashDenominationGrid: React.FC<CashDenominationGridProps> = ({
                 ) : (
                   <Coins className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                 )}
-                <span className="font-semibold text-slate-700 text-[11px] whitespace-nowrap">{d.label}</span>
+                <span className="font-semibold text-slate-700 text-[11px] whitespace-nowrap">{label}</span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -158,7 +169,7 @@ export const CashDenominationGrid: React.FC<CashDenominationGridProps> = ({
       {/* Résumé du Billetage */}
       <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2">
         <div className="text-xs">
-          <span className="text-slate-500 font-medium">Total Billetage Compté : </span>
+          <span className="text-slate-500 font-medium">{t.cashPage.totalCounted} </span>
           <span className="font-black text-slate-900 text-sm ml-1">{formatXAF(total)}</span>
         </div>
 
@@ -166,15 +177,15 @@ export const CashDenominationGrid: React.FC<CashDenominationGridProps> = ({
           <div className="text-xs font-bold">
             {discrepancy === 0 ? (
               <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-                Solde Parfait (0 XAF)
+                {t.cashPage.perfectBalance}
               </span>
             ) : discrepancy > 0 ? (
               <span className="text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
-                Surplus / Excédent : +{formatXAF(discrepancy)}
+                {t.cashPage.surplus} +{formatXAF(discrepancy)}
               </span>
             ) : (
               <span className="text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200">
-                Déficit / Manquant : {formatXAF(discrepancy)}
+                {t.cashPage.shortage} {formatXAF(discrepancy)}
               </span>
             )}
           </div>

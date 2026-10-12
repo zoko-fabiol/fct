@@ -326,33 +326,33 @@ export const CashView: React.FC<CashViewProps> = ({
   const kpis = [
     {
       id: 'kpi-balance',
-      label: 'Solde Théorique Caisse',
+      label: t.cashPage.theoreticalBalance,
       value: formatXAF(currentExpectedBalance),
-      sublabel: activeSession ? `Session ${activeSession.sessionNumber} ouverte` : 'Aucune session active',
+      sublabel: activeSession ? `${t.cashPage.sessionCol} ${activeSession.sessionNumber}` : t.noActiveSession,
       icon: Wallet,
       colorVariant: 'emerald' as const,
     },
     {
       id: 'kpi-inflow',
-      label: 'Total Encaissements',
+      label: t.cashPage.totalInflows,
       value: formatXAF(currentInflow),
-      sublabel: 'Recettes espèces enregistrées',
+      sublabel: t.cashPage.inflowsSublabel,
       icon: ArrowDownLeft,
       colorVariant: 'blue' as const,
     },
     {
       id: 'kpi-outflow',
-      label: 'Total Décaissements',
+      label: t.cashPage.totalOutflows,
       value: formatXAF(currentOutflow),
-      sublabel: 'Dépenses & remboursements',
+      sublabel: t.cashPage.outflowsSublabel,
       icon: ArrowUpRight,
       colorVariant: 'amber' as const,
     },
     {
       id: 'kpi-status',
-      label: 'Statut de la Caisse',
-      value: activeSession ? 'SESSION OUVERTE' : 'SESSION CLÔTURÉE',
-      sublabel: activeSession ? `Caissier : ${activeSession.openedByName}` : 'Ouverture requise',
+      label: t.cashPage.cashStatus,
+      value: activeSession ? t.cashPage.sessionOpen : t.cashPage.sessionClosed,
+      sublabel: activeSession ? `${t.cashPage.cashierLabel} ${activeSession.openedByName}` : t.cashPage.openRequired,
       icon: activeSession ? Unlock : Lock,
       colorVariant: activeSession ? ('purple' as const) : ('slate' as const),
     },
@@ -422,13 +422,13 @@ export const CashView: React.FC<CashViewProps> = ({
     return (
       <>
         <EntityShowroomLayout
-          backLabel="Retour au journal de caisse"
+          backLabel={t.cashPage.backToJournal}
           onBack={() => setSelectedMovement(null)}
-          title={`Écriture de Caisse ${selectedMovement.receiptNumber}`}
+          title={`${lang === 'en' ? 'Cash Entry' : 'Écriture de Caisse'} ${selectedMovement.receiptNumber}`}
           subtitle={`${selectedMovement.receivedFromOrPaidTo} • ${t.cashCategory[selectedMovement.category]}`}
           referenceId={selectedMovement.receiptNumber}
           status={selectedMovement.isReversal ? 'CANCELLED' : selectedMovement.type === 'INFLOW' ? 'ACTIVE' : 'IN_PROGRESS'}
-          statusLabel={selectedMovement.isReversal ? 'Extourne' : selectedMovement.type === 'INFLOW' ? 'Encaissement (+)' : 'Décaissement (-)'}
+          statusLabel={selectedMovement.isReversal ? t.cashPage.reversalTag : selectedMovement.type === 'INFLOW' ? t.cashPage.inflowTag : t.cashPage.outflowTag}
           avatarIcon={Wallet}
           actions={
             <div className="flex items-center gap-2">
@@ -438,7 +438,7 @@ export const CashView: React.FC<CashViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>Rattacher Justificatif</span>
+                <span>{t.cashPage.attachDoc}</span>
               </button>
               <button
                 type="button"
@@ -446,38 +446,38 @@ export const CashView: React.FC<CashViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>Imprimer Reçu Caisse</span>
+                <span>{t.cashPage.printReceipt}</span>
               </button>
             </div>
           }
           kpis={[
             {
-              label: 'Montant de l\'Opération',
+              label: lang === 'en' ? 'Transaction Amount' : 'Montant de l\'Opération',
               value: formatXAF(selectedMovement.amountXAF),
-              sublabel: selectedMovement.type === 'INFLOW' ? 'Flux entrant (+)' : 'Flux sortant (-)',
+              sublabel: selectedMovement.type === 'INFLOW' ? (lang === 'en' ? 'Inflow (+)' : 'Flux entrant (+)') : (lang === 'en' ? 'Outflow (-)' : 'Flux sortant (-)'),
               highlight: true,
             },
             {
-              label: 'Tiers Payeur / Bénéficiaire',
+              label: t.cashPage.thirdPartyLabel.replace(' :', ''),
               value: selectedMovement.receivedFromOrPaidTo,
               sublabel: t.cashCategory[selectedMovement.category],
             },
             {
-              label: 'Caissier Référent',
-              value: selectedMovement.performedByName || 'Caisse Centrale FCT',
-              sublabel: 'Horodatage immuable OHADA',
+              label: t.cashPage.cashierLabelName.replace(' :', ''),
+              value: selectedMovement.performedByName || (lang === 'en' ? 'FCT Central Cash' : 'Caisse Centrale FCT'),
+              sublabel: lang === 'en' ? 'Immutable OHADA timestamp' : 'Horodatage immuable OHADA',
             },
             {
-              label: 'Date de l\'Écriture',
+              label: t.date,
               value: selectedMovement.createdAt.split('T')[0],
-              sublabel: selectedMovement.isReversal ? 'Écriture extournée' : 'Certifiée conforme',
+              sublabel: selectedMovement.isReversal ? t.cashPage.reversalTag : (lang === 'en' ? 'Certified conforming' : 'Certifiée conforme'),
             },
           ]}
           tabs={[
-            { id: 'DETAILS', label: 'Détail de l\'Écriture', icon: Wallet },
-            { id: 'DOCS', label: 'Justificatifs & Reçus Numérisés', icon: FileText, badge: cashDocs.length },
-            { id: 'RELATIONS', label: 'Dossiers & Opérations Liées', icon: KeyRound },
-            { id: 'AUDIT', label: 'Audit & Traçabilité Immuable', icon: ShieldCheck },
+            { id: 'DETAILS', label: t.cashPage.tabDetails, icon: Wallet },
+            { id: 'DOCS', label: t.cashPage.tabDocs, icon: FileText, badge: cashDocs.length },
+            { id: 'RELATIONS', label: t.cashPage.tabRelations, icon: KeyRound },
+            { id: 'AUDIT', label: t.cashPage.tabAudit, icon: ShieldCheck },
           ]}
           activeTab={movementDetailTab}
           onTabChange={(t) => setMovementDetailTab(t as any)}
@@ -489,26 +489,26 @@ export const CashView: React.FC<CashViewProps> = ({
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
                   <div className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
                     <Wallet className="w-4 h-4 text-emerald-600" />
-                    <span>Flux Financier &amp; Règlement</span>
+                    <span>{t.cashPage.financialFlow}</span>
                   </div>
                   <div className="space-y-2 text-xs text-slate-700">
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Sens du mouvement :</span>
+                      <span className="text-slate-500">{t.cashPage.flowDirection}</span>
                       <span className={`font-black ${selectedMovement.type === 'INFLOW' ? 'text-emerald-700' : 'text-rose-700'}`}>
-                        {selectedMovement.type === 'INFLOW' ? 'Encaissement (+)' : 'Décaissement (-)'}
+                        {selectedMovement.type === 'INFLOW' ? t.cashPage.inflowTag : t.cashPage.outflowTag}
                       </span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Catégorie comptable :</span>
+                      <span className="text-slate-500">{t.cashPage.accountingCategory}</span>
                       <span className="font-bold text-slate-900">{t.cashCategory[selectedMovement.category]}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Montant numéraire :</span>
+                      <span className="text-slate-500">{t.cashPage.cashAmount}</span>
                       <span className="font-black text-sm text-emerald-900">{formatXAF(selectedMovement.amountXAF)}</span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-slate-500">Mode de paiement :</span>
-                      <span className="font-bold text-slate-900">100% Espèces (XAF)</span>
+                      <span className="text-slate-500">{t.cashPage.paymentMethod}</span>
+                      <span className="font-bold text-slate-900">100% {lang === 'en' ? 'Cash (XAF)' : 'Espèces (XAF)'}</span>
                     </div>
                   </div>
                 </div>
@@ -516,19 +516,19 @@ export const CashView: React.FC<CashViewProps> = ({
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
                   <div className="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
                     <User className="w-4 h-4 text-blue-600" />
-                    <span>Informations Tiers &amp; Caissier</span>
+                    <span>{t.cashPage.thirdPartyInfo}</span>
                   </div>
                   <div className="space-y-2 text-xs text-slate-700">
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Tiers bénéficiaire / payeur :</span>
+                      <span className="text-slate-500">{t.cashPage.thirdPartyLabel}</span>
                       <span className="font-bold text-slate-900">{selectedMovement.receivedFromOrPaidTo}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Caissier responsable :</span>
+                      <span className="text-slate-500">{t.cashPage.cashierLabelName}</span>
                       <span className="font-semibold text-slate-900">{selectedMovement.performedByName}</span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-slate-500">Horodatage certifié :</span>
+                      <span className="text-slate-500">{t.cashPage.certifiedTimestamp}</span>
                       <span className="font-mono text-slate-600">{selectedMovement.createdAt}</span>
                     </div>
                   </div>
@@ -538,7 +538,7 @@ export const CashView: React.FC<CashViewProps> = ({
               <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-2">
                 <div className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                   <FileText className="w-4 h-4 text-slate-600" />
-                  <span>Motif &amp; Justification de l'Écriture</span>
+                  <span>{t.cashPage.reasonSection}</span>
                 </div>
                 <p className="text-xs text-slate-800 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-100">
                   {selectedMovement.reason}
@@ -552,8 +552,8 @@ export const CashView: React.FC<CashViewProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">Justificatifs &amp; Décharges de Caisse</h3>
-                  <p className="text-xs text-slate-500">Reçu papier émargé, bon de caisse numéroté, pièce d'identité du tiers ou décharge</p>
+                  <h3 className="text-sm font-black text-slate-900">{lang === 'en' ? 'Cash Receipts & Vouchers' : 'Justificatifs & Décharges de Caisse'}</h3>
+                  <p className="text-xs text-slate-500">{lang === 'en' ? 'Signed paper receipt, voucher, third-party ID, or discharge' : 'Reçu papier émargé, bon de caisse numéroté, pièce d\'identité du tiers ou décharge'}</p>
                 </div>
                 <button
                   type="button"
@@ -561,15 +561,15 @@ export const CashView: React.FC<CashViewProps> = ({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Rattacher un document</span>
+                  <span>{t.cashPage.attachDoc}</span>
                 </button>
               </div>
 
               {cashDocs.length === 0 ? (
                 <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-500 space-y-2">
                   <FileText className="w-8 h-8 text-slate-300 mx-auto" />
-                  <p className="font-bold text-slate-700">Aucun document numérique rattaché à ce reçu de caisse</p>
-                  <p className="text-xs text-slate-400">Cliquez sur « Rattacher un document » pour archiver le reçu signé ou le bon de caisse.</p>
+                  <p className="font-bold text-slate-700">{t.cashPage.noDigitalDocs}</p>
+                  <p className="text-xs text-slate-400">{t.cashPage.attachDocHint}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -810,10 +810,10 @@ export const CashView: React.FC<CashViewProps> = ({
         <div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <Wallet className="w-6 h-6 text-emerald-600" />
-            <span>Gestion de Caisse &amp; Écritures en Espèces (XAF)</span>
+            <span>{t.cashPage.title}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Journal immuable, encaissements certifiés, décaissements avec pièces justificatives et contre-passations à Douala
+            {t.cashPage.subtitle}
           </p>
         </div>
 
@@ -826,7 +826,7 @@ export const CashView: React.FC<CashViewProps> = ({
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Nouvelle Écriture de Caisse</span>
+                  <span>{t.cashPage.recordMovementBtn}</span>
                 </button>
               )}
               {hasEffectivePermission(currentUser, 'cash', 'approve') && (
@@ -838,7 +838,7 @@ export const CashView: React.FC<CashViewProps> = ({
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-700 hover:bg-rose-600 text-white text-xs font-bold shadow-xs transition cursor-pointer"
                 >
                   <Lock className="w-3.5 h-3.5" />
-                  <span>Clôturer Session</span>
+                  <span>{t.cashPage.closeCashBtn}</span>
                 </button>
               )}
             </>
@@ -849,7 +849,7 @@ export const CashView: React.FC<CashViewProps> = ({
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold shadow-xs transition cursor-pointer"
               >
                 <Unlock className="w-4 h-4" />
-                <span>Ouvrir une Session de Caisse</span>
+                <span>{t.cashPage.openCashBtn}</span>
               </button>
             )
           )}
@@ -882,24 +882,24 @@ export const CashView: React.FC<CashViewProps> = ({
       <EntitySearchFilters
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Rechercher par n° reçu (REC-...), tiers, motif..."
+        searchPlaceholder={t.cashPage.searchPlaceholder}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         tabs={[
-          { id: 'ALL', label: `Toutes les écritures (${state.cashMovements.length})` },
+          { id: 'ALL', label: `${t.cashPage.allTab} (${state.cashMovements.length})` },
           {
             id: 'INFLOW',
-            label: 'Encaissements (+)',
+            label: t.cashPage.inflowsTab,
             count: state.cashMovements.filter((m) => m.type === 'INFLOW' && !m.isReversal).length,
           },
           {
             id: 'OUTFLOW',
-            label: 'Décaissements (-)',
+            label: t.cashPage.outflowsTab,
             count: state.cashMovements.filter((m) => m.type === 'OUTFLOW' && !m.isReversal).length,
           },
           {
             id: 'REVERSALS',
-            label: 'Contre-passations',
+            label: t.cashPage.reversalsTab,
             count: state.cashMovements.filter((m) => m.isReversal).length,
           },
         ]}
@@ -910,8 +910,8 @@ export const CashView: React.FC<CashViewProps> = ({
       {/* Content: Cards or Table */}
       {filteredMovements.length === 0 ? (
         <EmptyState
-          title="Aucune écriture de caisse trouvée"
-          description="Aucune transaction en espèces ne correspond à vos critères."
+          title={t.cashPage.emptyMovementsTitle}
+          description={t.cashPage.emptyMovementsDesc}
           icon={Wallet}
         />
       ) : viewMode === 'cards' ? (
@@ -928,26 +928,26 @@ export const CashView: React.FC<CashViewProps> = ({
                 status={mov.isReversal ? 'CANCELLED' : isInflow ? 'ACTIVE' : 'IN_PROGRESS'}
                 statusLabel={
                   mov.isReversal
-                    ? 'Extourne'
+                    ? t.cashPage.reversalTag
                     : isInflow
-                    ? 'Encaissement'
-                    : 'Décaissement'
+                    ? t.cashPage.inflowTag
+                    : t.cashPage.outflowTag
                 }
                 onClick={() => setSelectedMovement(mov)}
                 metrics={[
                   {
-                    label: 'Montant en Espèces',
+                    label: t.cashPage.cashAmount,
                     value: `${isInflow ? '+' : '-'}${formatXAF(mov.amountXAF)}`,
                     icon: DollarSign,
                     highlight: true,
                   },
                   {
-                    label: 'Horodatage',
+                    label: t.date,
                     value: mov.createdAt,
                     icon: Calendar,
                   },
                   {
-                    label: 'Caissier Référent',
+                    label: t.cashPage.cashierLabelName.replace(' :', ''),
                     value: mov.performedByName,
                     icon: User,
                   },
@@ -961,7 +961,7 @@ export const CashView: React.FC<CashViewProps> = ({
                         handlePrintReceipt(mov);
                       }}
                       className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
-                      title="Imprimer le reçu"
+                      title={t.cashPage.printReceipt}
                     >
                       <Printer className="w-3.5 h-3.5" />
                     </button>
@@ -974,7 +974,7 @@ export const CashView: React.FC<CashViewProps> = ({
                           setReversalReason('');
                         }}
                         className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition"
-                        title="Contre-passer"
+                        title={t.cashPage.reversalTag}
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
                       </button>
@@ -991,14 +991,14 @@ export const CashView: React.FC<CashViewProps> = ({
             <table className="w-full text-xs text-left">
               <thead className="bg-[#0f2a4a] text-white uppercase text-[10px] tracking-wider">
                 <tr>
-                  <th className="py-3 px-4">N° Reçu</th>
-                  <th className="py-3 px-4">Date &amp; Heure</th>
-                  <th className="py-3 px-4">Tiers (Payeur / Bénéficiaire)</th>
-                  <th className="py-3 px-4">Catégorie</th>
-                  <th className="py-3 px-4">Motif / Justification</th>
-                  <th className="py-3 px-4 text-right">Montant (XAF)</th>
-                  <th className="py-3 px-4">Caissier</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-3 px-4">{t.cashPage.receiptCol}</th>
+                  <th className="py-3 px-4">{t.cashPage.dateCol}</th>
+                  <th className="py-3 px-4">{t.cashPage.tierCol}</th>
+                  <th className="py-3 px-4">{t.cashPage.categoryCol}</th>
+                  <th className="py-3 px-4">{lang === 'en' ? 'Reason / Justification' : 'Motif / Justification'}</th>
+                  <th className="py-3 px-4 text-right">{t.cashPage.amountCol}</th>
+                  <th className="py-3 px-4">{t.cashPage.cashierLabelName.replace(' :', '')}</th>
+                  <th className="py-3 px-4 text-right">{t.actions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1080,7 +1080,7 @@ export const CashView: React.FC<CashViewProps> = ({
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <Plus className="w-5 h-5 text-emerald-600" />
-              <span>Enregistrer une Écriture de Caisse Certifiée</span>
+              <span>{t.cashPage.newMovementTitle}</span>
             </h3>
 
             {formError && (
@@ -1093,30 +1093,32 @@ export const CashView: React.FC<CashViewProps> = ({
             <form onSubmit={handleRecordMovement} className="space-y-3 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Type de flux *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.cashPage.typeLabel} *</label>
                   <select
                     value={movementForm.type}
                     onChange={(e) => setMovementForm({ ...movementForm, type: e.target.value as any })}
                     className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
                   >
-                    <option value="INFLOW">Encaissement (Recette +)</option>
-                    <option value="OUTFLOW">Décaissement (Dépense -)</option>
+                    <option value="INFLOW">{t.cashPage.inflowsTab} ({lang === 'en' ? 'Revenue +' : 'Recette +'})</option>
+                    <option value="OUTFLOW">{t.cashPage.outflowsTab} ({lang === 'en' ? 'Disbursement -' : 'Dépense -'})</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Catégorie comptable *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.cashPage.accountingCategory} *</label>
                   <select
                     value={movementForm.category}
                     onChange={(e) => setMovementForm({ ...movementForm, category: e.target.value as any })}
                     className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
                   >
-                    <option value="RENTAL_PAYMENT">Règlement Location</option>
-                    <option value="RENTAL_DEPOSIT">Caution Consignée</option>
-                    <option value="SALE_PAYMENT">Règlement Acompte Vente</option>
-                    <option value="FUEL_EXPENSE">Dépense Carburant</option>
-                    <option value="MAINTENANCE_EXPENSE">Frais Atelier / Garage</option>
-                    <option value="AGENCY_SUPPLIES">Fournitures d'Agence</option>
-                    <option value="OTHER_EXPENSE">Autre Décaissement</option>
+                    <option value="RENTAL_PAYMENT">{t.cashCategory.RENTAL_PAYMENT}</option>
+                    <option value="SALE_PAYMENT">{t.cashCategory.SALE_PAYMENT}</option>
+                    <option value="DEPOSIT_IN">{t.cashCategory.DEPOSIT_IN}</option>
+                    <option value="DEPOSIT_REFUND">{t.cashCategory.DEPOSIT_REFUND}</option>
+                    <option value="FUEL_EXPENSE">{t.cashCategory.FUEL_EXPENSE}</option>
+                    <option value="MAINTENANCE_EXPENSE">{t.cashCategory.MAINTENANCE_EXPENSE}</option>
+                    <option value="OFFICE_EXPENSE">{t.cashCategory.OFFICE_EXPENSE}</option>
+                    <option value="SALARY_ADVANCE">{t.cashCategory.SALARY_ADVANCE}</option>
+                    <option value="OTHER">{t.cashCategory.OTHER}</option>
                   </select>
                 </div>
               </div>
@@ -1125,15 +1127,14 @@ export const CashView: React.FC<CashViewProps> = ({
                 <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-semibold flex items-start gap-2">
                   <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <span>
-                    <strong>Contrôle de conformité FCT Douala :</strong> Pour tout décaissement d'espèces,
-                    le tiers bénéficiaire, le motif détaillé et la pièce justificative (facturette, quittance) sont
-                    obligatoires.
+                    <strong>{lang === 'en' ? 'FCT Compliance Notice:' : 'Contrôle de conformité FCT Douala :'}</strong>{' '}
+                    {t.cashPage.disbursementCompliance}
                   </span>
                 </div>
               )}
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Montant en Espèces (XAF) *</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.cashPage.amountLabel} *</label>
                 <input
                   type="number"
                   min={1}
@@ -1146,25 +1147,27 @@ export const CashView: React.FC<CashViewProps> = ({
 
               <div>
                 <label className="block text-slate-700 font-bold mb-1">
-                  {movementForm.type === 'OUTFLOW' ? 'Bénéficiaire du décaissement *' : 'Tiers Payeur (Client / Partenaire) *'}
+                  {movementForm.type === 'OUTFLOW'
+                    ? (lang === 'en' ? 'Disbursement Payee *' : 'Bénéficiaire du décaissement *')
+                    : (lang === 'en' ? 'Payer Third Party (Customer / Partner) *' : 'Tiers Payeur (Client / Partenaire) *')}
                 </label>
                 <input
                   type="text"
                   value={movementForm.receivedFromOrPaidTo}
                   onChange={(e) => setMovementForm({ ...movementForm, receivedFromOrPaidTo: e.target.value })}
-                  placeholder={movementForm.type === 'OUTFLOW' ? 'Ex: Station Total Bonamoussadi, Garage Rapide' : 'Ex: Christian Eboa Eboa'}
+                  placeholder={movementForm.type === 'OUTFLOW' ? (lang === 'en' ? 'E.g. Total Station Bonamoussadi, Express Garage' : 'Ex: Station Total Bonamoussadi, Garage Rapide') : (lang === 'en' ? 'E.g. Christian Eboa Eboa' : 'Ex: Christian Eboa Eboa')}
                   className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Motif / Justification détaillée *</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.cashPage.reasonLabel}</label>
                 <input
                   type="text"
                   value={movementForm.reason}
                   onChange={(e) => setMovementForm({ ...movementForm, reason: e.target.value })}
-                  placeholder={movementForm.type === 'OUTFLOW' ? 'Ex: Plein carburant Prado LT 502 (Ticket #84920)' : 'Ex: Acompte location Land Cruiser 3 jours'}
+                  placeholder={movementForm.type === 'OUTFLOW' ? (lang === 'en' ? 'E.g. Full gas tank Prado LT 502 (Ticket #84920)' : 'Ex: Plein carburant Prado LT 502 (Ticket #84920)') : (lang === 'en' ? 'E.g. Deposit for 3-day Land Cruiser rental' : 'Ex: Acompte location Land Cruiser 3 jours')}
                   className="w-full p-2.5 rounded-lg border border-slate-200 font-medium"
                   required
                 />
@@ -1173,12 +1176,12 @@ export const CashView: React.FC<CashViewProps> = ({
               {/* Pièce Justificative (Cloudinary Dropzone) */}
               <div>
                 <label className="block text-slate-700 font-bold mb-1">
-                  Pièce Justificative / Bon de Caisse {movementForm.type === 'OUTFLOW' ? '(Recommandé / Audit)' : '(Optionnel)'}
+                  {t.cashPage.supportingDoc} {movementForm.type === 'OUTFLOW' ? (lang === 'en' ? '(Recommended / Audit)' : '(Recommandé / Audit)') : (lang === 'en' ? '(Optional)' : '(Optionnel)')}
                 </label>
                 <CloudinaryUploadDropzone
                   folder="fct_automobile/cash"
-                  label="Téléverser le ticket / facturette / bon émargé :"
-                  helperText="Scan ou photo du ticket de caisse, reçu station ou bon de décaissement émargé"
+                  label={t.cashPage.uploadReceiptPrompt}
+                  helperText={t.cashPage.uploadReceiptHelper}
                   currentValue={movementForm.justificationReceiptUrl}
                   onUploadSuccess={(url) => setMovementForm({ ...movementForm, justificationReceiptUrl: url })}
                   onClear={() => setMovementForm({ ...movementForm, justificationReceiptUrl: '' })}
@@ -1191,13 +1194,13 @@ export const CashView: React.FC<CashViewProps> = ({
                   onClick={() => setIsRecordModalOpen(false)}
                   className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Valider &amp; Imprimer Reçu
+                  {lang === 'en' ? 'Validate & Print Receipt' : 'Valider & Imprimer Reçu'}
                 </button>
               </div>
             </form>
@@ -1212,7 +1215,7 @@ export const CashView: React.FC<CashViewProps> = ({
             <div className="flex items-center justify-between pb-2 border-b border-slate-200">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Unlock className="w-5 h-5 text-blue-900" />
-                <span>Ouvrir une Session de Caisse</span>
+                <span>{t.cashPage.openModalTitle}</span>
               </h3>
               <div className="flex bg-slate-100 p-0.5 rounded-lg text-[11px] font-bold">
                 <button
@@ -1222,7 +1225,7 @@ export const CashView: React.FC<CashViewProps> = ({
                     openMode === 'billetage' ? 'bg-white text-blue-900 shadow-2xs' : 'text-slate-600'
                   }`}
                 >
-                  Billetage BEAC
+                  {t.cashPage.openModeBilletage}
                 </button>
                 <button
                   type="button"
@@ -1231,7 +1234,7 @@ export const CashView: React.FC<CashViewProps> = ({
                     openMode === 'quick' ? 'bg-white text-blue-900 shadow-2xs' : 'text-slate-600'
                   }`}
                 >
-                  Saisie Rapide
+                  {t.cashPage.openModeQuick}
                 </button>
               </div>
             </div>
@@ -1240,18 +1243,19 @@ export const CashView: React.FC<CashViewProps> = ({
               {openMode === 'billetage' ? (
                 <div>
                   <CashDenominationGrid
+                    lang={lang}
                     onTotalChange={(tot, summary) => {
                       setOpeningBalance(tot);
                       setOpenBilletageSummary(summary);
                     }}
                   />
                   <div className="mt-2 text-slate-500 text-[11px]">
-                    Fonds de caisse calculé : <strong className="text-slate-900">{formatXAF(openingBalance)}</strong>
+                    {lang === 'en' ? 'Calculated cash float:' : 'Fonds de caisse calculé :'} <strong className="text-slate-900">{formatXAF(openingBalance)}</strong>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Fonds de caisse initial (XAF) *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.cashPage.openFundLabel} *</label>
                   <input
                     type="number"
                     value={openingBalance}
@@ -1268,13 +1272,13 @@ export const CashView: React.FC<CashViewProps> = ({
                   onClick={() => setIsOpenModalOpen(false)}
                   className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Ouvrir Caisse ({formatXAF(openingBalance)})
+                  {t.cashPage.confirmOpenBtn} ({formatXAF(openingBalance)})
                 </button>
               </div>
             </form>
@@ -1289,7 +1293,7 @@ export const CashView: React.FC<CashViewProps> = ({
             <div className="flex items-center justify-between pb-2 border-b border-slate-200">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Lock className="w-5 h-5 text-rose-700" />
-                <span>Clôturer la Session de Caisse</span>
+                <span>{t.cashPage.closeModalTitle}</span>
               </h3>
               <div className="flex bg-slate-100 p-0.5 rounded-lg text-[11px] font-bold">
                 <button
@@ -1299,7 +1303,7 @@ export const CashView: React.FC<CashViewProps> = ({
                     closeMode === 'billetage' ? 'bg-white text-rose-700 shadow-2xs' : 'text-slate-600'
                   }`}
                 >
-                  Billetage BEAC
+                  {t.cashPage.openModeBilletage}
                 </button>
                 <button
                   type="button"
@@ -1308,18 +1312,18 @@ export const CashView: React.FC<CashViewProps> = ({
                     closeMode === 'quick' ? 'bg-white text-rose-700 shadow-2xs' : 'text-slate-600'
                   }`}
                 >
-                  Saisie Directe
+                  {t.cashPage.openModeQuick}
                 </button>
               </div>
             </div>
 
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs flex items-center justify-between">
               <div>
-                <span className="text-slate-500 font-medium">Solde théorique calculé :</span>{' '}
+                <span className="text-slate-500 font-medium">{t.cashPage.theoreticalBalanceLabel}</span>{' '}
                 <strong className="text-slate-900 text-sm ml-1">{formatXAF(activeSession.calculatedExpectedBalanceXAF)}</strong>
               </div>
               <div className="text-[11px] text-slate-500">
-                Session {activeSession.sessionNumber}
+                {t.cashPage.sessionCol} {activeSession.sessionNumber}
               </div>
             </div>
 
@@ -1327,6 +1331,7 @@ export const CashView: React.FC<CashViewProps> = ({
               {closeMode === 'billetage' ? (
                 <div>
                   <CashDenominationGrid
+                    lang={lang}
                     expectedBalanceXAF={activeSession.calculatedExpectedBalanceXAF}
                     showDiscrepancy={true}
                     onTotalChange={(tot, summary) => {
@@ -1337,7 +1342,7 @@ export const CashView: React.FC<CashViewProps> = ({
                 </div>
               ) : (
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Montant physique compté (XAF) *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.cashPage.closePhysicalCount} *</label>
                   <input
                     type="number"
                     value={countedClosing}
@@ -1346,7 +1351,7 @@ export const CashView: React.FC<CashViewProps> = ({
                     required
                   />
                   <div className="mt-1 text-xs font-bold">
-                    Écart :{' '}
+                    {lang === 'en' ? 'Discrepancy:' : 'Écart :'} {' '}
                     <span
                       className={
                         countedClosing === activeSession.calculatedExpectedBalanceXAF
@@ -1364,9 +1369,9 @@ export const CashView: React.FC<CashViewProps> = ({
 
               <div>
                 <label className="block text-slate-700 font-bold mb-1">
-                  Justification des écarts / Notes de clôture{' '}
+                  {t.cashPage.closeNotesLabel}{' '}
                   {countedClosing !== activeSession.calculatedExpectedBalanceXAF && (
-                    <span className="text-rose-600 font-black">* OBLIGATOIRE (Écart détecté)</span>
+                    <span className="text-rose-600 font-black">{t.cashPage.mandatoryDiscrepancy}</span>
                   )}
                 </label>
                 <textarea
@@ -1374,8 +1379,8 @@ export const CashView: React.FC<CashViewProps> = ({
                   onChange={(e) => setClosingNotes(e.target.value)}
                   placeholder={
                     countedClosing !== activeSession.calculatedExpectedBalanceXAF
-                      ? "Expliquez obligatoirement l'origine de l'écart (ex: monnaie non rendue, dépense en attente de justificatif)"
-                      : "Remarques ou observations sur la vacation de caisse (optionnel)"
+                      ? t.cashPage.discrepancyPlaceholder
+                      : t.cashPage.normalClosingNotes
                   }
                   rows={2}
                   className="w-full p-2.5 rounded-lg border border-slate-200"
@@ -1388,13 +1393,13 @@ export const CashView: React.FC<CashViewProps> = ({
                   onClick={() => setIsCloseModalOpen(false)}
                   className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-rose-700 hover:bg-rose-600 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Clôturer &amp; Sceller ({formatXAF(countedClosing)})
+                  {t.cashPage.confirmCloseBtn} ({formatXAF(countedClosing)})
                 </button>
               </div>
             </form>
@@ -1408,20 +1413,20 @@ export const CashView: React.FC<CashViewProps> = ({
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <RotateCcw className="w-5 h-5 text-rose-700" />
-              <span>Contre-passation de Caisse (Extourne)</span>
+              <span>{t.cashPage.reversalTitle}</span>
             </h3>
 
             <p className="text-xs text-slate-600">
-              Annulation comptable certifiée du reçu <strong className="text-slate-900">{reversalTarget.receiptNumber}</strong> ({formatXAF(reversalTarget.amountXAF)}).
+              {t.cashPage.reversalConfirmNotice} <strong className="text-slate-900">{reversalTarget.receiptNumber}</strong> ({formatXAF(reversalTarget.amountXAF)}).
             </p>
 
             <form onSubmit={handleConfirmReversal} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Motif obligatoire d'extourne *</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.cashPage.reversalReasonLabel}</label>
                 <textarea
                   value={reversalReason}
                   onChange={(e) => setReversalReason(e.target.value)}
-                  placeholder="Ex: Erreur de montant saisie ou contestation client"
+                  placeholder={lang === 'en' ? 'E.g. Amount error entered or customer dispute' : 'Ex: Erreur de montant saisie ou contestation client'}
                   rows={2}
                   className="w-full p-2.5 rounded-lg border border-slate-200"
                   required
@@ -1434,13 +1439,13 @@ export const CashView: React.FC<CashViewProps> = ({
                   onClick={() => setReversalTarget(null)}
                   className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-rose-700 hover:bg-rose-600 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Confirmer Contre-passation
+                  {t.cashPage.confirmReversalBtn}
                 </button>
               </div>
             </form>

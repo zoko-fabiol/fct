@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { dbStore, DatabaseState } from '../services/dbStore.ts';
 import { CloudinaryUploadDropzone } from '../components/ui/CloudinaryUploadDropzone.tsx';
-import { Language } from '../services/i18n.ts';
+import { Language, translations } from '../services/i18n.ts';
 import { Invoice, InvoiceType, AppModule } from '../../packages/shared-types/index.ts';
 import { formatXAF, hasEffectivePermission } from '../../packages/business-rules/index.ts';
 import { DocumentPrintData } from '../components/DocumentModal.tsx';
@@ -62,6 +62,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
   onNavigate,
   contextEntityId,
 }) => {
+  const t = translations[lang];
   const currentUser = dbStore.getCurrentUser();
   const [activeTab, setActiveTab] = useState<'ALL' | 'UNPAID' | 'PAID' | 'PROFORMA'>('ALL');
   const [search, setSearch] = useState('');
@@ -223,25 +224,25 @@ export const BillingView: React.FC<BillingViewProps> = ({
   const kpis = [
     {
       id: 'kpi-invoiced',
-      label: 'Volume Total Facturé',
+      label: t.billingPage.totalInvoiced,
       value: formatXAF(totalInvoiced),
-      sublabel: `${state.invoices.filter((i) => i.type === 'INVOICE').length} factures émises`,
+      sublabel: `${state.invoices.filter((i) => i.type === 'INVOICE').length} ${t.billingPage.activeInvoicesCount.toLowerCase()}`,
       icon: Receipt,
       colorVariant: 'blue' as const,
     },
     {
       id: 'kpi-paid',
-      label: 'Règlements Encaissés',
+      label: t.billingPage.totalCollected,
       value: formatXAF(totalPaid),
-      sublabel: 'Validés en caisse',
+      sublabel: lang === 'en' ? 'Validated at cash desk' : 'Validés en caisse',
       icon: CheckCircle2,
       colorVariant: 'emerald' as const,
     },
     {
       id: 'kpi-balance',
-      label: 'Créances en Attente',
+      label: t.billingPage.outstandingBalance,
       value: formatXAF(totalBalanceDue),
-      sublabel: 'Soldes restant dus',
+      sublabel: lang === 'en' ? 'Remaining balances due' : 'Soldes restant dus',
       icon: Clock,
       colorVariant: totalBalanceDue > 0 ? ('rose' as const) : ('slate' as const),
     },
@@ -310,18 +311,18 @@ export const BillingView: React.FC<BillingViewProps> = ({
     return (
       <>
         <EntityShowroomLayout
-          backLabel="Retour aux factures et devis"
+          backLabel={t.billingPage.backToBilling}
           onBack={() => setSelectedInvoice(null)}
-          title={`${selectedInvoice.type === 'PROFORMA' ? 'Devis Proforma' : 'Facture'} ${selectedInvoice.invoiceNumber}`}
-          subtitle={`${selectedInvoice.customerName} • Émission : ${selectedInvoice.issueDate} • Échéance : ${selectedInvoice.dueDate}`}
+          title={`${selectedInvoice.type === 'PROFORMA' ? t.billingPage.proformaBadge : (lang === 'en' ? 'Invoice' : 'Facture')} ${selectedInvoice.invoiceNumber}`}
+          subtitle={`${selectedInvoice.customerName} • ${t.date} : ${selectedInvoice.issueDate} • ${t.billingPage.dueCol} : ${selectedInvoice.dueDate}`}
           referenceId={selectedInvoice.invoiceNumber}
           status={selectedInvoice.balanceXAF === 0 ? 'PAID' : selectedInvoice.status}
           statusLabel={
             selectedInvoice.status === 'CANCELLED'
-              ? 'Annulée'
+              ? (lang === 'en' ? 'Cancelled' : 'Annulée')
               : selectedInvoice.balanceXAF === 0
-              ? 'Soldée'
-              : 'En Attente de Règlement'
+              ? t.billingPage.settledBadge
+              : t.billingPage.unpaidBadge
           }
           avatarIcon={Receipt}
           actions={
@@ -332,7 +333,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>Rattacher Document</span>
+                <span>{lang === 'en' ? 'Attach Document' : 'Rattacher Document'}</span>
               </button>
               <button
                 type="button"
@@ -340,7 +341,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>Imprimer Facture PDF</span>
+                <span>{t.billingPage.printInvoiceBtn}</span>
               </button>
               {selectedInvoice.balanceXAF > 0 && onNavigate && (
                 <button
@@ -353,41 +354,41 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-xs transition"
                 >
                   <Wallet className="w-3.5 h-3.5" />
-                  <span>Encaisser en Caisse</span>
+                  <span>{t.billingPage.payCashBtn}</span>
                 </button>
               )}
             </div>
           }
           kpis={[
             {
-              label: 'Montant Total TTC',
+              label: t.billingPage.ttcCol,
               value: formatXAF(selectedInvoice.totalAmountXAF),
-              sublabel: `Sous-total HT: ${formatXAF(selectedInvoice.subtotalXAF)}`,
+              sublabel: `${t.billingPage.htCol}: ${formatXAF(selectedInvoice.subtotalXAF)}`,
               highlight: true,
             },
             {
-              label: 'Montant Déjà Encaissé',
+              label: t.billingPage.paidCol,
               value: formatXAF(selectedInvoice.paidAmountXAF),
-              sublabel: 'Règlements reçus en caisse',
+              sublabel: lang === 'en' ? 'Cash register receipts' : 'Règlements reçus en caisse',
             },
             {
-              label: 'Solde Restant Dû',
+              label: t.billingPage.balanceCol,
               value: formatXAF(selectedInvoice.balanceXAF),
-              sublabel: selectedInvoice.balanceXAF === 0 ? 'Facture totalement soldée' : 'Créance en cours de recouvrement',
+              sublabel: selectedInvoice.balanceXAF === 0 ? (lang === 'en' ? 'Invoice fully settled' : 'Facture totalement soldée') : (lang === 'en' ? 'Pending collection' : 'Créance en cours de recouvrement'),
             },
             {
-              label: 'TVA Collectée (19.25%)',
+              label: `${t.billingPage.vatCol} (19.25%)`,
               value: formatXAF(selectedInvoice.taxAmountXAF),
-              sublabel: 'Conformité fiscale Cameroun / DGI',
+              sublabel: lang === 'en' ? 'Cameroon Tax / DGI compliant' : 'Conformité fiscale Cameroun / DGI',
             },
           ]}
           tabs={[
-            { id: 'ITEMS', label: 'Détail des Lignes & Totaux', icon: Receipt },
-            { id: 'DOCS', label: 'Documents & Justificatifs', icon: FileText, badge: invDocs.length },
-            { id: 'CUSTOMER', label: 'Client Facturé', icon: User },
-            { id: 'ORIGIN', label: 'Dossier d\'Origine', icon: Calendar },
-            { id: 'PAYMENTS', label: 'Règlements & Caisse', icon: DollarSign },
-            { id: 'TIMELINE', label: 'Historique Comptable', icon: Clock },
+            { id: 'ITEMS', label: t.billingPage.tabItems, icon: Receipt },
+            { id: 'DOCS', label: t.billingPage.tabDocs, icon: FileText, badge: invDocs.length },
+            { id: 'CUSTOMER', label: t.billingPage.tabCustomer, icon: User },
+            { id: 'ORIGIN', label: t.billingPage.tabOrigin, icon: Calendar },
+            { id: 'PAYMENTS', label: t.billingPage.tabPayments, icon: DollarSign },
+            { id: 'TIMELINE', label: t.billingPage.tabTimeline, icon: Clock },
           ]}
           activeTab={invoiceDetailTab}
           onTabChange={(t) => setInvoiceDetailTab(t as any)}
@@ -400,10 +401,10 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   <table className="w-full text-xs text-left min-w-[500px]">
                     <thead className="bg-[#0f2a4a] text-white uppercase text-[10px] tracking-wider">
                       <tr>
-                        <th className="py-3 px-4">Description de la prestation / article</th>
-                        <th className="py-3 px-4 text-center">Quantité</th>
-                        <th className="py-3 px-4 text-right">Prix Unitaire HT</th>
-                        <th className="py-3 px-4 text-right">Total HT</th>
+                        <th className="py-3 px-4">{lang === 'en' ? 'Service / Item Description' : 'Description de la prestation / article'}</th>
+                        <th className="py-3 px-4 text-center">{lang === 'en' ? 'Quantity' : 'Quantité'}</th>
+                        <th className="py-3 px-4 text-right">{t.billingPage.htCol} {lang === 'en' ? 'Unit' : 'Unitaire'}</th>
+                        <th className="py-3 px-4 text-right">{t.billingPage.htCol}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -422,11 +423,11 @@ export const BillingView: React.FC<BillingViewProps> = ({
 
               <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs ml-auto max-w-sm space-y-2.5">
                 <div className="flex justify-between text-xs text-slate-600">
-                  <span>Sous-total Hors Taxes :</span>
+                  <span>{t.billingPage.htCol} :</span>
                   <span className="font-bold text-slate-900">{formatXAF(selectedInvoice.subtotalXAF)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-slate-600">
-                  <span>TVA Légale (19.25%) :</span>
+                  <span>{t.billingPage.vatCol} (19.25%) :</span>
                   <span className="font-bold text-slate-900">{formatXAF(selectedInvoice.taxAmountXAF)}</span>
                 </div>
                 <div className="flex justify-between border-t border-slate-200 pt-2.5 text-base font-black text-blue-950">
@@ -743,10 +744,10 @@ export const BillingView: React.FC<BillingViewProps> = ({
         <div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <Receipt className="w-6 h-6 text-emerald-600" />
-            <span>Facturation, Devis &amp; Règlements</span>
+            <span>{t.billingPage.title}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Émission des factures certifiées, proformas et suivi des créances clients à Douala
+            {t.billingPage.subtitle}
           </p>
         </div>
 
@@ -756,7 +757,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Émettre une Facture / Devis</span>
+            <span>{t.billingPage.newInvoice}</span>
           </button>
         )}
       </div>
@@ -787,24 +788,24 @@ export const BillingView: React.FC<BillingViewProps> = ({
       <EntitySearchFilters
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Rechercher par n° de facture (FAC-...), client..."
+        searchPlaceholder={lang === 'en' ? 'Search by invoice # (FAC-...), customer...' : 'Rechercher par n° de facture (FAC-...), client...'}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         tabs={[
-          { id: 'ALL', label: `Toutes (${state.invoices.length})` },
+          { id: 'ALL', label: `${t.billingPage.allTab} (${state.invoices.length})` },
           {
             id: 'UNPAID',
-            label: 'En attente / Impayées',
+            label: t.billingPage.unpaidTab,
             count: state.invoices.filter((i) => i.balanceXAF > 0 && i.status !== 'CANCELLED').length,
           },
           {
             id: 'PAID',
-            label: 'Soldées / Payées',
+            label: t.billingPage.paidTab,
             count: state.invoices.filter((i) => i.balanceXAF === 0).length,
           },
           {
             id: 'PROFORMA',
-            label: 'Proformas',
+            label: t.billingPage.quotesTab,
             count: state.invoices.filter((i) => i.type === 'PROFORMA').length,
           },
         ]}
@@ -815,12 +816,12 @@ export const BillingView: React.FC<BillingViewProps> = ({
       {/* Content: Cards or Table */}
       {filteredInvoices.length === 0 ? (
         <EmptyState
-          title="Aucune facture trouvée"
-          description="Aucun document de facturation ne correspond à vos critères de recherche."
+          title={t.billingPage.emptyInvoicesTitle}
+          description={t.billingPage.emptyInvoicesDesc}
           icon={Receipt}
           action={
             hasEffectivePermission(currentUser, 'billing', 'create')
-              ? { label: 'Émettre une facture', onClick: () => setIsNewInvoiceModalOpen(true) }
+              ? { label: t.billingPage.newInvoice, onClick: () => setIsNewInvoiceModalOpen(true) }
               : undefined
           }
         />
@@ -830,40 +831,40 @@ export const BillingView: React.FC<BillingViewProps> = ({
             <EntityCard
               key={inv.id}
               title={inv.invoiceNumber}
-              subtitle={`${inv.customerName} • Émission : ${inv.issueDate}`}
+              subtitle={`${inv.customerName} • ${t.date} : ${inv.issueDate}`}
               referenceId={inv.invoiceNumber}
               fallbackIcon={Receipt}
               status={inv.balanceXAF === 0 ? 'PAID' : inv.status}
               statusLabel={
                 inv.status === 'CANCELLED'
-                  ? 'Annulée'
+                  ? (lang === 'en' ? 'Cancelled' : 'Annulée')
                   : inv.balanceXAF === 0
-                  ? 'Soldée'
+                  ? t.billingPage.settledBadge
                   : inv.paidAmountXAF > 0
-                  ? 'Acompte versé'
-                  : 'En attente'
+                  ? t.billingPage.partialBadge
+                  : t.billingPage.unpaidBadge
               }
               onClick={() => setSelectedInvoice(inv)}
               metrics={[
                 {
-                  label: 'Montant Total TTC',
+                  label: t.billingPage.ttcCol,
                   value: formatXAF(inv.totalAmountXAF),
                   icon: DollarSign,
                   highlight: true,
                 },
                 {
-                  label: 'Encaissé en Caisse',
+                  label: t.billingPage.paidCol,
                   value: formatXAF(inv.paidAmountXAF),
                   icon: CheckCircle2,
                 },
                 {
-                  label: 'Solde Dû Restant',
+                  label: t.billingPage.balanceCol,
                   value: formatXAF(inv.balanceXAF),
                   icon: Clock,
                   highlight: inv.balanceXAF > 0,
                 },
                 {
-                  label: 'Échéance',
+                  label: t.billingPage.dueCol,
                   value: inv.dueDate,
                   icon: Calendar,
                 },
@@ -877,7 +878,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                       handlePrintInvoice(inv);
                     }}
                     className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
-                    title="Imprimer"
+                    title={t.billingPage.printInvoiceBtn}
                   >
                     <Printer className="w-3.5 h-3.5" />
                   </button>
@@ -889,9 +890,9 @@ export const BillingView: React.FC<BillingViewProps> = ({
                         onNavigate('cash', inv.id);
                       }}
                       className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition shadow-2xs"
-                      title="Encaisser"
+                      title={t.billingPage.payCashBtn}
                     >
-                      Encaisser
+                      {t.billingPage.payCashBtn}
                     </button>
                   )}
                 </div>
@@ -905,15 +906,15 @@ export const BillingView: React.FC<BillingViewProps> = ({
             <table className="w-full text-xs text-left">
               <thead className="bg-[#0f2a4a] text-white uppercase text-[10px] tracking-wider">
                 <tr>
-                  <th className="py-3 px-4">N° Facture</th>
-                  <th className="py-3 px-4">Type / Origine</th>
-                  <th className="py-3 px-4">Client</th>
-                  <th className="py-3 px-4">Émission / Échéance</th>
-                  <th className="py-3 px-4 text-right">Montant Total</th>
-                  <th className="py-3 px-4 text-right">Encaissé</th>
-                  <th className="py-3 px-4 text-right">Solde Dû</th>
-                  <th className="py-3 px-4 text-center">Statut</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-3 px-4">{t.billingPage.invoiceNumCol}</th>
+                  <th className="py-3 px-4">{lang === 'en' ? 'Type / Origin' : 'Type / Origine'}</th>
+                  <th className="py-3 px-4">{t.billingPage.customerCol}</th>
+                  <th className="py-3 px-4">{lang === 'en' ? 'Issue / Due Date' : 'Émission / Échéance'}</th>
+                  <th className="py-3 px-4 text-right">{t.billingPage.ttcCol}</th>
+                  <th className="py-3 px-4 text-right">{t.billingPage.paidCol}</th>
+                  <th className="py-3 px-4 text-right">{t.billingPage.balanceCol}</th>
+                  <th className="py-3 px-4 text-center">{t.billingPage.statusCol}</th>
+                  <th className="py-3 px-4 text-right">{t.actions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -930,12 +931,12 @@ export const BillingView: React.FC<BillingViewProps> = ({
                           inv.type === 'PROFORMA' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-800'
                         }`}
                       >
-                        {inv.type === 'PROFORMA' ? 'DEVIS PROFORMA' : 'FACTURE'}
+                        {inv.type === 'PROFORMA' ? t.billingPage.proformaBadge.toUpperCase() : (lang === 'en' ? 'INVOICE' : 'FACTURE')}
                       </span>
                     </td>
                     <td className="py-3 px-4 font-bold text-slate-900">{inv.customerName}</td>
                     <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
-                      {inv.issueDate} (éch. {inv.dueDate})
+                      {inv.issueDate} ({lang === 'en' ? 'due' : 'éch.'} {inv.dueDate})
                     </td>
                     <td className="py-3 px-4 text-right font-black text-slate-900 whitespace-nowrap">
                       {formatXAF(inv.totalAmountXAF)}
@@ -955,12 +956,12 @@ export const BillingView: React.FC<BillingViewProps> = ({
                         status={inv.balanceXAF === 0 ? 'PAID' : inv.status}
                         label={
                           inv.status === 'CANCELLED'
-                            ? 'Annulée'
+                            ? (lang === 'en' ? 'Cancelled' : 'Annulée')
                             : inv.balanceXAF === 0
-                            ? 'Soldée'
+                            ? t.billingPage.settledBadge
                             : inv.paidAmountXAF > 0
-                            ? 'Acompte'
-                            : 'En attente'
+                            ? t.billingPage.partialBadge
+                            : t.billingPage.unpaidBadge
                         }
                         size="sm"
                       />
@@ -971,7 +972,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                     >
                       <button
                         onClick={() => handlePrintInvoice(inv)}
-                        title="Imprimer"
+                        title={t.billingPage.printInvoiceBtn}
                         className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer inline-flex items-center transition"
                       >
                         <Printer className="w-3.5 h-3.5" />
@@ -980,11 +981,11 @@ export const BillingView: React.FC<BillingViewProps> = ({
                       {inv.balanceXAF > 0 && onNavigate && (
                         <button
                           onClick={() => onNavigate('cash', inv.id)}
-                          title="Encaisser"
+                          title={t.billingPage.payCashBtn}
                           className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] cursor-pointer inline-flex items-center gap-1 shadow-2xs transition"
                         >
                           <Wallet className="w-3 h-3" />
-                          <span>Encaisser</span>
+                          <span>{t.billingPage.payCashBtn}</span>
                         </button>
                       )}
                     </td>
@@ -996,32 +997,30 @@ export const BillingView: React.FC<BillingViewProps> = ({
         </div>
       )}
 
-      
-
       {/* New Invoice Modal */}
       {isNewInvoiceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <Plus className="w-5 h-5 text-emerald-600" />
-              <span>Créer une Facture ou Devis Proforma</span>
+              <span>{t.billingPage.createInvoiceTitle}</span>
             </h3>
 
             <form onSubmit={handleCreateInvoice} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Type de Document *</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.billingPage.docTypeLabel} *</label>
                 <select
                   value={invForm.type}
                   onChange={(e) => setInvForm({ ...invForm, type: e.target.value as any })}
                   className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
                 >
-                  <option value="INVOICE">Facture Définitive</option>
-                  <option value="PROFORMA">Devis / Proforma</option>
+                  <option value="INVOICE">{t.billingPage.standardInvoice}</option>
+                  <option value="PROFORMA">{t.billingPage.proforma}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Client à Facturer *</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.billingPage.clientLabel}</label>
                 <select
                   value={invForm.customerId}
                   onChange={(e) => setInvForm({ ...invForm, customerId: e.target.value })}
@@ -1037,7 +1036,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Description de la prestation *</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.billingPage.serviceLabel}</label>
                 <input
                   type="text"
                   value={invForm.description}
@@ -1049,7 +1048,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Quantité *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.billingPage.qtyLabel}</label>
                   <input
                     type="number"
                     min={1}
@@ -1060,7 +1059,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Prix Unitaire HT (XAF) *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.billingPage.unitPriceLabel}</label>
                   <input
                     type="number"
                     value={invForm.unitPriceXAF}
@@ -1080,12 +1079,12 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   className="w-4 h-4 rounded text-blue-900"
                 />
                 <label htmlFor="includeTVA" className="font-bold text-slate-800 cursor-pointer">
-                  Appliquer la TVA Camerounaise réglementaire (19.25%)
+                  {t.billingPage.includeVatLabel}
                 </label>
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Date d'Échéance *</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.billingPage.dueDateLabel}</label>
                 <input
                   type="date"
                   value={invForm.dueDate}
@@ -1101,13 +1100,13 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   onClick={() => setIsNewInvoiceModalOpen(false)}
                   className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Générer Document
+                  {t.billingPage.generateInvoiceBtn}
                 </button>
               </div>
             </form>

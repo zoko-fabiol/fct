@@ -79,6 +79,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
   onNavigate,
   contextEntityId,
 }) => {
+  const t = translations[lang];
   const currentUser = dbStore.getCurrentUser();
   const [activeTab, setActiveTab] = useState<string>('ALL');
   const [search, setSearch] = useState('');
@@ -182,33 +183,33 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
   const kpis = [
     {
       id: 'kpi-active',
-      label: 'Contrats Actifs',
+      label: t.rentalsPage.activeRentals,
       value: activeContractsCount,
-      sublabel: 'Véhicules en circulation',
+      sublabel: lang === 'en' ? 'Vehicles on the road' : 'Véhicules en circulation',
       icon: KeyRound,
       colorVariant: 'blue' as const,
     },
     {
       id: 'kpi-completed',
-      label: 'Locations Clôturées',
+      label: t.rentalsPage.returnedTab,
       value: completedContractsCount,
-      sublabel: 'Véhicules restitués',
+      sublabel: lang === 'en' ? 'Returned vehicles' : 'Véhicules restitués',
       icon: CheckCircle2,
       colorVariant: 'emerald' as const,
     },
     {
       id: 'kpi-revenue',
-      label: 'Revenus Encaissés',
+      label: lang === 'en' ? 'Revenue Collected' : 'Revenus Encaissés',
       value: formatXAF(totalRevenue),
-      sublabel: 'XAF réglés en agence',
+      sublabel: lang === 'en' ? 'XAF collected at counter' : 'XAF réglés en agence',
       icon: DollarSign,
       colorVariant: 'purple' as const,
     },
     {
       id: 'kpi-balance',
-      label: 'Soldes en Attente',
+      label: lang === 'en' ? 'Pending Balances' : 'Soldes en Attente',
       value: formatXAF(totalPendingBalance),
-      sublabel: 'Reste à percevoir',
+      sublabel: lang === 'en' ? 'Remaining to collect' : 'Reste à percevoir',
       icon: Clock,
       colorVariant: totalPendingBalance > 0 ? ('amber' as const) : ('slate' as const),
     },
@@ -521,22 +522,22 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
     return (
       <>
         <EntityShowroomLayout
-          backLabel="Retour aux contrats de location"
+          backLabel={t.rentalsPage.backToRentals}
           onBack={() => setSelectedContract(null)}
-          title={`Contrat ${selectedContract.contractNumber}`}
+          title={`${lang === 'en' ? 'Rental Agreement' : 'Contrat'} ${selectedContract.contractNumber}`}
           subtitle={`${selectedContract.customerName} • ${selectedContract.vehicleName}`}
           referenceId={selectedContract.contractNumber}
           status={selectedContract.status}
           statusLabel={
             selectedContract.status === 'CONFIRMED' || (selectedContract.status as string) === 'ACTIVE'
-              ? 'En Cours'
+              ? (lang === 'en' ? 'Active' : 'En Cours')
               : selectedContract.status === 'RETURNED' || (selectedContract.status as string) === 'COMPLETED'
-              ? 'Restitué'
+              ? (lang === 'en' ? 'Returned' : 'Restitué')
               : selectedContract.status === 'OVERDUE'
-              ? 'En Retard'
+              ? (lang === 'en' ? 'Overdue' : 'En Retard')
               : selectedContract.status === 'CANCELLED'
-              ? 'Annulé'
-              : 'Brouillon'
+              ? (lang === 'en' ? 'Cancelled' : 'Annulé')
+              : (lang === 'en' ? 'Draft' : 'Brouillon')
           }
           avatarImageUrl={linkedVeh?.photoUrls?.[0]}
           avatarIcon={KeyRound}
@@ -548,7 +549,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>Rattacher Document</span>
+                <span>{t.rentalsPage.attachDoc}</span>
               </button>
               <button
                 type="button"
@@ -556,7 +557,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>Imprimer Contrat</span>
+                <span>{t.rentalsPage.printContract}</span>
               </button>
               {(selectedContract.status === 'CONFIRMED' || (selectedContract.status as string) === 'ACTIVE') &&
                 hasEffectivePermission(currentUser, 'rentals', 'update') && (
@@ -569,42 +570,42 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                     className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-xs transition"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Clôturer / Retour</span>
+                    <span>{t.rentalsPage.closeReturnBtn}</span>
                   </button>
                 )}
             </div>
           }
           kpis={[
             {
-              label: 'Tarif Journalier',
+              label: t.rentalsPage.dailyRateCol,
               value: formatXAF(selectedContract.dailyRateXAF),
-              sublabel: 'Par jour de location',
+              sublabel: lang === 'en' ? 'Per rental day' : 'Par jour de location',
             },
             {
-              label: 'Durée Totale',
-              value: `${selectedContract.totalDays} Jours`,
-              sublabel: `Du ${selectedContract.startDate} au ${selectedContract.endDate}`,
+              label: lang === 'en' ? 'Total Duration' : 'Durée Totale',
+              value: `${selectedContract.totalDays} ${lang === 'en' ? 'Days' : 'Jours'}`,
+              sublabel: `${lang === 'en' ? 'From' : 'Du'} ${selectedContract.startDate} ${lang === 'en' ? 'to' : 'au'} ${selectedContract.endDate}`,
             },
             {
-              label: 'Montant Global',
+              label: t.rentalsPage.totalCol,
               value: formatXAF(selectedContract.totalAmountXAF),
-              sublabel: `Payé: ${formatXAF(selectedContract.paidAmountXAF)}`,
+              sublabel: `${lang === 'en' ? 'Paid:' : 'Payé:'} ${formatXAF(selectedContract.paidAmountXAF)}`,
               highlight: true,
             },
             {
-              label: 'Caution Consignée',
+              label: t.rentalsPage.depositCol,
               value: formatXAF(selectedContract.securityDepositXAF),
-              sublabel: selectedContract.depositReturnedXAF > 0 ? 'Caution Restituée' : 'Consignée en Caisse',
+              sublabel: selectedContract.depositReturnedXAF > 0 ? (lang === 'en' ? 'Deposit Refunded' : 'Caution Restituée') : (lang === 'en' ? 'Held in Cash Register' : 'Consignée en Caisse'),
             },
           ]}
           tabs={[
-            { id: 'TERMS', label: 'Conditions & Dates', icon: ClipboardList },
-            { id: 'DOCS', label: 'Justificatifs & Documents', icon: FileText, badge: contractDocs.length },
-            { id: 'VEHICLE', label: 'Véhicule & Chauffeur', icon: Car },
-            { id: 'CUSTOMER', label: 'Client Signataire', icon: User },
-            { id: 'FINANCES', label: 'Règlements & Factures', icon: DollarSign },
-            { id: 'INSPECTION', label: 'État des Lieux', icon: FileCheck },
-            { id: 'TIMELINE', label: 'Historique & Audit', icon: Clock },
+            { id: 'TERMS', label: t.rentalsPage.tabTerms, icon: ClipboardList },
+            { id: 'DOCS', label: t.rentalsPage.tabDocs, icon: FileText, badge: contractDocs.length },
+            { id: 'VEHICLE', label: t.rentalsPage.tabVehicle, icon: Car },
+            { id: 'CUSTOMER', label: t.rentalsPage.tabCustomer, icon: User },
+            { id: 'FINANCES', label: t.rentalsPage.tabFinances, icon: DollarSign },
+            { id: 'INSPECTION', label: t.rentalsPage.tabInspection, icon: FileCheck },
+            { id: 'TIMELINE', label: t.rentalsPage.tabTimeline, icon: Clock },
           ]}
           activeTab={contractDetailTab}
           onTabChange={(t) => setContractDetailTab(t as any)}
@@ -1262,10 +1263,10 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
         <div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <KeyRound className="w-6 h-6 text-emerald-600" />
-            <span>Locations &amp; Contrats de Flotte 360°</span>
+            <span>{t.rentalsPage.title}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Émission des contrats, inspections départ/retour, cautions consignées et suivi des règlements à Douala
+            {t.rentalsPage.subtitle}
           </p>
         </div>
 
@@ -1277,21 +1278,21 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                 filename: `FCT_Contrats_Location_${new Date().toISOString().split('T')[0]}`,
                 sheetName: 'Contrats Location',
                 title: 'FCT AUTOMOBILE DOUALA — REGISTRE DES CONTRATS DE LOCATION',
-                subtitle: `Exporté le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')} • ${filteredContracts.length} contrat(s)`,
+                subtitle: `Exporté le ${new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')} à ${new Date().toLocaleTimeString(lang === 'en' ? 'en-US' : 'fr-FR')} • ${filteredContracts.length} contrat(s)`,
                 columns: [
-                  { header: 'N° Contrat', key: 'contractNumber', width: 16 },
-                  { header: 'Client', key: 'customerName', width: 26 },
-                  { header: 'Véhicule', key: 'vehicleName', width: 28 },
-                  { header: 'Immatriculation', key: 'licensePlate', width: 18 },
-                  { header: 'Début', key: 'startDate', width: 14 },
-                  { header: 'Fin', key: 'endDate', width: 14 },
-                  { header: 'Jours', key: 'totalDays', width: 10 },
-                  { header: 'Tarif Jour (XAF)', key: 'dailyRateXAF', width: 18 },
-                  { header: 'Total (XAF)', key: 'totalAmountXAF', width: 18 },
-                  { header: 'Encaissé (XAF)', key: 'paidAmountXAF', width: 18 },
-                  { header: 'Solde (XAF)', key: 'remainingAmountXAF', width: 18 },
-                  { header: 'Caution (XAF)', key: 'securityDepositXAF', width: 18 },
-                  { header: 'Statut', key: 'status', width: 14 },
+                  { header: t.rentalsPage.contractNumCol, key: 'contractNumber', width: 16 },
+                  { header: t.rentalsPage.clientCol, key: 'customerName', width: 26 },
+                  { header: t.rentalsPage.vehicleCol, key: 'vehicleName', width: 28 },
+                  { header: lang === 'en' ? 'Plate' : 'Immatriculation', key: 'licensePlate', width: 18 },
+                  { header: lang === 'en' ? 'Start' : 'Début', key: 'startDate', width: 14 },
+                  { header: lang === 'en' ? 'End' : 'Fin', key: 'endDate', width: 14 },
+                  { header: lang === 'en' ? 'Days' : 'Jours', key: 'totalDays', width: 10 },
+                  { header: t.rentalsPage.dailyRateCol, key: 'dailyRateXAF', width: 18 },
+                  { header: t.rentalsPage.totalCol, key: 'totalAmountXAF', width: 18 },
+                  { header: lang === 'en' ? 'Paid (XAF)' : 'Encaissé (XAF)', key: 'paidAmountXAF', width: 18 },
+                  { header: lang === 'en' ? 'Balance (XAF)' : 'Solde (XAF)', key: 'remainingAmountXAF', width: 18 },
+                  { header: t.rentalsPage.depositCol, key: 'securityDepositXAF', width: 18 },
+                  { header: t.rentalsPage.statusCol, key: 'status', width: 14 },
                 ],
                 data: filteredContracts,
               });
@@ -1299,7 +1300,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#0f2a4a] hover:bg-[#163a66] text-white text-xs font-bold shadow-xs transition cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-            <span>Exporter Excel (.xlsx)</span>
+            <span>{t.exportCSV} (.xlsx)</span>
           </button>
           {hasEffectivePermission(currentUser, 'rentals', 'create') && (
             <button
@@ -1310,7 +1311,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Émettre un Nouveau Contrat</span>
+              <span>{t.rentalsPage.newContractBtn}</span>
             </button>
           )}
         </div>
@@ -1342,16 +1343,16 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
       <EntitySearchFilters
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Rechercher n° contrat (CTR-...), client, véhicule, chauffeur..."
+        searchPlaceholder={lang === 'en' ? 'Search contract # (CTR-...), customer, vehicle, driver...' : 'Rechercher n° contrat (CTR-...), client, véhicule, chauffeur...'}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         tabs={[
-          { id: 'ALL', label: 'Tous les contrats', count: state.contracts.length },
-          { id: 'ACTIVE', label: 'En cours', count: activeContractsCount },
-          { id: 'COMPLETED', label: 'Restitués', count: completedContractsCount },
+          { id: 'ALL', label: t.rentalsPage.allTab, count: state.contracts.length },
+          { id: 'ACTIVE', label: t.rentalsPage.activeTab, count: activeContractsCount },
+          { id: 'COMPLETED', label: t.rentalsPage.returnedTab, count: completedContractsCount },
           {
             id: 'CANCELLED',
-            label: 'Annulés',
+            label: lang === 'en' ? 'Cancelled' : 'Annulés',
             count: state.contracts.filter((c) => c.status === 'CANCELLED').length,
           },
         ]}
@@ -1362,12 +1363,12 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
       {/* Content: Cards or Table */}
       {filteredContracts.length === 0 ? (
         <EmptyState
-          title="Aucun contrat de location trouvé"
-          description="Aucun contrat ne correspond à votre recherche ou filtre actuel."
+          title={t.rentalsPage.emptyRentalsTitle}
+          description={t.rentalsPage.emptyRentalsDesc}
           icon={KeyRound}
           action={
             hasEffectivePermission(currentUser, 'rentals', 'create')
-              ? { label: 'Émettre un contrat', onClick: () => setIsCreateModalOpen(true) }
+              ? { label: t.rentalsPage.newContractBtn, onClick: () => setIsCreateModalOpen(true) }
               : undefined
           }
         />
@@ -1473,15 +1474,15 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
             <table className="w-full text-xs text-left">
               <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                 <tr>
-                  <th className="py-3 px-4">N° Contrat</th>
-                  <th className="py-3 px-4">Client</th>
-                  <th className="py-3 px-4">Véhicule</th>
-                  <th className="py-3 px-4">Période (Départ - Retour)</th>
-                  <th className="py-3 px-4 text-center">Chauffeur</th>
-                  <th className="py-3 px-4 text-right">Montant Total</th>
-                  <th className="py-3 px-4 text-right">Caution</th>
-                  <th className="py-3 px-4 text-center">Statut</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-3 px-4">{t.rentalsPage.contractNumCol}</th>
+                  <th className="py-3 px-4">{t.rentalsPage.clientCol}</th>
+                  <th className="py-3 px-4">{t.rentalsPage.vehicleCol}</th>
+                  <th className="py-3 px-4">{t.rentalsPage.periodCol}</th>
+                  <th className="py-3 px-4 text-center">{t.rentalsPage.driverCol}</th>
+                  <th className="py-3 px-4 text-right">{t.rentalsPage.totalCol}</th>
+                  <th className="py-3 px-4 text-right">{t.rentalsPage.depositCol}</th>
+                  <th className="py-3 px-4 text-center">{t.rentalsPage.statusCol}</th>
+                  <th className="py-3 px-4 text-right">{t.actions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1498,15 +1499,15 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       <td className="py-3 px-4 font-bold text-slate-900">{contract.customerName}</td>
                       <td className="py-3 px-4 text-slate-700 font-medium">{contract.vehicleName}</td>
                       <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
-                        {contract.startDate} → {contract.endDate} ({contract.totalDays}j)
+                        {contract.startDate} → {contract.endDate} ({contract.totalDays}{lang === 'en' ? 'd' : 'j'})
                       </td>
                       <td className="py-3 px-4 text-center">
                         {contract.driverIncluded ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
-                            {contract.driverName || 'Oui'}
+                            {contract.driverName || (lang === 'en' ? 'Yes' : 'Oui')}
                           </span>
                         ) : (
-                          <span className="text-slate-400 text-[10px]">Non</span>
+                          <span className="text-slate-400 text-[10px]">{lang === 'en' ? 'No' : 'Non'}</span>
                         )}
                       </td>
                       <td className="py-3 px-4 text-right font-black text-slate-900 whitespace-nowrap">
@@ -1520,14 +1521,14 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                           status={contract.status}
                           label={
                             isActive
-                              ? 'En Location'
+                              ? (lang === 'en' ? 'Active Rental' : 'En Location')
                               : contract.status === 'RETURNED' || (contract.status as string) === 'COMPLETED'
-                              ? 'Restitué'
+                              ? t.rentalsPage.returnedTab
                               : contract.status === 'OVERDUE'
-                              ? 'En Retard'
+                              ? (lang === 'en' ? 'Overdue' : 'En Retard')
                               : contract.status === 'CANCELLED'
-                              ? 'Annulé'
-                              : 'Brouillon'
+                              ? (lang === 'en' ? 'Cancelled' : 'Annulé')
+                              : (lang === 'en' ? 'Draft' : 'Brouillon')
                           }
                           size="sm"
                         />

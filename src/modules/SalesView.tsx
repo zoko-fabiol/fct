@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { dbStore, DatabaseState } from '../services/dbStore.ts';
 import { CloudinaryUploadDropzone } from '../components/ui/CloudinaryUploadDropzone.tsx';
-import { Language } from '../services/i18n.ts';
+import { Language, translations } from '../services/i18n.ts';
 import { SaleOrder, SalePipelineStage, AppModule } from '../../packages/shared-types/index.ts';
 import { formatXAF, hasEffectivePermission } from '../../packages/business-rules/index.ts';
 import { DocumentPrintData } from '../components/DocumentModal.tsx';
@@ -46,6 +46,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Check,
+  Calendar,
 } from 'lucide-react';
 
 interface SalesViewProps {
@@ -63,6 +64,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   onNavigate,
   contextEntityId,
 }) => {
+  const t = translations[lang];
   const currentUser = dbStore.getCurrentUser();
   const [activeStageFilter, setActiveStageFilter] = useState<string>('ALL');
   const [search, setSearch] = useState('');
@@ -86,12 +88,12 @@ export const SalesView: React.FC<SalesViewProps> = ({
   });
 
   const stages: { key: SalePipelineStage; label: string; color: string }[] = [
-    { key: 'PROSPECT', label: '1. Prospect Intéressé', color: 'bg-slate-100 text-slate-800' },
-    { key: 'OFFER', label: '2. Devis / Offre Envoyée', color: 'bg-blue-100 text-blue-800' },
-    { key: 'NEGOTIATION', label: '3. Négociation en cours', color: 'bg-purple-100 text-purple-800' },
-    { key: 'ORDER', label: '4. Bon de Commande Signé', color: 'bg-amber-100 text-amber-800' },
-    { key: 'SOLD', label: '5. Véhicule Vendu', color: 'bg-emerald-100 text-emerald-800' },
-    { key: 'DELIVERED', label: '6. Véhicule Livré (PV Signé)', color: 'bg-emerald-200 text-emerald-950 font-bold' },
+    { key: 'PROSPECT', label: lang === 'en' ? '1. Prospect Interested' : '1. Prospect Intéressé', color: 'bg-slate-100 text-slate-800' },
+    { key: 'OFFER', label: lang === 'en' ? '2. Quote / Proposal Sent' : '2. Devis / Offre Envoyée', color: 'bg-blue-100 text-blue-800' },
+    { key: 'NEGOTIATION', label: lang === 'en' ? '3. Negotiation in Progress' : '3. Négociation en cours', color: 'bg-purple-100 text-purple-800' },
+    { key: 'ORDER', label: lang === 'en' ? '4. Purchase Order Signed' : '4. Bon de Commande Signé', color: 'bg-amber-100 text-amber-800' },
+    { key: 'SOLD', label: lang === 'en' ? '5. Vehicle Sold' : '5. Véhicule Vendu', color: 'bg-emerald-100 text-emerald-800' },
+    { key: 'DELIVERED', label: lang === 'en' ? '6. Vehicle Delivered (Handover Report)' : '6. Véhicule Livré (PV Signé)', color: 'bg-emerald-200 text-emerald-950 font-bold' },
   ];
 
   // Deep linking handling from contextEntityId
@@ -246,33 +248,33 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const kpis = [
     {
       id: 'kpi-volume',
-      label: 'Volume Commercial Ventes',
+      label: t.salesPage.activeDeals,
       value: formatXAF(totalSalesVolume),
-      sublabel: `${state.sales.length} dossiers engagés`,
+      sublabel: `${state.sales.length} ${t.salesPage.engagedDeals}`,
       icon: TrendingUp,
       colorVariant: 'blue' as const,
     },
     {
       id: 'kpi-collected',
-      label: 'Acomptes & Encaissés',
+      label: t.salesPage.revenueGenerated,
       value: formatXAF(totalCollected),
-      sublabel: 'Règlements reçus en agence',
+      sublabel: t.salesPage.paymentsReceived,
       icon: CheckCircle2,
       colorVariant: 'emerald' as const,
     },
     {
       id: 'kpi-balance',
-      label: 'Soldes à la Livraison',
+      label: t.salesPage.pendingBalance,
       value: formatXAF(totalPendingBalance),
-      sublabel: 'En attente de remise des clés',
+      sublabel: t.salesPage.pendingHandover,
       icon: Clock,
       colorVariant: totalPendingBalance > 0 ? ('amber' as const) : ('slate' as const),
     },
     {
       id: 'kpi-delivered',
-      label: 'Véhicules Livrés',
+      label: t.salesPage.deliveredVehicles,
       value: deliveredCount,
-      sublabel: 'PV de réception signés',
+      sublabel: t.salesPage.handoverReportsSigned,
       icon: FileCheck,
       colorVariant: 'purple' as const,
     },
@@ -339,9 +341,9 @@ export const SalesView: React.FC<SalesViewProps> = ({
     return (
       <>
         <EntityShowroomLayout
-          backLabel="Retour aux dossiers de vente"
+          backLabel={t.salesPage.backToSales}
           onBack={() => setSelectedSale(null)}
-          title={`Bon de Commande ${selectedSale.orderNumber}`}
+          title={`${lang === 'en' ? 'Sales Order' : 'Bon de Commande'} ${selectedSale.orderNumber}`}
           subtitle={`${selectedSale.customerName} • ${selectedSale.vehicleName}`}
           referenceId={selectedSale.orderNumber}
           status={selectedSale.stage}
@@ -355,7 +357,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>Rattacher Document</span>
+                <span>{t.salesPage.attachDoc}</span>
               </button>
               <button
                 type="button"
@@ -363,7 +365,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>Imprimer Bon de Commande</span>
+                <span>{t.salesPage.printOrderBtn}</span>
               </button>
               {selectedSale.stage !== 'DELIVERED' &&
                 hasEffectivePermission(currentUser, 'sales', 'update') && (
@@ -373,41 +375,41 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-xs transition"
                   >
                     <FileCheck className="w-3.5 h-3.5" />
-                    <span>Valider la Livraison (PV)</span>
+                    <span>{t.salesPage.validateDelivery}</span>
                   </button>
                 )}
             </div>
           }
           kpis={[
             {
-              label: 'Prix Négocié Net',
+              label: t.salesPage.negotiatedPrice,
               value: formatXAF(selectedSale.negotiatedPriceXAF),
-              sublabel: `Prix catalogue: ${formatXAF(selectedSale.listedPriceXAF)}`,
+              sublabel: `${t.salesPage.catalogPrice} ${formatXAF(selectedSale.listedPriceXAF)}`,
               highlight: true,
             },
             {
-              label: 'Acompte Encaissé',
+              label: t.salesPage.advancePaid,
               value: formatXAF(selectedSale.paidAmountXAF),
-              sublabel: 'Règlement validé en caisse',
+              sublabel: t.salesPage.paymentsReceived,
             },
             {
-              label: 'Solde Restant Dû',
+              label: t.salesPage.balanceDue,
               value: formatXAF(selectedSale.balanceXAF),
-              sublabel: selectedSale.balanceXAF === 0 ? 'Dossier soldé à 100%' : 'À percevoir avant livraison',
+              sublabel: selectedSale.balanceXAF === 0 ? (lang === 'en' ? 'Fully settled' : 'Dossier soldé à 100%') : t.salesPage.pendingHandover,
             },
             {
-              label: 'Conseiller Commercial',
-              value: selectedSale.salesAgentName || 'Équipe FCT Douala',
+              label: t.salesPage.salesAdvisor,
+              value: selectedSale.salesAgentName || (lang === 'en' ? 'FCT Douala Team' : 'Équipe FCT Douala'),
               sublabel: `Date: ${selectedSale.createdAt.split('T')[0]}`,
             },
           ]}
           tabs={[
-            { id: 'DETAILS', label: 'Commande & Tarifs', icon: TrendingUp },
-            { id: 'DOCS', label: 'Documents & PV Signés', icon: FileText, badge: saleDocs.length },
-            { id: 'VEHICLE', label: 'Véhicule Vendu', icon: Car },
-            { id: 'CUSTOMER', label: 'Client Acquéreur', icon: User },
-            { id: 'FINANCES', label: 'Facturation & Caisse', icon: DollarSign },
-            { id: 'TIMELINE', label: 'Pipeline Commercial', icon: Clock },
+            { id: 'DETAILS', label: t.salesPage.tabDetails, icon: TrendingUp },
+            { id: 'DOCS', label: t.salesPage.tabDocs, icon: FileText, badge: saleDocs.length },
+            { id: 'VEHICLE', label: t.salesPage.tabVehicle, icon: Car },
+            { id: 'CUSTOMER', label: t.salesPage.tabCustomer, icon: User },
+            { id: 'FINANCES', label: t.salesPage.tabFinances, icon: DollarSign },
+            { id: 'TIMELINE', label: t.salesPage.tabTimeline, icon: Clock },
           ]}
           activeTab={saleDetailTab}
           onTabChange={(t) => setSaleDetailTab(t as any)}
@@ -419,25 +421,25 @@ export const SalesView: React.FC<SalesViewProps> = ({
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
                   <div className="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
                     <TrendingUp className="w-4 h-4 text-blue-600" />
-                    <span>Synthèse Financière de la Vente</span>
+                    <span>{t.salesPage.financialSummary}</span>
                   </div>
                   <div className="space-y-2 text-xs text-slate-700">
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Prix catalogue initial :</span>
+                      <span className="text-slate-500">{t.salesPage.catalogPrice}</span>
                       <span className="font-bold text-slate-900">{formatXAF(selectedSale.listedPriceXAF)}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Prix de vente final négocié :</span>
+                      <span className="text-slate-500">{lang === 'en' ? 'Final negotiated price:' : 'Prix de vente final négocié :'}</span>
                       <span className="font-black text-sm text-blue-950">{formatXAF(selectedSale.negotiatedPriceXAF)}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Remise commerciale accordée :</span>
+                      <span className="text-slate-500">{t.salesPage.commercialDiscount}</span>
                       <span className="font-bold text-emerald-800">
                         {formatXAF(Math.max(0, selectedSale.listedPriceXAF - selectedSale.negotiatedPriceXAF))}
                       </span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-slate-500">Date d'ouverture dossier :</span>
+                      <span className="text-slate-500">{t.salesPage.openDate}</span>
                       <span className="font-mono text-slate-600">{selectedSale.createdAt}</span>
                     </div>
                   </div>
@@ -446,13 +448,13 @@ export const SalesView: React.FC<SalesViewProps> = ({
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
                   <div className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                     <FileText className="w-4 h-4 text-slate-600" />
-                    <span>Conditions Particulières & Notes</span>
+                    <span>{t.salesPage.specialConditions}</span>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-50 text-xs text-slate-700 min-h-[90px] border border-slate-100">
-                    {selectedSale.notes || 'Aucune observation particulière enregistrée.'}
+                    {selectedSale.notes || (lang === 'en' ? 'No specific notes recorded.' : 'Aucune observation particulière enregistrée.')}
                   </div>
                   <div className="text-xs text-slate-500">
-                    Commercial référent FCT : <strong className="text-slate-900">{selectedSale.salesAgentName}</strong>
+                    {t.salesPage.fctAdvisor} <strong className="text-slate-900">{selectedSale.salesAgentName}</strong>
                   </div>
                 </div>
               </div>
@@ -464,8 +466,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">Documents & Justificatifs de Vente</h3>
-                  <p className="text-xs text-slate-500">Bon de commande signé, PV de livraison contradictoire, carte grise barrée, scan CNI</p>
+                  <h3 className="text-sm font-black text-slate-900">{t.salesPage.saleDocsTitle}</h3>
+                  <p className="text-xs text-slate-500">{t.salesPage.saleDocsSubtitle}</p>
                 </div>
                 <button
                   type="button"
@@ -473,15 +475,15 @@ export const SalesView: React.FC<SalesViewProps> = ({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Rattacher un document</span>
+                  <span>{t.salesPage.attachDoc}</span>
                 </button>
               </div>
 
               {saleDocs.length === 0 ? (
                 <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-500 space-y-2">
                   <FileText className="w-8 h-8 text-slate-300 mx-auto" />
-                  <p className="font-bold text-slate-700">Aucun document numérique rattaché à ce dossier de vente</p>
-                  <p className="text-xs text-slate-400">Cliquez sur « Rattacher un document » pour archiver le bon de commande ou le PV de livraison.</p>
+                  <p className="font-bold text-slate-700">{t.salesPage.noSaleDocs}</p>
+                  <p className="text-xs text-slate-400">{t.salesPage.noSaleDocsHint}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -493,7 +495,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         </div>
                         <div>
                           <h4 className="font-bold text-slate-900 text-xs">{doc.title}</h4>
-                          <div className="text-[11px] text-slate-500">{doc.category} • Ajouté le {doc.uploadedAt ? doc.uploadedAt.split('T')[0] : 'N/A'}</div>
+                          <div className="text-[11px] text-slate-500">{doc.category} • {lang === 'en' ? 'Added' : 'Ajouté le'} {doc.uploadedAt ? doc.uploadedAt.split('T')[0] : 'N/A'}</div>
                           {doc.notes && <div className="text-[11px] text-slate-600 italic mt-0.5">{doc.notes}</div>}
                         </div>
                       </div>
@@ -562,13 +564,13 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       className="px-4 py-2 rounded-xl bg-[#0f2a4a] hover:bg-[#163a66] text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer self-start md:self-center"
                     >
                       <Car className="w-3.5 h-3.5" />
-                      <span>Ouvrir Fiche Showroom Véhicule</span>
+                      <span>{t.salesPage.vehicleShowroomBtn}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-slate-50 text-slate-500 text-xs">Véhicule non trouvé.</div>
+                <div className="p-4 rounded-xl bg-slate-50 text-slate-500 text-xs">{lang === 'en' ? 'Vehicle not found.' : 'Véhicule non trouvé.'}</div>
               )}
             </div>
           )}
@@ -580,16 +582,16 @@ export const SalesView: React.FC<SalesViewProps> = ({
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-1.5">
                     <div className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
-                      {linkedCust.type === 'COMPANY' ? 'Client Entreprise' : 'Client Particulier'}
+                      {linkedCust.type === 'COMPANY' ? (lang === 'en' ? 'Corporate Client' : 'Client Entreprise') : (lang === 'en' ? 'Individual Client' : 'Client Particulier')}
                     </div>
                     <h4 className="font-black text-slate-900 text-base">
                       {linkedCust.companyName || linkedCust.fullName}
                     </h4>
-                    <div className="text-slate-600 text-xs">Téléphone : <span className="font-bold text-slate-900">{linkedCust.phone}</span></div>
+                    <div className="text-slate-600 text-xs">{lang === 'en' ? 'Phone:' : 'Téléphone :'} <span className="font-bold text-slate-900">{linkedCust.phone}</span></div>
                     <div className="text-slate-600 text-xs">Email : {linkedCust.email}</div>
-                    <div className="text-slate-600 text-xs">Adresse / Ville : {linkedCust.address}</div>
+                    <div className="text-slate-600 text-xs">{lang === 'en' ? 'Address / City:' : 'Adresse / Ville :'} {linkedCust.address}</div>
                     {linkedCust.taxNumber && (
-                      <div className="font-mono text-slate-500 text-xs">NIU Fiscal : {linkedCust.taxNumber}</div>
+                      <div className="font-mono text-slate-500 text-xs">{lang === 'en' ? 'Tax ID:' : 'NIU Fiscal :'} {linkedCust.taxNumber}</div>
                     )}
                   </div>
 
@@ -603,13 +605,13 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer shrink-0"
                     >
                       <User className="w-3.5 h-3.5" />
-                      <span>Consulter Fiche Client CRM 360°</span>
+                      <span>{t.salesPage.customerProfileBtn}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-slate-50 text-slate-500 text-xs">Client acquéreur introuvable.</div>
+                <div className="p-4 rounded-xl bg-slate-50 text-slate-500 text-xs">{lang === 'en' ? 'Purchasing customer not found.' : 'Client acquéreur introuvable.'}</div>
               )}
             </div>
           )}
@@ -619,15 +621,15 @@ export const SalesView: React.FC<SalesViewProps> = ({
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-center">
-                  <div className="text-xs font-bold text-blue-700 uppercase">Prix Total Vente</div>
+                  <div className="text-xs font-bold text-blue-700 uppercase">{lang === 'en' ? 'Total Sale Price' : 'Prix Total Vente'}</div>
                   <div className="text-lg font-black text-blue-950 mt-1">{formatXAF(selectedSale.negotiatedPriceXAF)}</div>
                 </div>
                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
-                  <div className="text-xs font-bold text-emerald-700 uppercase">Acompte / Règlements Reçus</div>
+                  <div className="text-xs font-bold text-emerald-700 uppercase">{t.salesPage.advancePaid}</div>
                   <div className="text-lg font-black text-emerald-950 mt-1">{formatXAF(selectedSale.paidAmountXAF)}</div>
                 </div>
                 <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-center">
-                  <div className="text-xs font-bold text-amber-700 uppercase">Solde Restant à Percevoir</div>
+                  <div className="text-xs font-bold text-amber-700 uppercase">{t.salesPage.balanceDue}</div>
                   <div className="text-lg font-black text-amber-950 mt-1">{formatXAF(selectedSale.balanceXAF)}</div>
                 </div>
               </div>
@@ -644,7 +646,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     className="px-3.5 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     <Receipt className="w-3.5 h-3.5" />
-                    <span>Consulter les Factures de Vente Liées</span>
+                    <span>{t.salesPage.invoicesBtn}</span>
                   </button>
                   <button
                     type="button"
@@ -656,7 +658,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     <Wallet className="w-3.5 h-3.5" />
-                    <span>Encaisser Acompte / Solde en Caisse</span>
+                    <span>{t.salesPage.collectCashBtn}</span>
                   </button>
                 </div>
               )}
@@ -667,7 +669,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
           {saleDetailTab === 'TIMELINE' && (
             <div className="space-y-4">
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-                <h4 className="font-bold text-slate-800 text-xs mb-3">Progression du Pipeline de Vente</h4>
+                <h4 className="font-bold text-slate-800 text-xs mb-3">{t.salesPage.pipelineProgress}</h4>
                 <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                   {stages.map((stg, idx) => {
                     const currentIdx = stages.findIndex((s) => s.key === selectedSale.stage);
@@ -685,8 +687,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
                             : 'bg-white text-slate-400 border-slate-200'
                         }`}
                       >
-                        <div className="text-[10px] uppercase tracking-wider">{idx + 1}. Étape</div>
-                        <div className="text-xs truncate">{stg.label.split('. ')[1]}</div>
+                        <div className="text-[10px] uppercase tracking-wider">{idx + 1}. {t.salesPage.step}</div>
+                        <div className="text-xs truncate">{stg.label.split('. ')[1] || stg.label}</div>
                       </div>
                     );
                   })}
@@ -698,8 +700,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
                   {
                     id: 'evt-order',
                     date: selectedSale.createdAt,
-                    title: `Émission du bon de commande ${selectedSale.orderNumber}`,
-                    description: `Création du dossier de vente pour ${selectedSale.vehicleName} au client ${selectedSale.customerName}.`,
+                    title: `${lang === 'en' ? 'Sales order issued' : 'Émission du bon de commande'} ${selectedSale.orderNumber}`,
+                    description: `${lang === 'en' ? 'Sales file created for' : 'Création du dossier de vente pour'} ${selectedSale.vehicleName} ${lang === 'en' ? 'to customer' : 'au client'} ${selectedSale.customerName}.`,
                     type: 'INFO',
                   },
                   ...(selectedSale.stage === 'DELIVERED'
@@ -707,8 +709,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         {
                           id: 'evt-deliv',
                           date: selectedSale.deliveryDate || selectedSale.createdAt,
-                          title: 'Livraison contradictoire du véhicule avec PV de remise des clés',
-                          description: 'Clés et documents administratifs remis au client acquéreur.',
+                          title: lang === 'en' ? 'Vehicle handover with key release report' : 'Livraison contradictoire du véhicule avec PV de remise des clés',
+                          description: lang === 'en' ? 'Keys and legal documents handed over to purchaser.' : 'Clés et documents administratifs remis au client acquéreur.',
                           type: 'SUCCESS' as const,
                         },
                       ]
@@ -726,7 +728,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                   <Upload className="w-5 h-5 text-purple-600" />
-                  <span>Rattacher un Document à la Vente</span>
+                  <span>{t.salesPage.attachDocModalTitle}</span>
                 </h3>
                 <button
                   type="button"
@@ -739,49 +741,49 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
               <form onSubmit={handleAddDocumentToSale} className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Intitulé du document *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.salesPage.docTitleLabel}</label>
                   <input
                     type="text"
                     required
                     value={docForm.title}
                     onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
-                    placeholder="Ex: Bon de commande signé, PV livraison, Scan CNI acquéreur..."
+                    placeholder={t.salesPage.docTitlePlaceholder}
                     className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Catégorie du document</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.salesPage.docCategoryLabel}</label>
                   <select
                     value={docForm.category}
                     onChange={(e) => setDocForm({ ...docForm, category: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-slate-200"
                   >
-                    <option value="BON_DE_COMMANDE">Bon de Commande Signé</option>
-                    <option value="PV_LIVRAISON">PV de Livraison Contradictoire</option>
-                    <option value="CARTE_GRISE">Carte Grise / Certificat d'immatriculation</option>
-                    <option value="CNI_PASSEPORT">CNI / Passeport Acquéreur</option>
-                    <option value="RECU_ACOMPTE">Reçu d'Acompte / Caisse</option>
-                    <option value="AUTRE">Autre Justificatif</option>
+                    <option value="BON_DE_COMMANDE">{lang === 'en' ? 'Signed Sales Order' : 'Bon de Commande Signé'}</option>
+                    <option value="PV_LIVRAISON">{lang === 'en' ? 'Handover Report' : 'PV de Livraison Contradictoire'}</option>
+                    <option value="CARTE_GRISE">{lang === 'en' ? 'Registration / Title' : 'Carte Grise / Certificat d\'immatriculation'}</option>
+                    <option value="CNI_PASSEPORT">{lang === 'en' ? 'Purchaser ID / Passport' : 'CNI / Passeport Acquéreur'}</option>
+                    <option value="RECU_ACOMPTE">{lang === 'en' ? 'Deposit Receipt' : 'Reçu d\'Acompte / Caisse'}</option>
+                    <option value="AUTRE">{lang === 'en' ? 'Other Document' : 'Autre Justificatif'}</option>
                   </select>
                 </div>
 
                 <CloudinaryUploadDropzone
                   folder="fct_automobile/sales"
-                  label="Bon de commande / PV signé (Téléversement Cloudinary FCT) :"
-                  helperText="Glissez ou sélectionnez le bon signé, PV de livraison ou scan CNI (PDF, PNG, JPG)"
+                  label={lang === 'en' ? 'Sales order / Handover report (Cloudinary Upload):' : 'Bon de commande / PV signé (Téléversement Cloudinary FCT) :'}
+                  helperText={lang === 'en' ? 'Drag or select signed order, handover report or ID scan (PDF, PNG, JPG)' : 'Glissez ou sélectionnez le bon signé, PV de livraison ou scan CNI (PDF, PNG, JPG)'}
                   currentValue={docForm.fileUrl}
                   onUploadSuccess={(url) => setDocForm({ ...docForm, fileUrl: url })}
                   onClear={() => setDocForm({ ...docForm, fileUrl: '' })}
                 />
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Notes / Observations</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.salesPage.specialNotesLabel}</label>
                   <textarea
                     rows={2}
                     value={docForm.notes}
                     onChange={(e) => setDocForm({ ...docForm, notes: e.target.value })}
-                    placeholder="Observations ou annotations..."
+                    placeholder={lang === 'en' ? 'Observations or annotations...' : 'Observations ou annotations...'}
                     className="w-full p-2.5 rounded-xl border border-slate-200"
                   />
                 </div>
@@ -792,13 +794,13 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     onClick={() => setIsAddDocModalOpen(false)}
                     className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
                   >
-                    Annuler
+                    {t.cancel}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold cursor-pointer shadow-xs"
                   >
-                    Enregistrer et Rattacher
+                    {t.salesPage.saveAndAttachBtn}
                   </button>
                 </div>
               </form>
@@ -816,10 +818,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
         <div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <TrendingUp className="w-6 h-6 text-emerald-600" />
-            <span>Ventes Véhicules &amp; Showroom Commercial</span>
+            <span>{t.salesPage.title}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Bons de commande, négociation, acomptes et livraisons de véhicules neufs et occasions certifiées à Douala
+            {t.salesPage.subtitle}
           </p>
         </div>
 
@@ -832,7 +834,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Nouveau Bon de Commande Vente</span>
+            <span>{t.salesPage.newSaleBtn}</span>
           </button>
         )}
       </div>
@@ -865,14 +867,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
       <EntitySearchFilters
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Rechercher par n° de commande (VNT-...), client, véhicule, commercial..."
+        searchPlaceholder={t.salesPage.searchPlaceholder}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         tabs={[
-          { id: 'ALL', label: `Toutes (${state.sales.length})` },
-          { id: 'ORDER', label: 'Bons de Commande', count: state.sales.filter((s) => s.stage === 'ORDER').length },
-          { id: 'SOLD', label: 'Vendus', count: state.sales.filter((s) => s.stage === 'SOLD').length },
-          { id: 'DELIVERED', label: 'Livrés (PV)', count: state.sales.filter((s) => s.stage === 'DELIVERED').length },
+          { id: 'ALL', label: `${t.salesPage.allTab} (${state.sales.length})` },
+          { id: 'ORDER', label: t.salesPage.orderTab, count: state.sales.filter((s) => s.stage === 'ORDER').length },
+          { id: 'SOLD', label: lang === 'en' ? 'Sold' : 'Vendus', count: state.sales.filter((s) => s.stage === 'SOLD').length },
+          { id: 'DELIVERED', label: t.salesPage.deliveredTab, count: state.sales.filter((s) => s.stage === 'DELIVERED').length },
         ]}
         activeTab={activeStageFilter}
         onTabChange={setActiveStageFilter}
@@ -881,12 +883,12 @@ export const SalesView: React.FC<SalesViewProps> = ({
       {/* Content: Cards or Table */}
       {filteredSales.length === 0 ? (
         <EmptyState
-          title="Aucune commande de vente trouvée"
-          description="Aucune commande ne correspond à vos filtres actuels."
+          title={t.salesPage.emptySalesTitle}
+          description={t.salesPage.emptySalesDesc}
           icon={TrendingUp}
           action={
             hasEffectivePermission(currentUser, 'sales', 'create')
-              ? { label: 'Créer un bon de commande', onClick: () => setIsNewSaleModalOpen(true) }
+              ? { label: t.salesPage.newSaleBtn, onClick: () => setIsNewSaleModalOpen(true) }
               : undefined
           }
         />
@@ -907,32 +909,32 @@ export const SalesView: React.FC<SalesViewProps> = ({
                 status={sale.stage}
                 statusLabel={
                   sale.stage === 'DELIVERED'
-                    ? 'Livré'
+                    ? (lang === 'en' ? 'Delivered' : 'Livré')
                     : sale.stage === 'SOLD'
-                    ? 'Vendu'
-                    : 'Commande'
+                    ? (lang === 'en' ? 'Sold' : 'Vendu')
+                    : (lang === 'en' ? 'Order' : 'Commande')
                 }
                 onClick={() => setSelectedSale(sale)}
                 metrics={[
                   {
-                    label: 'Prix Négocié XAF',
+                    label: t.salesPage.negotiatedPriceCol,
                     value: formatXAF(sale.negotiatedPriceXAF),
                     icon: DollarSign,
                     highlight: true,
                   },
                   {
-                    label: 'Acompte Versé',
+                    label: t.salesPage.paidCol,
                     value: formatXAF(sale.paidAmountXAF),
                     icon: CheckCircle2,
                   },
                   {
-                    label: 'Solde Dû Livraison',
+                    label: t.salesPage.balanceCol,
                     value: formatXAF(sale.balanceXAF),
                     icon: Clock,
                     highlight: sale.balanceXAF > 0,
                   },
                   {
-                    label: 'Commercial Référent',
+                    label: t.salesPage.salesAgentCol,
                     value: sale.salesAgentName,
                     icon: User,
                   },
@@ -946,7 +948,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         handlePrintSaleOrder(sale);
                       }}
                       className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
-                      title="Imprimer le bon de commande"
+                      title={t.salesPage.printOrderBtn}
                     >
                       <Printer className="w-3.5 h-3.5" />
                     </button>
@@ -958,9 +960,9 @@ export const SalesView: React.FC<SalesViewProps> = ({
                           handleStageChange(sale.id, 'DELIVERED');
                         }}
                         className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-2xs transition"
-                        title="Marquer comme livré (PV)"
+                        title={t.salesPage.validateDelivery}
                       >
-                        Livrer
+                        {t.salesPage.deliverAction}
                       </button>
                     )}
                   </div>
@@ -975,15 +977,15 @@ export const SalesView: React.FC<SalesViewProps> = ({
             <table className="w-full min-w-[750px] text-xs text-left">
               <thead className="bg-[#0f2a4a] text-white uppercase text-[10px] tracking-wider">
                 <tr>
-                  <th className="py-3 px-4">N° Commande</th>
-                  <th className="py-3 px-4">Client</th>
-                  <th className="py-3 px-4">Véhicule</th>
-                  <th className="py-3 px-4 text-right">Prix Négocié</th>
-                  <th className="py-3 px-4 text-right">Acompte Payé</th>
-                  <th className="py-3 px-4 text-right">Solde Dû</th>
-                  <th className="py-3 px-4 text-center">Étape Pipeline</th>
-                  <th className="py-3 px-4">Commercial</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-3 px-4">{t.salesPage.orderNumCol}</th>
+                  <th className="py-3 px-4">{t.salesPage.customerCol}</th>
+                  <th className="py-3 px-4">{t.salesPage.vehicleCol}</th>
+                  <th className="py-3 px-4 text-right">{t.salesPage.negotiatedPriceCol}</th>
+                  <th className="py-3 px-4 text-right">{t.salesPage.paidCol}</th>
+                  <th className="py-3 px-4 text-right">{t.salesPage.balanceCol}</th>
+                  <th className="py-3 px-4 text-center">{t.salesPage.stageCol}</th>
+                  <th className="py-3 px-4">{t.salesPage.salesAgentCol}</th>
+                  <th className="py-3 px-4 text-right">{t.actions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1019,7 +1021,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     >
                       <button
                         onClick={() => handlePrintSaleOrder(sale)}
-                        title="Imprimer bon de commande"
+                        title={t.salesPage.printOrderBtn}
                         className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer inline-flex items-center transition"
                       >
                         <Printer className="w-3.5 h-3.5" />
@@ -1028,11 +1030,11 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       {sale.stage !== 'DELIVERED' && hasEffectivePermission(currentUser, 'sales', 'update') && (
                         <button
                           onClick={() => handleStageChange(sale.id, 'DELIVERED')}
-                          title="Marquer comme livré"
+                          title={t.salesPage.validateDelivery}
                           className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] cursor-pointer inline-flex items-center gap-1 shadow-2xs transition"
                         >
                           <FileCheck className="w-3 h-3" />
-                          <span>Livrer</span>
+                          <span>{t.salesPage.deliverAction}</span>
                         </button>
                       )}
                     </td>
@@ -1044,8 +1046,6 @@ export const SalesView: React.FC<SalesViewProps> = ({
         </div>
       )}
 
-      
-
       {/* New Sale Modal */}
       {isNewSaleModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
@@ -1053,7 +1053,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-emerald-600" />
-                <span>Nouveau Bon de Commande Vente Véhicule</span>
+                <span>{t.salesPage.newSaleModalTitle}</span>
               </h3>
               <button
                 onClick={() => setIsNewSaleModalOpen(false)}
@@ -1072,7 +1072,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
             <form onSubmit={handleCreateSale} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Client Acquéreur *</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.salesPage.buyerClient}</label>
                 <select
                   value={saleForm.customerId}
                   onChange={(e) => setSaleForm({ ...saleForm, customerId: e.target.value })}
@@ -1088,7 +1088,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Véhicule à Vendre *</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.salesPage.vehicleToSell}</label>
                 <select
                   value={saleForm.vehicleId}
                   onChange={(e) => handleSelectVehicle(e.target.value)}
@@ -1099,7 +1099,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     .filter((v) => v.isForSale && v.status !== 'SOLD')
                     .map((v) => (
                       <option key={v.id} value={v.id}>
-                        {v.brand} {v.model} ({v.licensePlate}) - Prix: {formatXAF(v.salePrice || 25000000)}
+                        {v.brand} {v.model} ({v.licensePlate}) - {lang === 'en' ? 'Price:' : 'Prix:'} {formatXAF(v.salePrice || 25000000)}
                       </option>
                     ))}
                 </select>
@@ -1107,7 +1107,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Prix Catalogue (XAF)</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.salesPage.catalogPriceLabel}</label>
                   <input
                     type="number"
                     value={saleForm.listedPriceXAF}
@@ -1117,7 +1117,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Prix Négocié Final (XAF) *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.salesPage.negotiatedPriceLabel}</label>
                   <input
                     type="number"
                     value={saleForm.negotiatedPriceXAF}
@@ -1129,7 +1129,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Acompte Immédiat Reçu (XAF)</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.salesPage.downPaymentLabel}</label>
                 <input
                   type="number"
                   value={saleForm.paidAmountXAF}
@@ -1139,7 +1139,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Notes &amp; Modalités particulières</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.salesPage.specialNotesLabel}</label>
                 <textarea
                   value={saleForm.notes}
                   onChange={(e) => setSaleForm({ ...saleForm, notes: e.target.value })}
@@ -1154,13 +1154,13 @@ export const SalesView: React.FC<SalesViewProps> = ({
                   onClick={() => setIsNewSaleModalOpen(false)}
                   className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Créer Bon de Commande &amp; Facture
+                  {t.salesPage.createOrderInvoiceBtn}
                 </button>
               </div>
             </form>
