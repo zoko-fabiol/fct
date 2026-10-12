@@ -542,7 +542,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
             label: 'Missions Conclues',
             value: `${driverTrips.length} missions`,
             icon: Briefcase,
-            sublabel: `Note ${selectedDriver.rating} / 5.0 ⭐`,
+            sublabel: `Évaluation certifiée : ${selectedDriver.rating} / 5.0`,
           },
         ]}
         tabs={[

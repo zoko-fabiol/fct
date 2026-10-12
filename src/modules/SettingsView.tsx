@@ -46,7 +46,9 @@ import {
   Check,
   RefreshCw,
   Info,
-  ShieldCheck
+  ShieldCheck,
+  X,
+  Globe
 } from 'lucide-react';
 import { UsersView } from './UsersView.tsx';
 
@@ -727,8 +729,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               <label className="block text-slate-700 font-bold">Langue Principale de l’Application</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                  { code: 'fr', label: 'Français (Cameroun)', flag: '🇨🇲' },
-                  { code: 'en', label: 'English (UK / US)', flag: '🇬🇧' },
+                  { code: 'fr', label: 'Français (Cameroun)', badge: 'FR' },
+                  { code: 'en', label: 'English (UK / US)', badge: 'EN' },
                 ].map((item) => (
                   <button
                     key={item.code}
@@ -741,9 +743,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                         : 'border-slate-200 hover:border-slate-300 bg-white'
                     }`}
                   >
-                    <span className="block font-bold text-slate-900 text-sm">
-                      {item.flag} {item.label}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wider">
+                        {item.badge}
+                      </span>
+                      <span className="font-bold text-slate-900 text-sm">
+                        {item.label}
+                      </span>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -1751,9 +1758,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               <button
                 type="button"
                 onClick={() => setIsImportModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"
+                aria-label="Fermer"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
             <p className="text-xs text-slate-500">

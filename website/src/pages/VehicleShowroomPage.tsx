@@ -157,7 +157,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
             )}
             {vehicle.licensePlate && (
               <div className="fct-showroom-plate-badge" title="Immatriculation CEMAC certifiée">
-                <span>🇨🇲</span>
+                <Shield size={12} style={{ color: '#38bdf8' }} />
                 <span>{vehicle.licensePlate}</span>
               </div>
             )}
@@ -179,8 +179,9 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
               <span>•</span>
               <span>Couleur : <strong>{vehicle.color}</strong></span>
               <span>•</span>
-              <span style={{ color: 'var(--fct-green-primary)', fontWeight: 700 }}>
-                ● {vehicle.status === 'AVAILABLE' ? 'Disponible au showroom' : 'En révision'}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--fct-green-primary)', fontWeight: 700 }}>
+                <CheckCircle2 size={13} />
+                <span>{vehicle.status === 'AVAILABLE' ? 'Disponible au showroom' : 'En révision'}</span>
               </span>
             </div>
           </div>

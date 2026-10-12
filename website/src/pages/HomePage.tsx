@@ -12,6 +12,10 @@ import {
   FileSpreadsheet,
   ArrowRight,
   Sparkles,
+  Settings2,
+  Fuel,
+  Users,
+  Gauge,
 } from 'lucide-react';
 import { Vehicle } from '../types/index.ts';
 import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
@@ -235,10 +239,22 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
                   </div>
 
                   <div className="fct-card-specs-row">
-                    <span>⚙️ {v.transmission === 'AUTOMATIQUE' ? 'Automatique' : 'Manuelle'}</span>
-                    <span>⛽ {v.fuel}</span>
-                    <span>👥 {v.seats} Places</span>
-                    <span>📍 {v.mileage.toLocaleString('fr-FR')} km</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <Settings2 size={13} style={{ color: 'var(--fct-blue-primary)', flexShrink: 0 }} />
+                      <span>{v.transmission === 'AUTOMATIQUE' ? 'Automatique' : 'Manuelle'}</span>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <Fuel size={13} style={{ color: 'var(--fct-blue-primary)', flexShrink: 0 }} />
+                      <span>{v.fuel}</span>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <Users size={13} style={{ color: 'var(--fct-blue-primary)', flexShrink: 0 }} />
+                      <span>{v.seats} Places</span>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <Gauge size={13} style={{ color: 'var(--fct-blue-primary)', flexShrink: 0 }} />
+                      <span>{v.mileage.toLocaleString('fr-FR')} km</span>
+                    </span>
                   </div>
 
                   <div className="fct-card-price-row">

@@ -221,9 +221,10 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({ data, onClose }) =
             <button
               type="button"
               onClick={() => setArchiveError(null)}
-              className="text-rose-600 font-bold ml-2"
+              className="text-rose-600 hover:text-rose-800 p-1 ml-2 transition"
+              aria-label="Fermer l'alerte"
             >
-              ✕
+              <X size={14} />
             </button>
           </div>
         )}
