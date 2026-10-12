@@ -31,6 +31,8 @@ const BORDER: [number, number, number] = [226, 232, 240];
 export interface InvoicePdfOptions {
   /** Image PNG (data URL) du QR code de vérification */
   qrDataUrl?: string;
+  /** Image PNG / JPEG (data URL) du logo officiel FCT */
+  logoDataUrl?: string;
 }
 
 /**
@@ -44,12 +46,25 @@ export function buildInvoicePdf(data: DocumentPrintData, options: InvoicePdfOpti
   let y = M;
 
   // --- En-tête société ---------------------------------------------------
-  doc.setFillColor(...NAVY);
-  doc.roundedRect(M, y, 18, 18, 2, 2, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('FCT', M + 9, y + 11.5, { align: 'center' });
+  if (options.logoDataUrl) {
+    try {
+      doc.addImage(options.logoDataUrl, 'PNG', M, y, 22, 14, undefined, 'FAST');
+    } catch {
+      doc.setFillColor(...NAVY);
+      doc.roundedRect(M, y, 18, 18, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('FCT', M + 9, y + 11.5, { align: 'center' });
+    }
+  } else {
+    doc.setFillColor(...NAVY);
+    doc.roundedRect(M, y, 18, 18, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('FCT', M + 9, y + 11.5, { align: 'center' });
+  }
 
   doc.setTextColor(...NAVY);
   doc.setFontSize(12.5);

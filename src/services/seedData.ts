@@ -45,7 +45,7 @@ export const initialSettings: AgencySettings = {
 
   // Extensions
   tradeName: 'FCT Automobile Douala',
-  logoUrl: '',
+  logoUrl: '/fct-logo.png',
   legalMention: 'Franchise Conseils Trading - SARL au capital de 10 000 000 FCFA - Douala, Cameroun',
   dateFormat: 'DD/MM/YYYY',
   timeFormat: '24h',

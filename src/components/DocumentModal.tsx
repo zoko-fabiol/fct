@@ -238,8 +238,12 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({ data, onClose }) =
             {/* EN-TÊTE OFFICIEL DE L'ENTREPRISE */}
             <div className="flex items-start justify-between border-b-2 border-emerald-600 pb-5">
               <div className="flex items-start gap-4">
-                <div className="h-16 w-16 bg-[#0f2a4a] rounded-lg flex items-center justify-center text-white font-black text-2xl tracking-widest shadow-sm shrink-0">
-                  FCT
+                <div className="bg-white border border-slate-200 rounded-lg p-1 shadow-xs shrink-0 flex items-center justify-center">
+                  <img
+                    src="/fct-logo.png"
+                    alt="FCT - Franchise Conseils Trading"
+                    className="h-14 w-auto max-w-[160px] object-contain"
+                  />
                 </div>
                 <div>
                   <h1 className="text-lg font-black text-[#0f2a4a] tracking-tight">

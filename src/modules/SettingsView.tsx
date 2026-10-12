@@ -613,14 +613,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 <label className="block text-slate-500 font-semibold mb-1">
                   URL du Logo de l’Entreprise (Entêtes & Impressions)
                 </label>
-                <input
-                  type="text"
-                  disabled={!canEdit}
-                  value={formData.logoUrl || ''}
-                  onChange={(e) => handleChange('logoUrl', e.target.value)}
-                  placeholder="https://... ou identifiant Cloudinary"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-mono text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-60"
-                />
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-28 bg-white border border-slate-200 rounded-xl p-1 shadow-xs flex items-center justify-center shrink-0">
+                    <img
+                      src={formData.logoUrl || '/fct-logo.png'}
+                      alt="Logo FCT Preview"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    disabled={!canEdit}
+                    value={formData.logoUrl || ''}
+                    onChange={(e) => handleChange('logoUrl', e.target.value)}
+                    placeholder="/fct-logo.png ou URL Cloudinary"
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-mono text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-60"
+                  />
+                </div>
               </div>
 
               <div className="sm:col-span-2">

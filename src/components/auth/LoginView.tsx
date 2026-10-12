@@ -282,10 +282,16 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
       {/* Carte d'Authentification Centrale */}
       <div className="relative z-10 w-full max-w-md my-auto bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6 sm:p-8 text-slate-800 space-y-6 animate-scaleUp">
-        {/* En-tête : Blason FCT Douala */}
+        {/* En-tête : Logo Officiel FCT Douala */}
         <div className="text-center space-y-3">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#0a264a] to-[#0e3b70] border-2 border-emerald-400/40 shadow-xl shadow-slate-900/20 flex items-center justify-center mx-auto text-emerald-400">
-            <Car className="w-8 h-8" />
+          <div className="flex justify-center mb-1">
+            <div className="bg-white p-2.5 rounded-2xl border border-slate-200/80 shadow-md inline-flex items-center justify-center">
+              <img
+                src="/fct-logo.png"
+                alt="FCT - Franchise Conseils Trading Automobile"
+                className="h-12 sm:h-14 w-auto max-w-[240px] object-contain"
+              />
+            </div>
           </div>
 
           <div>

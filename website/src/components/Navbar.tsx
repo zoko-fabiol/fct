@@ -22,14 +22,18 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPage, onNavigate }) => {
       <div className="fct-container">
         <div className="fct-nav-inner">
           {/* Logo & Identité Visuelle FCT */}
-          <button onClick={() => handleNav('home')} className="fct-brand" style={{ cursor: 'pointer' }}>
-            <div className="fct-brand-logo">
-              <Car size={24} strokeWidth={2.2} />
-            </div>
-            <div className="fct-brand-info" style={{ textAlign: 'left' }}>
-              <h1>FCT Automobile</h1>
-              <span>Franchise Conseils Trading · Douala</span>
-            </div>
+          <button onClick={() => handleNav('home')} className="fct-brand" style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}>
+            <img
+              src="/fct-logo.png"
+              alt="FCT - Franchise Conseils Trading Automobile Douala"
+              style={{
+                height: 46,
+                width: 'auto',
+                maxWidth: 200,
+                objectFit: 'contain',
+                display: 'block',
+              }}
+            />
           </button>
 
           {/* Liens de Navigation Desktop Multi-Pages */}

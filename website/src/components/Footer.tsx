@@ -20,13 +20,17 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           {/* Colonne 1 : À Propos */}
           <div className="fct-footer-col">
             <div className="fct-brand" style={{ marginBottom: 14 }}>
-              <div className="fct-brand-logo" style={{ width: 38, height: 38 }}>
-                <Car size={20} strokeWidth={2.2} />
-              </div>
-              <div className="fct-brand-info">
-                <h1 style={{ fontSize: 17 }}>FCT Automobile</h1>
-                <span style={{ fontSize: 10 }}>Franchise Conseils Trading</span>
-              </div>
+              <img
+                src="/fct-logo.png"
+                alt="FCT - Franchise Conseils Trading Automobile Douala"
+                style={{
+                  height: 44,
+                  width: 'auto',
+                  maxWidth: 190,
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
+              />
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 16 }}>
               Société leader à Douala pour la location de SUV, 4x4 et berlines de prestige, la vente certifiée

@@ -24,11 +24,15 @@ export const AppLoader: React.FC<AppLoaderProps> = ({
       <div className="relative z-10 flex flex-col items-center text-center max-w-sm w-full space-y-6 animate-fadeIn">
         {/* Blason / Logo Automobile FCT */}
         <div className="relative">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#0a264a] to-[#0e3b70] border-2 border-emerald-400/40 shadow-2xl shadow-emerald-950/50 flex items-center justify-center p-3">
-            <Car className="w-10 h-10 text-emerald-400 animate-pulse" />
+          <div className="bg-white p-3 rounded-2xl border-2 border-emerald-400/50 shadow-2xl shadow-emerald-950/50 flex items-center justify-center">
+            <img
+              src="/fct-logo.png"
+              alt="FCT - Franchise Conseils Trading"
+              className="h-14 w-auto max-w-[200px] object-contain animate-pulse"
+            />
           </div>
           {/* Badge de sécurité */}
-          <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center shadow-md">
+          <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center shadow-md">
             <ShieldCheck className="w-4 h-4 text-[#061524]" />
           </div>
         </div>

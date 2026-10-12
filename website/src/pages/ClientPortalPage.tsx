@@ -422,21 +422,18 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
             }}
           >
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div
+              <img
+                src="/fct-logo.png"
+                alt="FCT - Franchise Conseils Trading"
                 style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 14,
-                  background: 'var(--fct-blue-soft)',
-                  color: 'var(--fct-blue-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 12px',
+                  height: 48,
+                  width: 'auto',
+                  maxWidth: 200,
+                  objectFit: 'contain',
+                  margin: '0 auto 16px',
+                  display: 'block',
                 }}
-              >
-                <UserCheck size={26} />
-              </div>
+              />
               <h3 style={{ fontSize: 22, fontWeight: 900, color: 'var(--fct-blue-dark)', margin: 0 }}>
                 {isRegister ? 'Créer un Compte Adhérent' : 'Connexion Espace Client'}
               </h3>

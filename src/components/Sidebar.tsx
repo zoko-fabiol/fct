@@ -209,6 +209,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Agency Footer Card */}
       <div className="p-3 m-3 rounded-lg bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400">
+        <div className="bg-white p-1.5 rounded-md mb-2 flex items-center justify-center">
+          <img
+            src="/fct-logo.png"
+            alt="FCT Automobile Douala"
+            className="h-6 w-auto max-w-[130px] object-contain"
+          />
+        </div>
         <div className="font-semibold text-white mb-0.5">FCT Automobile Douala</div>
         <div className="text-[10px] text-slate-400">Agence Santa Barbara</div>
         <div className="mt-1 flex items-center justify-between text-[10px]">
@@ -240,12 +247,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Drawer Header */}
             <div className="p-3 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/90">
               <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-lg bg-emerald-600 flex items-center justify-center font-black text-xs text-white">
-                  FCT
-                </div>
-                <div>
-                  <div className="font-bold text-xs text-white">FCT Automobile</div>
-                  <div className="text-[10px] text-slate-400">Douala, Santa Barbara</div>
+                <div className="bg-white px-2 py-1 rounded-md border border-white/20 shadow-sm flex items-center justify-center shrink-0">
+                  <img
+                    src="/fct-logo.png"
+                    alt="FCT Automobile Douala"
+                    className="h-6 w-auto max-w-[110px] object-contain"
+                  />
                 </div>
               </div>
               <button

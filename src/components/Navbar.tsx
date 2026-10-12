@@ -61,8 +61,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
           </button>
 
-          <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-emerald-600 flex items-center justify-center font-black text-lg sm:text-xl text-white tracking-wider shadow-inner shrink-0">
-            FCT
+          <div className="bg-white px-2 py-1 rounded-lg border border-white/20 shadow-sm flex items-center justify-center shrink-0">
+            <img
+              src="/fct-logo.png"
+              alt="FCT Automobile Douala"
+              className="h-7 sm:h-8 w-auto max-w-[120px] object-contain"
+            />
           </div>
           <div>
             <div className="flex items-center gap-1.5 sm:gap-2">
