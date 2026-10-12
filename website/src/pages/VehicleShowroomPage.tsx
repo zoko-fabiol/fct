@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
   Car,
   ChevronLeft,
+  ChevronRight,
   Settings2,
   Fuel,
   Users,
@@ -17,6 +18,10 @@ import {
   Clock,
   MapPin,
   Award,
+  Maximize2,
+  X,
+  Eye,
+  Shield,
 } from 'lucide-react';
 import { Vehicle } from '../types/index.ts';
 import { FCT_AGENCY_INFO, CERTIFIED_HEALTH_RECORDS } from '../data/defaultCatalog.ts';
@@ -37,6 +42,8 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
   onToast,
 }) => {
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isFitCover, setIsFitCover] = useState(false);
   const [activeTab, setActiveTab] = useState<'rent' | 'buy'>(vehicle.isForRent ? 'rent' : 'buy');
 
   // Dates par défaut pour réservation
@@ -133,62 +140,55 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
   return (
     <div className="fct-showroom-page">
       <div className="fct-container">
-        {/* Fil d'Ariane & Bouton Retour */}
-        <div className="fct-breadcrumb">
-          <button
-            onClick={onBack}
-            className="btn-secondary"
-            style={{ padding: '6px 14px', fontSize: 13, gap: 4 }}
-          >
+        {/* Navigation Supérieure Épurée */}
+        <div className="fct-showroom-top-nav">
+          <button onClick={onBack} className="fct-back-link">
             <ChevronLeft size={16} />
             <span>Retour au catalogue</span>
           </button>
-          <span>/</span>
-          <span>Showroom Véhicule</span>
-          <span>/</span>
-          <strong style={{ color: 'var(--fct-blue-dark)' }}>
-            {vehicle.brand} {vehicle.model}
-          </strong>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span className="fct-badge fct-badge-blue">{vehicle.category}</span>
+            {vehicle.conditionGrade && (
+              <span className="fct-badge fct-badge-green">
+                <Award size={13} />
+                {vehicle.conditionGrade}
+              </span>
+            )}
+            {vehicle.licensePlate && (
+              <div className="fct-showroom-plate-badge" title="Immatriculation CEMAC certifiée">
+                <span>🇨🇲</span>
+                <span>{vehicle.licensePlate}</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Titre & Badges d'En-tête */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 28 }}>
-          <div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-              <span className="fct-badge fct-badge-blue">{vehicle.category}</span>
-              {vehicle.conditionGrade && (
-                <span className="fct-badge fct-badge-green">
-                  <Award size={12} />
-                  {vehicle.conditionGrade}
-                </span>
-              )}
-              {vehicle.licensePlate && (
-                <span
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                    padding: '3px 8px',
-                    borderRadius: 6,
-                    background: '#e2e8f0',
-                    color: '#0f172a',
-                    fontWeight: 700,
-                  }}
-                >
-                  Plaque : {vehicle.licensePlate}
-                </span>
-              )}
-            </div>
-            <h1 style={{ fontSize: 36, fontWeight: 900, color: 'var(--fct-blue-dark)', lineHeight: 1.15 }}>
-              {vehicle.brand} {vehicle.model} ({vehicle.year})
+        {/* En-tête Prestigieux du Showroom */}
+        <div className="fct-showroom-header">
+          <div className="fct-showroom-title-wrap">
+            <h1 className="fct-showroom-title">
+              {vehicle.brand} {vehicle.model}{' '}
+              <span style={{ color: 'var(--fct-blue-primary)', fontWeight: 700 }}>({vehicle.year})</span>
             </h1>
-            <p style={{ color: 'var(--text-sub)', fontSize: 14, marginTop: 4 }}>
-              Couleur : <strong>{vehicle.color}</strong> · Emplacement : <strong>{vehicle.currentLocation}</strong>
-            </p>
+            <div className="fct-showroom-subtitle">
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <MapPin size={14} color="var(--fct-blue-primary)" />
+                {vehicle.currentLocation || 'Agence FCT Bonamoussadi, Douala'}
+              </span>
+              <span>•</span>
+              <span>Couleur : <strong>{vehicle.color}</strong></span>
+              <span>•</span>
+              <span style={{ color: 'var(--fct-green-primary)', fontWeight: 700 }}>
+                ● {vehicle.status === 'AVAILABLE' ? 'Disponible au showroom' : 'En révision'}
+              </span>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 10 }}>
+          {/* Boutons d'Action Rapide */}
+          <div className="fct-showroom-actions-fast">
             <a
-              href={`https://wa.me/${FCT_AGENCY_INFO.whatsapp}?text=Bonjour%20FCT%20Automobile,%20je%20suis%20intéressé%20par%20le%20showroom%20du%20véhicule%20${encodeURIComponent(
+              href={`https://wa.me/${FCT_AGENCY_INFO.whatsapp}?text=Bonjour%20FCT%20Automobile,%20je%20souhaite%20des%20informations%20sur%20le%20showroom%20du%20véhicule%20${encodeURIComponent(
                 vehicle.brand + ' ' + vehicle.model
               )}`}
               target="_blank"
@@ -205,26 +205,88 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
           </div>
         </div>
 
-        {/* Grille Principale Showroom (Galerie Gauche + Action Droite) */}
+        {/* Grille Principale Showroom */}
         <div className="fct-showroom-grid">
-          {/* Colonne de Gauche : Galerie & Spécifications & Carnet */}
+          {/* Colonne de Gauche : Galerie Studio HD + Fiche Technique + Carnet */}
           <div>
-            {/* Galerie d'Images Showroom */}
+            {/* Galerie d'Images Showroom Studio (Zéro Coupe) */}
             <div className="fct-showroom-gallery">
-              <div className="fct-gallery-main">
+              <div
+                className={`fct-gallery-main ${isFitCover ? 'fit-cover' : ''}`}
+                onClick={() => photos.length > 0 && setIsLightboxOpen(true)}
+                title="Cliquer pour afficher en plein écran haute résolution"
+              >
                 {photos.length > 0 ? (
-                  <img src={photos[activePhotoIdx]} alt={`${vehicle.brand} ${vehicle.model}`} />
+                  <img
+                    src={photos[activePhotoIdx]}
+                    alt={`${vehicle.brand} ${vehicle.model} - Vue Showroom Officielle FCT`}
+                  />
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, color: 'var(--fct-blue-primary)' }}>
-                    <Car size={80} strokeWidth={1.4} />
-                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-sub)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, color: '#94a3b8' }}>
+                    <Car size={72} strokeWidth={1.4} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1' }}>
                       Showroom Officiel FCT Automobile Douala
                     </span>
                   </div>
                 )}
+
+                {/* Flèches de navigation si plusieurs photos */}
+                {photos.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="fct-gallery-arrow left"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActivePhotoIdx((prev) => (prev > 0 ? prev - 1 : photos.length - 1));
+                      }}
+                      aria-label="Photo précédente"
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                    <button
+                      type="button"
+                      className="fct-gallery-arrow right"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActivePhotoIdx((prev) => (prev < photos.length - 1 ? prev + 1 : 0));
+                      }}
+                      aria-label="Photo suivante"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  </>
+                )}
+
+                {/* Contrôles de Galerie Overlay */}
+                <div className="fct-gallery-controls" onClick={(e) => e.stopPropagation()}>
+                  {photos.length > 1 && (
+                    <span className="fct-gallery-btn" style={{ cursor: 'default' }}>
+                      {activePhotoIdx + 1} / {photos.length}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="fct-gallery-btn"
+                    onClick={() => setIsFitCover(!isFitCover)}
+                    title={isFitCover ? "Afficher l'image entière sans coupure" : "Remplir le cadre"}
+                  >
+                    <Eye size={13} />
+                    <span>{isFitCover ? 'Vue Entière' : 'Remplir'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="fct-gallery-btn"
+                    onClick={() => setIsLightboxOpen(true)}
+                    title="Agrandir en plein écran"
+                  >
+                    <Maximize2 size={13} />
+                    <span>Zoom HD</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Miniatures cliquables si plusieurs photos */}
+              {/* Miniatures cliquables */}
               {photos.length > 1 && (
                 <div className="fct-gallery-thumbs">
                   {photos.map((p, idx) => (
@@ -232,12 +294,56 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                       key={idx}
                       onClick={() => setActivePhotoIdx(idx)}
                       className={`fct-thumb-btn ${idx === activePhotoIdx ? 'active' : ''}`}
+                      title={`Photo ${idx + 1}`}
                     >
                       <img src={p} alt={`Vue ${idx + 1}`} />
                     </button>
                   ))}
                 </div>
               )}
+
+              {/* Puces Clés du Véhicule sous la photo */}
+              <div className="fct-showroom-quick-specs">
+                <div className="fct-quick-spec-item">
+                  <div className="fct-quick-spec-icon">
+                    <Settings2 size={18} />
+                  </div>
+                  <div className="fct-quick-spec-info">
+                    <small>Boîte</small>
+                    <strong>{vehicle.transmission === 'AUTOMATIQUE' ? 'Automatique' : 'Manuelle'}</strong>
+                  </div>
+                </div>
+
+                <div className="fct-quick-spec-item">
+                  <div className="fct-quick-spec-icon">
+                    <Fuel size={18} />
+                  </div>
+                  <div className="fct-quick-spec-info">
+                    <small>Énergie</small>
+                    <strong>{vehicle.fuel}</strong>
+                  </div>
+                </div>
+
+                <div className="fct-quick-spec-item">
+                  <div className="fct-quick-spec-icon">
+                    <Users size={18} />
+                  </div>
+                  <div className="fct-quick-spec-info">
+                    <small>Capacité</small>
+                    <strong>{vehicle.seats} Places</strong>
+                  </div>
+                </div>
+
+                <div className="fct-quick-spec-item">
+                  <div className="fct-quick-spec-icon">
+                    <ShieldCheck size={18} />
+                  </div>
+                  <div className="fct-quick-spec-info">
+                    <small>Garantie</small>
+                    <strong>110 Pts Contrôlés</strong>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Description Détaillée */}
@@ -653,6 +759,27 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Modal Lightbox Haute Définition Plein Écran */}
+      {isLightboxOpen && photos.length > 0 && (
+        <div className="fct-lightbox-overlay" onClick={() => setIsLightboxOpen(false)}>
+          <button
+            type="button"
+            className="fct-lightbox-close"
+            onClick={() => setIsLightboxOpen(false)}
+            aria-label="Fermer le plein écran"
+          >
+            <X size={22} />
+          </button>
+          <div className="fct-lightbox-img-wrap" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={photos[activePhotoIdx]}
+              alt={`${vehicle.brand} ${vehicle.model} - Plein écran`}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

@@ -561,22 +561,101 @@ img {
 /* ==========================================================================
    PAGE SHOWROOM VÉHICULE DÉDIÉE (PLEINE PAGE - ZÉRO POPUP)
    ========================================================================== */
+/* ==========================================================================
+   PAGE SHOWROOM VÉHICULE DÉDIÉE (PLEINE PAGE HAUT DE GAMME)
+   ========================================================================== */
 .fct-showroom-page {
-  padding: 40px 0 80px;
+  padding: 24px 0 80px;
 }
 
-.fct-breadcrumb {
+.fct-showroom-top-nav {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.fct-back-link {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  color: var(--fct-blue-dark);
   font-size: 13px;
-  color: var(--text-muted);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.fct-back-link:hover {
+  background: var(--fct-blue-soft);
+  border-color: var(--fct-blue-primary);
+  color: var(--fct-blue-primary);
+  transform: translateX(-2px);
+}
+
+.fct-showroom-plate-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: monospace;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Header Showroom (Titre + Localisation + Actions) */
+.fct-showroom-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 20px;
   margin-bottom: 24px;
 }
 
-.fct-breadcrumb a {
-  color: var(--fct-blue-primary);
-  font-weight: 700;
+.fct-showroom-title-wrap {
+  flex: 1;
+  min-width: 280px;
+}
+
+.fct-showroom-title {
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 900;
+  color: var(--fct-blue-dark);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+}
+
+.fct-showroom-subtitle {
+  font-size: 14px;
+  color: var(--text-sub);
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fct-showroom-actions-fast {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .fct-showroom-grid {
@@ -586,55 +665,134 @@ img {
   align-items: start;
 }
 
-/* Galerie Haute Définition */
+/* Galerie Haute Définition Plein Cadre (Zéro Image Coupée) */
 .fct-showroom-gallery {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  padding: 20px;
+  padding: 16px;
   box-shadow: var(--shadow-sm);
+  position: relative;
 }
 
 .fct-gallery-main {
   width: 100%;
-  height: 420px;
+  aspect-ratio: 16 / 10;
+  max-height: 480px;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  background: #f1f5f9;
+  background: radial-gradient(circle at center, #1e293b 0%, #0a0f1d 100%);
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: zoom-in;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .fct-gallery-main img {
   width: 100%;
   height: 100%;
+  object-fit: contain; /* Garantee: 100% de la voiture visible, jamais rognée ! */
+  transition: transform 0.3s ease;
+}
+
+.fct-gallery-main.fit-cover img {
   object-fit: cover;
 }
 
+/* Boutons de contrôle overlay sur la photo */
+.fct-gallery-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.fct-gallery-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fct-gallery-btn:hover {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: #ffffff;
+  transform: scale(1.03);
+}
+
+/* Flèches de navigation photo */
+.fct-gallery-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.fct-gallery-arrow:hover {
+  background: rgba(15, 23, 42, 0.95);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.fct-gallery-arrow.left {
+  left: 12px;
+}
+
+.fct-gallery-arrow.right {
+  right: 12px;
+}
+
+/* Miniatures de Photos */
 .fct-gallery-thumbs {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-top: 14px;
   overflow-x: auto;
   padding-bottom: 6px;
 }
 
 .fct-thumb-btn {
-  width: 90px;
-  height: 65px;
+  width: 84px;
+  height: 56px;
   border-radius: var(--radius-sm);
   overflow: hidden;
   border: 2px solid transparent;
+  background: #0f172a;
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: 0.6;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .fct-thumb-btn.active {
   border-color: var(--fct-blue-primary);
   opacity: 1;
+  transform: scale(1.04);
+  box-shadow: 0 0 0 2px var(--fct-blue-soft);
 }
 
 .fct-thumb-btn img {
@@ -643,12 +801,113 @@ img {
   object-fit: cover;
 }
 
+/* Lightbox Modal Plein Écran */
+.fct-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 29, 0.95);
+  backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.fct-lightbox-img-wrap {
+  max-width: 95vw;
+  max-height: 85vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fct-lightbox-img-wrap img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.fct-lightbox-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fct-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1);
+}
+
+/* Puces Clés du Véhicule (Bandeau sous photo) */
+.fct-showroom-quick-specs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.fct-quick-spec-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-surface-alt);
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.fct-quick-spec-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--fct-blue-soft);
+  color: var(--fct-blue-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fct-quick-spec-info small {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.fct-quick-spec-info strong {
+  display: block;
+  font-size: 13px;
+  color: var(--fct-blue-dark);
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Volet d'Action & Réservation Showroom */
 .fct-showroom-action-card {
   background: var(--bg-surface);
   border: 1.5px solid var(--border-medium);
   border-radius: var(--radius-xl);
-  padding: 32px;
+  padding: 30px;
   box-shadow: var(--shadow-md);
   position: sticky;
   top: 100px;
@@ -942,6 +1201,40 @@ img {
     padding: 16px;
     gap: 12px;
   }
+
+  /* Showroom Responsive sur Tablettes et Mobiles */
+  .fct-showroom-page {
+    padding: 16px 0 60px;
+  }
+  .fct-showroom-grid {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+  }
+  .fct-showroom-action-card {
+    position: static !important;
+  }
+  .fct-showroom-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .fct-showroom-actions-fast {
+    width: 100%;
+  }
+  .fct-showroom-actions-fast a {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  .fct-showroom-quick-specs {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .fct-gallery-main {
+    aspect-ratio: 16 / 10;
+    max-height: 320px;
+  }
 }
 
 /* Page Agence Layout Responsive */
@@ -956,6 +1249,13 @@ img {
   .fct-agency-layout {
     grid-template-columns: 1fr;
     gap: 24px;
+  }
+  .fct-showroom-grid {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+  .fct-showroom-action-card {
+    position: static !important;
   }
 }
 
@@ -992,6 +1292,20 @@ img {
   }
   .fct-card-image-wrap {
     height: 175px;
+  }
+  .fct-showroom-quick-specs {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .fct-gallery-main {
+    aspect-ratio: 16 / 10;
+    max-height: 250px;
+  }
+  .fct-showroom-action-card {
+    padding: 20px 16px;
+  }
+  .fct-showroom-specs-box {
+    padding: 20px 16px;
   }
 }
 
