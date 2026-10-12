@@ -36,12 +36,15 @@ export interface InvoicePdfOptions {
   qrDataUrl?: string;
   /** Image PNG / JPEG (data URL) du logo officiel FCT */
   logoDataUrl?: string;
+  /** Langue d'exportation du PDF */
+  lang?: 'fr' | 'en';
 }
 
 /**
  * Construit le document jsPDF d'une facture / d'un document commercial FCT.
  */
 export function buildInvoicePdf(data: DocumentPrintData, options: InvoicePdfOptions = {}): jsPDF {
+  const isEn = options.lang === 'en';
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -75,7 +78,7 @@ export function buildInvoicePdf(data: DocumentPrintData, options: InvoicePdfOpti
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(...SLATE);
-  doc.text(FCT_COMPANY.tagline, textStartX, y + 8.5);
+  doc.text(isEn ? 'Car Sales & Rental - Fleet Management - Douala' : FCT_COMPANY.tagline, textStartX, y + 8.5);
   doc.text(FCT_COMPANY.address, textStartX, y + 12.5);
   doc.setFontSize(7.5);
   doc.text(FCT_COMPANY.legal, textStartX, y + 16.5);
@@ -108,7 +111,7 @@ export function buildInvoicePdf(data: DocumentPrintData, options: InvoicePdfOpti
   // --- Bloc client -------------------------------------------------------
   const clientLines = [
     data.customerAddress,
-    data.customerPhone ? `Tél : ${data.customerPhone}` : undefined,
+    data.customerPhone ? `${isEn ? 'Phone:' : 'Tél :'} ${data.customerPhone}` : undefined,
     data.customerNiu ? `NIU : ${data.customerNiu}` : undefined,
   ].filter(Boolean) as string[];
   const boxH = 12 + clientLines.length * 4;
@@ -119,17 +122,17 @@ export function buildInvoicePdf(data: DocumentPrintData, options: InvoicePdfOpti
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7);
   doc.setTextColor(148, 163, 184);
-  doc.text('CLIENT / DESTINATAIRE', M + 4, y + 5);
-  doc.text("LIEU D'ÉMISSION & DEVISE", rightX - 4, y + 5, { align: 'right' });
+  doc.text(isEn ? 'CLIENT / RECIPIENT' : 'CLIENT / DESTINATAIRE', M + 4, y + 5);
+  doc.text(isEn ? 'ISSUING AGENCY & CURRENCY' : "LIEU D'ÉMISSION & DEVISE", rightX - 4, y + 5, { align: 'right' });
   doc.setFontSize(10);
   doc.setTextColor(15, 23, 42);
   doc.text(data.customerName || '-', M + 4, y + 10);
   doc.setFontSize(8.5);
-  doc.text(FCT_COMPANY.agency, rightX - 4, y + 10, { align: 'right' });
+  doc.text(isEn ? 'FCT Agency Bonamoussadi' : FCT_COMPANY.agency, rightX - 4, y + 10, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(...SLATE);
-  doc.text('Devise : FCFA (XAF)', rightX - 4, y + 14, { align: 'right' });
+  doc.text(isEn ? 'Currency: CFA Franc (XAF)' : 'Devise : FCFA (XAF)', rightX - 4, y + 14, { align: 'right' });
   clientLines.forEach((line, i) => doc.text(line, M + 4, y + 14 + i * 4));
   y += boxH + 6;
 
@@ -137,7 +140,7 @@ export function buildInvoicePdf(data: DocumentPrintData, options: InvoicePdfOpti
   autoTable(doc, {
     startY: y,
     margin: { left: M, right: M, bottom: 18 },
-    head: [['Désignation', 'Qté', 'Prix unitaire', 'Total (FCFA)']],
+    head: [[isEn ? 'Description' : 'Désignation', isEn ? 'Qty' : 'Qté', isEn ? 'Unit Price' : 'Prix unitaire', isEn ? 'Total (XAF)' : 'Total (FCFA)']],
     body: data.items.map((it) => [
       it.description,
       String(it.qty),
@@ -170,17 +173,19 @@ export function buildInvoicePdf(data: DocumentPrintData, options: InvoicePdfOpti
   const totEffective = data.total ?? data.totalAmountXAF ?? 0;
   const subTotEffective = data.subtotal ?? totEffective;
   const taxEffective = data.tax ?? 0;
-  const totals: [string, string, boolean?][] = [['Sous-total', formatAmountPlain(subTotEffective)]];
-  if (taxEffective > 0) totals.push(['TVA (19,25 %)', formatAmountPlain(taxEffective)]);
+  const totals: [string, string, boolean?][] = [[isEn ? 'Subtotal' : 'Sous-total', formatAmountPlain(subTotEffective)]];
+  if (taxEffective > 0) totals.push([isEn ? 'VAT (19.25%)' : 'TVA (19,25 %)', formatAmountPlain(taxEffective)]);
   if (data.depositAmount && data.depositAmount > 0) {
-    totals.push(['Caution consignée', formatAmountPlain(data.depositAmount)]);
+    totals.push([isEn ? 'Security deposit' : 'Caution consignée', formatAmountPlain(data.depositAmount)]);
   }
-  totals.push(['TOTAL NET', formatAmountPlain(totEffective), true]);
+  totals.push([isEn ? 'TOTAL NET (INCL. TAX)' : 'TOTAL NET', formatAmountPlain(totEffective), true]);
 
-  const words = `Arrêté le présent document à la somme de : ${amountInWordsFCFA(totEffective)}.`;
+  const words = isEn
+    ? `Certified this official document to the sum of: ${amountInWordsFCFA(totEffective, 'en')}.`
+    : `Arrêté le présent document à la somme de : ${amountInWordsFCFA(totEffective, 'fr')}.`;
   doc.setFontSize(8);
   const wordsLines = doc.splitTextToSize(words, pageW - 2 * M);
-  const notesLines = data.notes ? doc.splitTextToSize(`Observations : ${data.notes}`, pageW - 2 * M - 6) : [];
+  const notesLines = data.notes ? doc.splitTextToSize(`${isEn ? 'Notes:' : 'Observations :'} ${data.notes}`, pageW - 2 * M - 6) : [];
   const blockH = totals.length * 6 + 6 + wordsLines.length * 4 + (notesLines.length ? notesLines.length * 4 + 8 : 0) + 42;
   if (y + blockH > pageH - 18) {
     doc.addPage();
@@ -241,19 +246,19 @@ export function buildInvoicePdf(data: DocumentPrintData, options: InvoicePdfOpti
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(51, 65, 85);
-  doc.text(data.signatureRole1 || 'Pour le Client (Bon pour accord)', M + colW / 2, y, { align: 'center' });
-  doc.text(data.signatureRole2 || 'Pour FCT Automobile (Direction / Caissier)', M + colW * 1.5, y, { align: 'center' });
+  doc.text(data.signatureRole1 || (isEn ? 'For the Client (Approved & Agreed)' : 'Pour le Client (Bon pour accord)'), M + colW / 2, y, { align: 'center' });
+  doc.text(data.signatureRole2 || (isEn ? 'For FCT Automobile (Management / Cashier)' : 'Pour FCT Automobile (Direction / Caissier)'), M + colW * 1.5, y, { align: 'center' });
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7);
   doc.setTextColor(148, 163, 184);
-  doc.text('Signature & mention manuscrite', M + colW / 2, y + 22, { align: 'center' });
-  doc.text('Cachet & signature certifiée', M + colW * 1.5, y + 22, { align: 'center' });
+  doc.text(isEn ? 'Handwritten signature & notice' : 'Signature & mention manuscrite', M + colW / 2, y + 22, { align: 'center' });
+  doc.text(isEn ? 'Official stamp & certified signature' : 'Cachet & signature certifiée', M + colW * 1.5, y + 22, { align: 'center' });
 
   if (options.qrDataUrl) {
     doc.addImage(options.qrDataUrl, 'PNG', pageW - M - 24, y - 3, 24, 24);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6);
-    doc.text('Vérification FCT', pageW - M - 12, y + 24, { align: 'center' });
+    doc.text(isEn ? 'FCT Verification' : 'Vérification FCT', pageW - M - 12, y + 24, { align: 'center' });
   }
 
   // --- Pied de page sur chaque page --------------------------------------

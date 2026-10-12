@@ -591,7 +591,7 @@ export default function App() {
       </div>
 
       {/* Official FCT Document Print Modal */}
-      <DocumentModal data={printDocData} onClose={() => setPrintDocData(null)} />
+      <DocumentModal data={printDocData} onClose={() => setPrintDocData(null)} lang={lang} />
 
       {/* Modal Mon Profil Collaborateur & Code PIN */}
       {currentUser && (

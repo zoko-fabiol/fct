@@ -223,24 +223,31 @@ export function exportCollectionToExcel<T>(
 /**
  * Exporte un contrat de location ou une facture au format Excel A4 professionnel et stylisé
  */
-export function exportDocumentToExcel(docData: DocumentPrintData): void {
+export function exportDocumentToExcel(docData: DocumentPrintData, lang: 'fr' | 'en' = 'fr'): void {
   const wb = XLSX.utils.book_new();
 
   // Tableau de contenu brut
+  const isEn = lang === 'en';
   const aoa: any[][] = [
     ['FRANCHISE CONSEILS TRADING (FCT) AUTOMOBILE DOUALA', '', '', '', ''],
     ['Carrefour Santa Barbara, Bonamoussadi, Douala - Cameroun', '', '', '', ''],
     ['RC/DLA/2020/B/1458 | NIU : M052014587963P | Tél : +237 699 45 88 12', '', '', '', ''],
     [],
-    [`DOCUMENT OFFICIEL : ${docData.title.toUpperCase()}`, '', '', '', ''],
-    [`N° : ${docData.docNumber}`, '', '', `DATE : ${docData.date}`, ''],
+    [`${isEn ? 'OFFICIAL DOCUMENT' : 'DOCUMENT OFFICIEL'} : ${docData.title.toUpperCase()}`, '', '', '', ''],
+    [`${isEn ? 'NO.' : 'N°'} : ${docData.docNumber}`, '', '', `DATE : ${docData.date}`, ''],
     [],
-    ['DESTINATAIRE / CLIENT :', '', '', 'LIEU D\'ÉMISSION :', ''],
-    [docData.customerName, '', '', 'Agence FCT Bonamoussadi', ''],
-    [docData.customerAddress || 'Douala, Cameroun', '', '', 'Devise : FCFA (XAF)', ''],
-    [`Tél : ${docData.customerPhone || 'N/A'}${docData.customerNiu ? ` | NIU : ${docData.customerNiu}` : ''}`, '', '', '', ''],
+    [`${isEn ? 'RECIPIENT / CLIENT :' : 'DESTINATAIRE / CLIENT :'}`, '', '', `${isEn ? 'ISSUING LOCATION :' : 'LIEU D\'ÉMISSION :'}`, ''],
+    [docData.customerName, '', '', isEn ? 'FCT Agency Bonamoussadi' : 'Agence FCT Bonamoussadi', ''],
+    [docData.customerAddress || 'Douala, Cameroun', '', '', isEn ? 'Currency: CFA Franc (XAF)' : 'Devise : FCFA (XAF)', ''],
+    [`${isEn ? 'Phone' : 'Tél'} : ${docData.customerPhone || 'N/A'}${docData.customerNiu ? ` | NIU : ${docData.customerNiu}` : ''}`, '', '', '', ''],
     [],
-    ['N°', 'Désignation de la prestation', 'Qté', 'Prix unitaire (FCFA)', 'Total (FCFA)'],
+    [
+      isEn ? 'No.' : 'N°',
+      isEn ? 'Service / Item Description' : 'Désignation de la prestation',
+      isEn ? 'Qty' : 'Qté',
+      isEn ? 'Unit Price (FCFA)' : 'Prix unitaire (FCFA)',
+      isEn ? 'Total (FCFA)' : 'Total (FCFA)',
+    ],
   ];
 
   const tableStartRow = 12;
@@ -257,26 +264,42 @@ export function exportDocumentToExcel(docData: DocumentPrintData): void {
   });
 
   const subtotalRowIdx = aoa.length;
-  aoa.push(['', '', '', 'Sous-total :', docData.subtotal]);
+  aoa.push(['', '', '', isEn ? 'Subtotal :' : 'Sous-total :', docData.subtotal]);
 
   if (docData.tax && docData.tax > 0) {
-    aoa.push(['', '', '', 'TVA (19,25%) :', docData.tax]);
+    aoa.push(['', '', '', isEn ? 'VAT (19.25%) :' : 'TVA (19,25%) :', docData.tax]);
   }
 
   if (docData.depositAmount && docData.depositAmount > 0) {
-    aoa.push(['', '', '', 'Caution consignée :', docData.depositAmount]);
+    aoa.push(['', '', '', isEn ? 'Security deposit :' : 'Caution consignée :', docData.depositAmount]);
   }
 
   const totalRowIdx = aoa.length;
-  aoa.push(['', '', '', 'TOTAL NET (FCFA) :', docData.total]);
+  aoa.push(['', '', '', isEn ? 'TOTAL NET (FCFA) :' : 'TOTAL NET (FCFA) :', docData.total]);
 
   // Observations & Signatures
   aoa.push([]);
-  aoa.push(['OBSERVATIONS & MENTIONS LÉGALES :']);
-  aoa.push([docData.notes || 'Caution consignée obligatoire. Le locataire s\'engage à respecter les conditions d\'utilisation du réseau FCT.']);
+  aoa.push([isEn ? 'NOTES & LEGAL NOTICES :' : 'OBSERVATIONS & MENTIONS LÉGALES :']);
+  aoa.push([
+    docData.notes || (isEn
+      ? 'Mandatory security deposit. The client agrees to abide by the terms and conditions of the FCT network.'
+      : 'Caution consignée obligatoire. Le locataire s\'engage à respecter les conditions d\'utilisation du réseau FCT.')
+  ]);
   aoa.push([]);
-  aoa.push(['Pour le Client (Bon pour accord)', '', '', 'Pour FCT Automobile (Direction / Caissier)', '']);
-  aoa.push(['Mention manuscrite "Lu et approuvé"', '', '', 'Cachet & signature certifiée', '']);
+  aoa.push([
+    isEn ? 'For the Client (Approved & Agreed)' : 'Pour le Client (Bon pour accord)',
+    '',
+    '',
+    isEn ? 'For FCT Automobile (Management / Cashier)' : 'Pour FCT Automobile (Direction / Caissier)',
+    ''
+  ]);
+  aoa.push([
+    isEn ? 'Handwritten mention "Read & Approved"' : 'Mention manuscrite "Lu et approuvé"',
+    '',
+    '',
+    isEn ? 'Official stamp & certified signature' : 'Cachet & signature certifiée',
+    ''
+  ]);
 
   const ws = XLSX.utils.aoa_to_sheet(aoa);
 

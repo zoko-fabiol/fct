@@ -83,8 +83,57 @@ export function numberToFrenchWords(amount: number): string {
   return parts.join(' ');
 }
 
-/** Montant en lettres pour les factures : « Arrêtée la présente facture à la somme de … ». */
-export function amountInWordsFCFA(amount: number): string {
+/** Convertit un nombre entier en toutes lettres (anglais). */
+const EN_UNITS = [
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+  'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
+  'seventeen', 'eighteen', 'nineteen',
+];
+const EN_TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+function below1000En(n: number): string {
+  let s = '';
+  if (n >= 100) {
+    s += `${EN_UNITS[Math.floor(n / 100)]} hundred`;
+    n %= 100;
+    if (n > 0) s += ' ';
+  }
+  if (n >= 20) {
+    s += EN_TENS[Math.floor(n / 10)];
+    if (n % 10 > 0) s += `-${EN_UNITS[n % 10]}`;
+  } else if (n > 0 || s === '') {
+    s += EN_UNITS[n];
+  }
+  return s;
+}
+
+export function numberToEnglishWords(amount: number): string {
+  let n = Math.floor(Math.abs(Number.isFinite(amount) ? amount : 0));
+  if (n === 0) return 'zero';
+
+  const parts: string[] = [];
+  const scales: [number, string][] = [
+    [1_000_000_000, 'billion'],
+    [1_000_000, 'million'],
+    [1_000, 'thousand'],
+  ];
+  for (const [value, label] of scales) {
+    const q = Math.floor(n / value);
+    if (q > 0) {
+      parts.push(`${below1000En(q)} ${label}`);
+      n %= value;
+    }
+  }
+  if (n > 0) parts.push(below1000En(n));
+  return parts.join(' ');
+}
+
+/** Montant en lettres pour les factures (bilingue FR/EN). */
+export function amountInWordsFCFA(amount: number, lang: 'fr' | 'en' = 'fr'): string {
+  if (lang === 'en') {
+    const words = numberToEnglishWords(Math.round(amount));
+    return `${words.charAt(0).toUpperCase()}${words.slice(1)} CFA Francs`;
+  }
   const words = numberToFrenchWords(Math.round(amount));
   return `${words.charAt(0).toUpperCase()}${words.slice(1)} francs CFA`;
 }

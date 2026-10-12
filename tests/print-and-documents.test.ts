@@ -32,7 +32,7 @@ describe('Formatage des Factures & Documents FCT (invoiceFormat)', () => {
     expect(formatAmountPlain(150000, false)).toBe('150 000');
   });
 
-  it('convertit les entiers en toutes lettres en français', () => {
+  it('convertit les entiers en toutes lettres en français et en anglais', () => {
     expect(numberToFrenchWords(0)).toBe('zéro');
     expect(numberToFrenchWords(1)).toBe('un');
     expect(numberToFrenchWords(21)).toBe('vingt et un');
@@ -40,7 +40,9 @@ describe('Formatage des Factures & Documents FCT (invoiceFormat)', () => {
     expect(numberToFrenchWords(100)).toBe('cent');
     expect(numberToFrenchWords(1000)).toBe('mille');
     expect(numberToFrenchWords(1250000)).toContain('un million');
-    expect(amountInWordsFCFA(150000)).toMatch(/Cent cinquante mille francs CFA/i);
+    expect(amountInWordsFCFA(150000, 'fr')).toMatch(/Cent cinquante mille francs CFA/i);
+    expect(amountInWordsFCFA(150000, 'en')).toBe('One hundred fifty thousand CFA Francs');
+    expect(amountInWordsFCFA(1250000, 'en')).toBe('One million two hundred fifty thousand CFA Francs');
   });
 
   it('construit un payload de QR code complet et infalsifiable', () => {
@@ -137,6 +139,12 @@ describe('Génération de PDF Vectoriel des Factures (invoicePdf)', () => {
     const doc = buildInvoicePdf(sampleInvoice);
     expect(doc).toBeDefined();
     expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(1);
+  });
+
+  it('génère un PDF vectoriel bilingue en anglais', () => {
+    const docEn = buildInvoicePdf(sampleInvoice, { lang: 'en' });
+    expect(docEn).toBeDefined();
+    expect(docEn.getNumberOfPages()).toBeGreaterThanOrEqual(1);
   });
 
   it('génère un Blob PDF pour archivage direct sur Cloudinary', () => {
