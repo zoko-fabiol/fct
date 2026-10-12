@@ -2,13 +2,18 @@ import React, { useState, useMemo } from 'react';
 import { ShoppingBag, Award, CheckCircle2, Car, ArrowRight, ShieldCheck, Settings2, Fuel, Users, Gauge } from 'lucide-react';
 import { Vehicle } from '../types/index.ts';
 import { formatXAF } from '../utils/formatters.ts';
+import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
 
 interface SalesPageProps {
   vehicles: Vehicle[];
   onOpenShowroom: (vehicleId: string) => void;
+  lang?: WebsiteLanguage;
 }
 
-export const SalesPage: React.FC<SalesPageProps> = ({ vehicles, onOpenShowroom }) => {
+export const SalesPage: React.FC<SalesPageProps> = ({ vehicles, onOpenShowroom, lang = 'fr' }) => {
+  const t = websiteTranslations[lang].sales;
+  const isEn = lang === 'en';
+
   const [selectedCat, setSelectedCat] = useState<string>('ALL');
   const [maxPrice, setMaxPrice] = useState<number>(100000000);
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,12 +42,11 @@ export const SalesPage: React.FC<SalesPageProps> = ({ vehicles, onOpenShowroom }
       {/* En-tête de la Page Vente */}
       <div className="fct-page-header">
         <div className="fct-container">
-          <span className="fct-badge fct-badge-green">Véhicules Certifiés FCT</span>
-          <h2>Vente de Véhicules d'Occasion & Neufs à Douala</h2>
-          <p>
-            Tous nos véhicules en vente sont révisés en 110 points dans nos ateliers de Bassa.
-            Papiers en règle (carte grise, dédouanement CEMAC, visite technique valide) et devis proforma immédiat.
-          </p>
+          <span className="fct-badge fct-badge-green">
+            {isEn ? 'FCT Certified Vehicles' : 'Véhicules Certifiés FCT'}
+          </span>
+          <h2>{t.title}</h2>
+          <p>{t.subtitle}</p>
         </div>
       </div>
 
@@ -51,10 +55,10 @@ export const SalesPage: React.FC<SalesPageProps> = ({ vehicles, onOpenShowroom }
           {/* Barre Latérale des Filtres */}
           <aside className="fct-filters-sidebar">
             <div className="fct-filter-group">
-              <h4>Recherche</h4>
+              <h4>{isEn ? 'Search' : 'Recherche'}</h4>
               <input
                 type="text"
-                placeholder="Modèle, marque..."
+                placeholder={isEn ? 'Model, brand...' : 'Modèle, marque...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="fct-input"
@@ -63,55 +67,55 @@ export const SalesPage: React.FC<SalesPageProps> = ({ vehicles, onOpenShowroom }
             </div>
 
             <div className="fct-filter-group">
-              <h4>Catégorie</h4>
+              <h4>{isEn ? 'Category' : 'Catégorie'}</h4>
               <div className="fct-filter-options">
                 <button
                   onClick={() => setSelectedCat('ALL')}
                   className={`fct-filter-btn ${selectedCat === 'ALL' ? 'active' : ''}`}
                 >
-                  Toutes ({vehicles.filter((v) => v.isForSale).length})
+                  {isEn ? `All (${vehicles.filter((v) => v.isForSale).length})` : `Toutes (${vehicles.filter((v) => v.isForSale).length})`}
                 </button>
                 <button
                   onClick={() => setSelectedCat('SUV')}
                   className={`fct-filter-btn ${selectedCat === 'SUV' ? 'active' : ''}`}
                 >
-                  SUV & Confort
+                  {isEn ? 'SUV & Comfort' : 'SUV & Confort'}
                 </button>
                 <button
                   onClick={() => setSelectedCat('4X4')}
                   className={`fct-filter-btn ${selectedCat === '4X4' ? 'active' : ''}`}
                 >
-                  4x4 Tout-Terrain
+                  {isEn ? '4x4 All-Terrain' : '4x4 Tout-Terrain'}
                 </button>
                 <button
                   onClick={() => setSelectedCat('LUXE')}
                   className={`fct-filter-btn ${selectedCat === 'LUXE' ? 'active' : ''}`}
                 >
-                  Luxe & VIP
+                  {isEn ? 'Luxury & VIP' : 'Luxe & VIP'}
                 </button>
               </div>
             </div>
 
             <div className="fct-filter-group">
-              <h4>Budget Maximal</h4>
+              <h4>{isEn ? 'Maximum Budget' : 'Budget Maximal'}</h4>
               <div className="fct-filter-options">
                 <button
                   onClick={() => setMaxPrice(100000000)}
                   className={`fct-filter-btn ${maxPrice === 100000000 ? 'active' : ''}`}
                 >
-                  Tous les budgets
+                  {isEn ? 'All budgets' : 'Tous les budgets'}
                 </button>
                 <button
                   onClick={() => setMaxPrice(30000000)}
                   className={`fct-filter-btn ${maxPrice === 30000000 ? 'active' : ''}`}
                 >
-                  Moins de 30M FCFA
+                  {isEn ? 'Under 30M XAF' : 'Moins de 30M FCFA'}
                 </button>
                 <button
                   onClick={() => setMaxPrice(50000000)}
                   className={`fct-filter-btn ${maxPrice === 50000000 ? 'active' : ''}`}
                 >
-                  Moins de 50M FCFA
+                  {isEn ? 'Under 50M XAF' : 'Moins de 50M FCFA'}
                 </button>
               </div>
             </div>
@@ -119,10 +123,12 @@ export const SalesPage: React.FC<SalesPageProps> = ({ vehicles, onOpenShowroom }
             <div style={{ background: 'var(--fct-green-soft)', padding: 14, borderRadius: 10, border: '1px solid rgba(5, 150, 105, 0.2)', fontSize: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: 'var(--fct-green-primary)' }}>
                 <ShieldCheck size={16} />
-                <span>Garantie Atelier FCT</span>
+                <span>{isEn ? 'FCT Workshop Warranty' : 'Garantie Atelier FCT'}</span>
               </div>
               <p style={{ color: 'var(--text-sub)', marginTop: 4 }}>
-                Chaque vente comprend un carnet de santé numérique et un certificat d'inspection valide.
+                {isEn
+                  ? 'Every vehicle sale includes a digital health record and a certified technical inspection.'
+                  : 'Chaque vente comprend un carnet de santé numérique et un certificat d\'inspection valide.'}
               </p>
             </div>
           </aside>
@@ -131,11 +137,11 @@ export const SalesPage: React.FC<SalesPageProps> = ({ vehicles, onOpenShowroom }
           <main>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-sub)' }}>
-                {salesList.length} véhicule{salesList.length > 1 ? 's' : ''} certifié{salesList.length > 1 ? 's' : ''} en stock
+                {salesList.length} {isEn ? (salesList.length > 1 ? 'certified vehicles in stock' : 'certified vehicle in stock') : (salesList.length > 1 ? 'véhicules certifiés en stock' : 'véhicule certifié en stock')}
               </span>
               <span className="fct-badge fct-badge-amber">
                 <Award size={12} />
-                <span>Inspection 110 points validée</span>
+                <span>{isEn ? '110-point inspection certified' : 'Inspection 110 points validée'}</span>
               </span>
             </div>
 
@@ -200,7 +206,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({ vehicles, onOpenShowroom }
                       <div className="fct-card-specs-row">
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                           <Settings2 size={13} style={{ color: 'var(--fct-blue-primary)', flexShrink: 0 }} />
-                          <span>{v.transmission === 'AUTOMATIQUE' ? 'Automatique' : 'Manuelle'}</span>
+                          <span>{v.transmission === 'AUTOMATIQUE' ? (isEn ? 'Automatic' : 'Automatique') : (isEn ? 'Manual' : 'Manuelle')}</span>
                         </span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                           <Fuel size={13} style={{ color: 'var(--fct-blue-primary)', flexShrink: 0 }} />
@@ -208,25 +214,25 @@ export const SalesPage: React.FC<SalesPageProps> = ({ vehicles, onOpenShowroom }
                         </span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                           <Users size={13} style={{ color: 'var(--fct-blue-primary)', flexShrink: 0 }} />
-                          <span>{v.seats} Places</span>
+                          <span>{v.seats} {isEn ? 'Seats' : 'Places'}</span>
                         </span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                           <Gauge size={13} style={{ color: 'var(--fct-blue-primary)', flexShrink: 0 }} />
-                          <span>{v.mileage.toLocaleString('fr-FR')} km</span>
+                          <span>{v.mileage.toLocaleString(isEn ? 'en-US' : 'fr-FR')} km</span>
                         </span>
                       </div>
 
                       <div className="fct-card-price-row">
                         <div>
                           <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            Prix TTC Garanti
+                            {isEn ? 'Direct Purchase Price' : 'Prix TTC Garanti'}
                           </span>
                           <div className="fct-price-tag">
                             {formatXAF(v.salePrice)}
                           </div>
                         </div>
                         <button className="btn-primary" style={{ padding: '8px 14px', fontSize: 12 }}>
-                          <span>Showroom</span>
+                          <span>{isEn ? 'Showroom' : 'Showroom'}</span>
                           <ArrowRight size={14} />
                         </button>
                       </div>
@@ -236,7 +242,9 @@ export const SalesPage: React.FC<SalesPageProps> = ({ vehicles, onOpenShowroom }
               </div>
             ) : (
               <div style={{ background: 'white', padding: 50, borderRadius: 16, textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
-                <p style={{ color: 'var(--text-sub)', fontSize: 15 }}>Aucun véhicule en vente ne correspond à ces critères.</p>
+                <p style={{ color: 'var(--text-sub)', fontSize: 15 }}>
+                  {isEn ? 'No vehicles for sale match these criteria.' : 'Aucun véhicule en vente ne correspond à ces critères.'}
+                </p>
               </div>
             )}
           </main>

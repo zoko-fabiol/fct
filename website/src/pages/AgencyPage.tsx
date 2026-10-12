@@ -1,17 +1,25 @@
 import React from 'react';
 import { MapPin, Phone, Clock, Mail, MessageSquare, ShieldCheck, Navigation } from 'lucide-react';
 import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
+import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
 
-export const AgencyPage: React.FC = () => {
+interface AgencyPageProps {
+  lang?: WebsiteLanguage;
+}
+
+export const AgencyPage: React.FC<AgencyPageProps> = ({ lang = 'fr' }) => {
+  const t = websiteTranslations[lang].agency;
+  const isEn = lang === 'en';
+
   return (
     <div style={{ paddingBottom: 80 }}>
       <div className="fct-page-header">
         <div className="fct-container">
-          <span className="fct-badge fct-badge-green">Siège & Showroom Douala</span>
-          <h2>Notre Agence de Bonamoussadi</h2>
-          <p>
-            Rencontrez nos conseillers, visitez notre showroom et retirez votre véhicule en toute sérénité.
-          </p>
+          <span className="fct-badge fct-badge-green">
+            {isEn ? 'Douala Headquarters & Showroom' : 'Siège & Showroom Douala'}
+          </span>
+          <h2>{t.title}</h2>
+          <p>{t.subtitle}</p>
         </div>
       </div>
 
@@ -29,10 +37,12 @@ export const AgencyPage: React.FC = () => {
                   <MapPin size={22} />
                 </div>
                 <div>
-                  <strong style={{ display: 'block', fontSize: 15, color: 'var(--fct-blue-dark)' }}>Adresse Physique :</strong>
-                  <p style={{ color: 'var(--text-body)', marginTop: 2 }}>{FCT_AGENCY_INFO.address}</p>
+                  <strong style={{ display: 'block', fontSize: 15, color: 'var(--fct-blue-dark)' }}>
+                    {t.addressTitle} :
+                  </strong>
+                  <p style={{ color: 'var(--text-body)', marginTop: 2 }}>{t.addressDesc}</p>
                   <p style={{ color: 'var(--fct-green-primary)', fontWeight: 700, fontSize: 13, marginTop: 2 }}>
-                    {FCT_AGENCY_INFO.landmark}
+                    {t.landmark}
                   </p>
                 </div>
               </div>
@@ -42,8 +52,12 @@ export const AgencyPage: React.FC = () => {
                   <Clock size={22} />
                 </div>
                 <div>
-                  <strong style={{ display: 'block', fontSize: 15, color: 'var(--fct-blue-dark)' }}>Horaires d'Ouverture :</strong>
-                  <p style={{ color: 'var(--text-body)', marginTop: 2 }}>{FCT_AGENCY_INFO.hours}</p>
+                  <strong style={{ display: 'block', fontSize: 15, color: 'var(--fct-blue-dark)' }}>
+                    {t.openingHoursTitle} :
+                  </strong>
+                  <p style={{ color: 'var(--text-body)', marginTop: 2 }}>{t.weekdays}</p>
+                  <p style={{ color: 'var(--text-body)', marginTop: 1 }}>{t.saturday}</p>
+                  <p style={{ color: 'var(--fct-blue-primary)', fontWeight: 600, marginTop: 1 }}>{t.sunday}</p>
                 </div>
               </div>
 
@@ -52,7 +66,9 @@ export const AgencyPage: React.FC = () => {
                   <Phone size={22} />
                 </div>
                 <div>
-                  <strong style={{ display: 'block', fontSize: 15, color: 'var(--fct-blue-dark)' }}>Standards Téléphoniques :</strong>
+                  <strong style={{ display: 'block', fontSize: 15, color: 'var(--fct-blue-dark)' }}>
+                    {t.contactDesk} :
+                  </strong>
                   <p style={{ marginTop: 2 }}>
                     <a href={`tel:${FCT_AGENCY_INFO.phone1}`} style={{ color: 'var(--fct-blue-primary)', fontWeight: 700 }}>
                       {FCT_AGENCY_INFO.phone1}
@@ -63,7 +79,7 @@ export const AgencyPage: React.FC = () => {
                     </a>
                   </p>
                   <p style={{ color: 'var(--fct-green-primary)', fontSize: 13, marginTop: 2 }}>
-                    {FCT_AGENCY_INFO.emergency}
+                    {isEn ? '24/7 Roadside Assistance: +237 677 12 34 56' : FCT_AGENCY_INFO.emergency}
                   </p>
                 </div>
               </div>
@@ -73,7 +89,9 @@ export const AgencyPage: React.FC = () => {
                   <Mail size={22} />
                 </div>
                 <div>
-                  <strong style={{ display: 'block', fontSize: 15, color: 'var(--fct-blue-dark)' }}>Courriel Professionnel :</strong>
+                  <strong style={{ display: 'block', fontSize: 15, color: 'var(--fct-blue-dark)' }}>
+                    {isEn ? 'Corporate Email:' : 'Courriel Professionnel :'}
+                  </strong>
                   <p style={{ color: 'var(--text-body)', marginTop: 2 }}>{FCT_AGENCY_INFO.email}</p>
                 </div>
               </div>
@@ -99,40 +117,28 @@ export const AgencyPage: React.FC = () => {
                 margin: '0 auto 16px',
               }}
             >
-              <MessageSquare size={32} />
+              <Navigation size={32} />
             </div>
-
-            <h4 style={{ fontSize: 20, fontWeight: 900, color: 'var(--fct-blue-dark)', marginBottom: 8 }}>
-              Assistance & Réservation Immédiate
+            <h4 style={{ fontSize: 20, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 8 }}>
+              {isEn ? 'Easy Access in Bonamoussadi' : 'Accès Facile à Bonamoussadi'}
             </h4>
-            <p style={{ fontSize: 14, color: 'var(--text-sub)', marginBottom: 24, lineHeight: 1.6 }}>
-              Échangez directement avec un conseiller FCT à Douala pour réserver un véhicule sous 15 minutes.
+            <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 24 }}>
+              {isEn
+                ? 'Prime location at Carrefour Santa Barbara with dedicated customer parking and immediate vehicle pickup.'
+                : 'Emplacement stratégique au Carrefour Santa Barbara avec parking sécurisé pour vos véhicules de location et d\'essai.'}
             </p>
-
             <a
-              href={`https://wa.me/${FCT_AGENCY_INFO.whatsapp}?text=Bonjour%20FCT%20Automobile,%20je%20souhaite%20des%20renseignements%20sur%20vos%20véhicules.`}
+              href={`https://wa.me/${FCT_AGENCY_INFO.whatsapp}?text=${encodeURIComponent(
+                isEn ? 'Hello FCT Automobile, I would like to locate your agency.' : 'Bonjour FCT Automobile, je souhaite obtenir l\'itinéraire vers votre agence.'
+              )}`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-emerald"
-              style={{ width: '100%', justifyContent: 'center', padding: '14px 20px', marginBottom: 12 }}
+              style={{ display: 'inline-flex', width: '100%', justifyContent: 'center', padding: '12px 20px', fontSize: 14 }}
             >
               <MessageSquare size={18} />
-              <span>Contacter sur WhatsApp (+237)</span>
+              <span>{isEn ? 'Open WhatsApp Chat' : 'Contacter sur WhatsApp'}</span>
             </a>
-
-            <a
-              href={`tel:${FCT_AGENCY_INFO.phone1}`}
-              className="btn-secondary"
-              style={{ width: '100%', justifyContent: 'center', padding: '13px 20px' }}
-            >
-              <Phone size={18} />
-              <span>Appeler : {FCT_AGENCY_INFO.phone1}</span>
-            </a>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', marginTop: 24 }}>
-              <ShieldCheck size={16} color="#059669" />
-              <span>Agence officielle certifiée FCT Douala</span>
-            </div>
           </div>
         </div>
       </div>

@@ -30,13 +30,17 @@ import {
 } from '../services/clientPortalService.ts';
 import { AppPage } from '../types/router.ts';
 import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
+import { WebsiteLanguage, websiteI18n } from '../services/i18n.ts';
 
 interface ClientPortalPageProps {
   onToast: (msg: string) => void;
   onNavigate?: (page: AppPage) => void;
+  lang?: WebsiteLanguage;
 }
 
-export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onNavigate }) => {
+export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onNavigate, lang = 'fr' }) => {
+  const isEn = lang === 'en';
+  const t = websiteI18n[lang].portal;
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(auth.currentUser);
   const [bookings, setBookings] = useState<ClientBooking[]>([]);
   const [isLoadingBookings, setIsLoadingBookings] = useState(false);
@@ -78,7 +82,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
-      setAuthError('Veuillez renseigner votre email et mot de passe.');
+      setAuthError(isEn ? 'Please provide both email and password.' : 'Veuillez renseigner votre email et mot de passe.');
       return;
     }
 
@@ -88,33 +92,41 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
     try {
       if (isRegister) {
         if (!fullName.trim()) {
-          setAuthError('Veuillez indiquer votre nom complet.');
+          setAuthError(isEn ? 'Please provide your full name.' : 'Veuillez indiquer votre nom complet.');
           setAuthLoading(false);
           return;
         }
         const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
         await syncCustomerProfile(cred.user, { fullName: fullName.trim(), phone: phone.trim() });
         setCurrentUser(cred.user);
-        onToast(`Bienvenue ${fullName.trim()} ! Votre compte client FCT est actif.`);
+        onToast(
+          isEn
+            ? `Welcome ${fullName.trim()}! Your FCT client account is active.`
+            : `Bienvenue ${fullName.trim()} ! Votre compte client FCT est actif.`
+        );
       } else {
         const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
         setCurrentUser(cred.user);
-        onToast(`Ravi de vous revoir sur votre espace client FCT !`);
+        onToast(
+          isEn
+            ? `Glad to see you back on your FCT client portal!`
+            : `Ravi de vous revoir sur votre espace client FCT !`
+        );
       }
     } catch (err: any) {
       console.error('[Client Portal Auth Error]', err);
-      // Traduction des erreurs Firebase en français explicite (Silent-Failure Hunting)
+      // Traduction des erreurs Firebase en français/anglais explicite (Silent-Failure Hunting)
       const code = err.code || '';
       if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-        setAuthError('Adresse email ou mot de passe incorrect.');
+        setAuthError(isEn ? 'Incorrect email address or password.' : 'Adresse email ou mot de passe incorrect.');
       } else if (code === 'auth/email-already-in-use') {
-        setAuthError('Cette adresse email est déjà associée à un compte FCT.');
+        setAuthError(isEn ? 'This email address is already registered with FCT.' : 'Cette adresse email est déjà associée à un compte FCT.');
       } else if (code === 'auth/weak-password') {
-        setAuthError('Le mot de passe doit contenir au moins 6 caractères.');
+        setAuthError(isEn ? 'Password must be at least 6 characters long.' : 'Le mot de passe doit contenir au moins 6 caractères.');
       } else if (code === 'auth/invalid-email') {
-        setAuthError('Format d’adresse email invalide.');
+        setAuthError(isEn ? 'Invalid email address format.' : 'Format d’adresse email invalide.');
       } else {
-        setAuthError(err.message || 'Erreur lors de la connexion. Veuillez réessayer.');
+        setAuthError(err.message || (isEn ? 'An error occurred during authentication. Please retry.' : 'Erreur lors de la connexion. Veuillez réessayer.'));
       }
     } finally {
       setAuthLoading(false);
@@ -126,7 +138,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
       await signOut(auth);
       setCurrentUser(null);
       setBookings([]);
-      onToast('Vous êtes déconnecté de votre espace adhérent.');
+      onToast(isEn ? 'You have logged out of your member portal.' : 'Vous êtes déconnecté de votre espace adhérent.');
     } catch (e: any) {
       console.warn('Erreur déconnexion:', e);
     }
@@ -141,11 +153,14 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
       {/* En-tête Espace Adhérent */}
       <div className="fct-page-header">
         <div className="fct-container">
-          <span className="fct-badge fct-badge-blue">Espace Adhérent & Client Privilège</span>
-          <h2>Portail Client FCT Automobile Douala</h2>
+          <span className="fct-badge fct-badge-blue">
+            {isEn ? 'Member Space & VIP Client' : 'Espace Adhérent & Client Privilège'}
+          </span>
+          <h2>{isEn ? 'FCT Automobile Douala Client Portal' : 'Portail Client FCT Automobile Douala'}</h2>
           <p>
-            Suivez vos réservations en temps réel, consultez vos devis et échangez directement avec
-            l'agence de Bonamoussadi en toute autonomie.
+            {isEn
+              ? 'Track your reservations in real time, view your records and communicate directly with the Bonamoussadi agency.'
+              : "Suivez vos réservations en temps réel, consultez vos devis et échangez directement avec l'agence de Bonamoussadi en toute autonomie."}
           </p>
         </div>
       </div>
@@ -188,9 +203,11 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--fct-blue-dark)', margin: 0 }}>
-                      Espace Adhérent FCT
+                      {isEn ? 'FCT Member Space' : 'Espace Adhérent FCT'}
                     </h3>
-                    <span className="fct-badge fct-badge-green" style={{ fontSize: 10 }}>En Ligne</span>
+                    <span className="fct-badge fct-badge-green" style={{ fontSize: 10 }}>
+                      {isEn ? 'Online' : 'En Ligne'}
+                    </span>
                   </div>
                   <p style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>
                     {currentUser.email}
@@ -204,7 +221,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                 style={{ color: '#ef4444', borderColor: '#fca5a5', fontSize: 13, padding: '8px 14px' }}
               >
                 <LogOut size={15} />
-                <span>Déconnexion</span>
+                <span>{isEn ? 'Log Out' : 'Déconnexion'}</span>
               </button>
             </div>
 
@@ -221,10 +238,12 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
                 <div>
                   <h4 style={{ fontSize: 18, fontWeight: 800, color: 'var(--fct-blue-dark)', margin: 0 }}>
-                    Mes Dossiers & Réservations Récentes
+                    {isEn ? 'My Files & Recent Reservations' : 'Mes Dossiers & Réservations Récentes'}
                   </h4>
                   <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                    Synchronisation directe avec la base de données de l'agence (sans actualiser la page)
+                    {isEn
+                      ? 'Live synchronization with the agency database (no page refresh)'
+                      : "Synchronisation directe avec la base de données de l'agence (sans actualiser la page)"}
                   </p>
                 </div>
                 {onNavigate && (
@@ -234,7 +253,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                     style={{ fontSize: 12, padding: '8px 14px' }}
                   >
                     <KeyRound size={14} />
-                    <span>Nouvelle Réservation</span>
+                    <span>{isEn ? 'New Reservation' : 'Nouvelle Réservation'}</span>
                   </button>
                 )}
               </div>
@@ -242,7 +261,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
               {isLoadingBookings ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: 13 }}>
                   <div style={{ display: 'inline-block', width: 24, height: 24, border: '3px solid #cbd5e1', borderTopColor: 'var(--fct-blue-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: 8 }} />
-                  <div>Chargement de vos dossiers Firestore en direct...</div>
+                  <div>{isEn ? 'Loading your Firestore records live...' : 'Chargement de vos dossiers Firestore en direct...'}</div>
                 </div>
               ) : bookings.length > 0 ? (
                 /* Liste des VRAIES réservations du client */
@@ -250,7 +269,9 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                   {bookings.map((b) => {
                     const statusInfo = getBookingStatusInfo(b.status);
                     const whatsappMsg = encodeURIComponent(
-                      `Bonjour FCT Automobile, je vous contacte concernant mon dossier de réservation ${b.reservationNumber || b.id} pour le véhicule ${b.vehicleName || ''}.`
+                      isEn
+                        ? `Hello FCT Automobile, I am contacting you regarding my booking file ${b.reservationNumber || b.id} for vehicle ${b.vehicleName || ''}.`
+                        : `Bonjour FCT Automobile, je vous contacte concernant mon dossier de réservation ${b.reservationNumber || b.id} pour le véhicule ${b.vehicleName || ''}.`
                     );
 
                     return (
@@ -285,17 +306,17 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                               {b.vehicleName}
                             </strong>
                             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
-                              Réf. Dossier : <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--text-main)' }}>{b.reservationNumber}</span>
+                              {isEn ? 'File Ref:' : 'Réf. Dossier :'} <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--text-main)' }}>{b.reservationNumber}</span>
                             </div>
                           </div>
 
                           <div style={{ textAlign: 'right' }}>
                             <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--fct-blue-primary)' }}>
-                              {(b.totalAmountEstimated || 0).toLocaleString('fr-FR')} FCFA
+                              {(b.totalAmountEstimated || 0).toLocaleString(isEn ? 'en-US' : 'fr-FR')} FCFA
                             </div>
                             {b.depositAmount ? (
                               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                                Caution : {b.depositAmount.toLocaleString('fr-FR')} FCFA
+                                {isEn ? 'Deposit:' : 'Caution :'} {b.depositAmount.toLocaleString(isEn ? 'en-US' : 'fr-FR')} FCFA
                               </div>
                             ) : null}
                           </div>
@@ -316,21 +337,23 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                             <Calendar size={14} color="var(--fct-blue-primary)" />
                             <span>
-                              Du {b.startDate || '—'} au {b.endDate || '—'} ({b.durationDays || 1} j)
+                              {isEn
+                                ? `From ${b.startDate || '—'} to ${b.endDate || '—'} (${b.durationDays || 1} d)`
+                                : `Du ${b.startDate || '—'} au ${b.endDate || '—'} (${b.durationDays || 1} j)`}
                             </span>
                           </div>
 
                           {b.driverOptionIncluded && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fct-green-primary)', fontWeight: 600 }}>
                               <CheckCircle2 size={14} />
-                              <span>Option Chauffeur FCT</span>
+                              <span>{isEn ? 'FCT Dedicated Chauffeur' : 'Option Chauffeur FCT'}</span>
                             </div>
                           )}
 
                           {b.destination && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                               <Clock size={14} />
-                              <span>Destination : {b.destination}</span>
+                              <span>{isEn ? 'Destination:' : 'Destination :'} {b.destination}</span>
                             </div>
                           )}
                         </div>
@@ -345,7 +368,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                             style={{ fontSize: 12, padding: '7px 12px' }}
                           >
                             <MessageSquare size={13} />
-                            <span>Échanger sur WhatsApp</span>
+                            <span>{isEn ? 'Chat on WhatsApp' : 'Échanger sur WhatsApp'}</span>
                           </a>
 
                           <button
@@ -354,7 +377,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                             style={{ fontSize: 12, padding: '7px 12px' }}
                           >
                             <Printer size={13} />
-                            <span>Imprimer Fiche</span>
+                            <span>{isEn ? 'Print File' : 'Imprimer Fiche'}</span>
                           </button>
                         </div>
                       </div>
@@ -389,10 +412,12 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                     <Car size={26} strokeWidth={1.5} />
                   </div>
                   <h5 style={{ fontSize: 16, fontWeight: 800, color: 'var(--fct-blue-dark)', margin: 0 }}>
-                    Aucun dossier de réservation en cours
+                    {isEn ? 'No active reservation file' : 'Aucun dossier de réservation en cours'}
                   </h5>
                   <p style={{ fontSize: 13, color: 'var(--text-sub)', maxWidth: 420, margin: '8px auto 20px', lineHeight: 1.5 }}>
-                    Vous n'avez pas encore effectué de réservation avec l'adresse <strong>{currentUser.email}</strong>. Vos prochaines demandes validées en agence apparaîtront ici automatiquement.
+                    {isEn
+                      ? `You haven't made any reservations yet with the address ${currentUser.email}. Your upcoming validated rentals will automatically appear here.`
+                      : `Vous n'avez pas encore effectué de réservation avec l'adresse ${currentUser.email}. Vos prochaines demandes validées en agence apparaîtront ici automatiquement.`}
                   </p>
                   {onNavigate && (
                     <button
@@ -400,7 +425,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                       className="btn-primary"
                       style={{ padding: '10px 20px', fontSize: 13 }}
                     >
-                      <span>Explorer la Flotte Disponible</span>
+                      <span>{isEn ? 'Browse Available Fleet' : 'Explorer la Flotte Disponible'}</span>
                       <ArrowRight size={14} />
                     </button>
                   )}
@@ -435,10 +460,14 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                 }}
               />
               <h3 style={{ fontSize: 22, fontWeight: 900, color: 'var(--fct-blue-dark)', margin: 0 }}>
-                {isRegister ? 'Créer un Compte Adhérent' : 'Connexion Espace Client'}
+                {isRegister
+                  ? (isEn ? 'Create Member Account' : 'Créer un Compte Adhérent')
+                  : (isEn ? 'Client Portal Sign In' : 'Connexion Espace Client')}
               </h3>
               <p style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4 }}>
-                Accédez à vos dossiers en direct et bénéficiez des privilèges FCT
+                {isEn
+                  ? 'Access your files live and enjoy FCT VIP privileges'
+                  : 'Accédez à vos dossiers en direct et bénéficiez des privilèges FCT'}
               </p>
             </div>
 
@@ -466,10 +495,10 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
               {isRegister && (
                 <>
                   <div className="fct-field">
-                    <label className="fct-label">Nom complet *</label>
+                    <label className="fct-label">{isEn ? 'Full Name *' : 'Nom complet *'}</label>
                     <input
                       type="text"
-                      placeholder="Ex: Alain BIYIK"
+                      placeholder={isEn ? 'e.g. Alain BIYIK' : 'Ex: Alain BIYIK'}
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="fct-input"
@@ -477,7 +506,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                     />
                   </div>
                   <div className="fct-field">
-                    <label className="fct-label">Numéro de téléphone / WhatsApp</label>
+                    <label className="fct-label">{isEn ? 'Phone Number / WhatsApp' : 'Numéro de téléphone / WhatsApp'}</label>
                     <input
                       type="tel"
                       placeholder="+237 6XX XX XX XX"
@@ -490,7 +519,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
               )}
 
               <div className="fct-field">
-                <label className="fct-label">Adresse Courriel *</label>
+                <label className="fct-label">{isEn ? 'Email Address *' : 'Adresse Courriel *'}</label>
                 <input
                   type="email"
                   placeholder="votre.email@fct.cm"
@@ -502,10 +531,10 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
               </div>
 
               <div className="fct-field">
-                <label className="fct-label">Mot de Passe *</label>
+                <label className="fct-label">{isEn ? 'Password *' : 'Mot de Passe *'}</label>
                 <input
                   type="password"
-                  placeholder="Minimum 6 caractères"
+                  placeholder={isEn ? 'Minimum 6 characters' : 'Minimum 6 caractères'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="fct-input"
@@ -519,7 +548,13 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                 className="btn-primary"
                 style={{ width: '100%', justifyContent: 'center', marginTop: 8, padding: 12, fontSize: 14 }}
               >
-                <span>{authLoading ? 'Connexion en cours...' : isRegister ? "Créer mon Compte Adhérent" : 'Accéder à mon Espace'}</span>
+                <span>
+                  {authLoading
+                    ? (isEn ? 'Authentication in progress...' : 'Connexion en cours...')
+                    : isRegister
+                    ? (isEn ? 'Create My Member Account' : 'Créer mon Compte Adhérent')
+                    : (isEn ? 'Sign In to My Space' : 'Accéder à mon Espace')}
+                </span>
               </button>
             </form>
 
@@ -533,8 +568,8 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                 style={{ fontSize: 13, color: 'var(--fct-blue-primary)', fontWeight: 700, cursor: 'pointer', background: 'none', border: 'none' }}
               >
                 {isRegister
-                  ? 'Déjà adhérent ? Connectez-vous ici'
-                  : 'Pas encore de compte ? Créer un profil en 30 secondes'}
+                  ? (isEn ? 'Already a member? Log in here' : 'Déjà adhérent ? Connectez-vous ici')
+                  : (isEn ? 'No account yet? Create your profile in 30 seconds' : 'Pas encore de compte ? Créer un profil en 30 secondes')}
               </button>
             </div>
           </div>

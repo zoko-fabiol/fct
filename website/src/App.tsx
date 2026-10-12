@@ -10,8 +10,8 @@ import { ClientPortalPage } from './pages/ClientPortalPage.tsx';
 import { AgencyPage } from './pages/AgencyPage.tsx';
 import { Vehicle } from './types/index.ts';
 import { AppPage, RouteState } from './types/router.ts';
-import { INITIAL_VEHICLES } from './data/defaultCatalog.ts';
 import { subscribePublicVehicles } from './services/firebase.ts';
+import { WebsiteLanguage, websiteTranslations } from './services/i18n.ts';
 import { CheckCircle2 } from 'lucide-react';
 
 export default function App() {
@@ -19,6 +19,28 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [route, setRoute] = useState<RouteState>({ page: 'home' });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // État de la langue (mémorisé dans le navigateur)
+  const [lang, setLang] = useState<WebsiteLanguage>(() => {
+    try {
+      const saved = localStorage.getItem('fct_website_lang');
+      return saved === 'en' ? 'en' : 'fr';
+    } catch {
+      return 'fr';
+    }
+  });
+
+  const toggleLang = () => {
+    setLang((prev) => {
+      const next = prev === 'fr' ? 'en' : 'fr';
+      try {
+        localStorage.setItem('fct_website_lang', next);
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
 
   // Synchronisation base de données Firestore en direct (Zéro fausse donnée)
   useEffect(() => {
@@ -28,7 +50,6 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
-
 
   // Gestion du routage par hash URL pour l'historique du navigateur
   useEffect(() => {
@@ -84,18 +105,21 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-page)' }}>
-      {/* Barre de Navigation Multi-Pages FCT */}
+      {/* Barre de Navigation Multi-Pages FCT avec sélecteur FR / EN */}
       <Navbar
         currentPage={route.page}
         onNavigate={(p) => navigate(p)}
+        lang={lang}
+        onToggleLang={toggleLang}
       />
 
-      {/* Rendu de la Page Dédiée Active (Chaque section est une vraie page) */}
+      {/* Rendu de la Page Dédiée Active */}
       <main style={{ flex: 1 }}>
         {route.page === 'home' && (
           <HomePage
             vehicles={vehicles}
             onNavigate={(p, vId) => navigate(p, vId)}
+            lang={lang}
           />
         )}
 
@@ -103,6 +127,7 @@ export default function App() {
           <RentalPage
             vehicles={vehicles}
             onOpenShowroom={(vId) => navigate('showroom', vId)}
+            lang={lang}
           />
         )}
 
@@ -110,6 +135,7 @@ export default function App() {
           <SalesPage
             vehicles={vehicles}
             onOpenShowroom={(vId) => navigate('showroom', vId)}
+            lang={lang}
           />
         )}
 
@@ -120,27 +146,28 @@ export default function App() {
               onBack={() => navigate('location')}
               onNavigateToHealth={(plate) => navigate('carnet-sante', undefined, plate)}
               onToast={(msg) => showToast(msg)}
+              lang={lang}
             />
           ) : (
             <div style={{ padding: '80px 20px', textAlign: 'center' }}>
               <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--fct-blue-dark)' }}>
-                Aucun véhicule sélectionné ou disponible
+                {lang === 'en' ? 'No vehicle selected or available' : 'Aucun véhicule sélectionné ou disponible'}
               </h3>
               <p style={{ color: 'var(--text-sub)', marginTop: 8 }}>
-                Le catalogue en ligne est synchronisé en direct avec l'agence.
+                {lang === 'en' ? 'The catalog is synchronized live with the Douala agency.' : 'Le catalogue en ligne est synchronisé en direct avec l\'agence.'}
               </p>
               <button onClick={() => navigate('location')} className="btn-primary" style={{ marginTop: 20 }}>
-                Retour au catalogue
+                {lang === 'en' ? 'Back to Fleet' : 'Retour au catalogue'}
               </button>
             </div>
           )
         )}
 
-
         {route.page === 'carnet-sante' && (
           <HealthPassportPage
             initialPlate={route.initialPlate || 'LT-8841-CE'}
             onOpenShowroom={(vId) => navigate('showroom', vId)}
+            lang={lang}
           />
         )}
 
@@ -148,14 +175,15 @@ export default function App() {
           <ClientPortalPage
             onToast={(msg) => showToast(msg)}
             onNavigate={(p) => navigate(p)}
+            lang={lang}
           />
         )}
 
-        {route.page === 'agence' && <AgencyPage />}
+        {route.page === 'agence' && <AgencyPage lang={lang} />}
       </main>
 
       {/* Pied de Page Multi-Pages FCT */}
-      <Footer onNavigate={(p) => navigate(p)} />
+      <Footer onNavigate={(p) => navigate(p)} lang={lang} />
 
       {/* Toast Notification Visuel */}
       {toastMessage && (

@@ -54,7 +54,7 @@ export function calculateTotalBreakdown(breakdown: DenominationBreakdown): numbe
   return DENOMINATIONS.reduce((sum, item) => sum + (breakdown[item.key] || 0) * item.value, 0);
 }
 
-export function generateBreakdownSummary(breakdown: DenominationBreakdown): string {
+export function generateBreakdownSummary(breakdown: DenominationBreakdown, lang: Language = 'fr'): string {
   const parts: string[] = [];
   DENOMINATIONS.forEach((d) => {
     const qty = breakdown[d.key] || 0;
@@ -63,7 +63,7 @@ export function generateBreakdownSummary(breakdown: DenominationBreakdown): stri
     }
   });
   const total = calculateTotalBreakdown(breakdown);
-  return parts.length > 0 ? `[Billetage: ${parts.join(', ')} = ${formatXAF(total)}]` : '';
+  return parts.length > 0 ? `[${lang === 'en' ? 'Cash Breakdown' : 'Billetage'}: ${parts.join(', ')} = ${formatXAF(total)}]` : '';
 }
 
 interface CashDenominationGridProps {
@@ -83,7 +83,7 @@ export const CashDenominationGrid: React.FC<CashDenominationGridProps> = ({
   const [breakdown, setBreakdown] = useState<DenominationBreakdown>(INITIAL_BREAKDOWN);
 
   const total = calculateTotalBreakdown(breakdown);
-  const summary = generateBreakdownSummary(breakdown);
+  const summary = generateBreakdownSummary(breakdown, lang);
 
   useEffect(() => {
     if (onTotalChange) {

@@ -27,12 +27,14 @@ import { Vehicle } from '../types/index.ts';
 import { FCT_AGENCY_INFO, CERTIFIED_HEALTH_RECORDS } from '../data/defaultCatalog.ts';
 import { formatXAF, formatDateFR } from '../utils/formatters.ts';
 import { submitBooking, submitPurchaseLead } from '../services/firebase.ts';
+import { WebsiteLanguage, websiteI18n } from '../services/i18n.ts';
 
 interface VehicleShowroomPageProps {
   vehicle: Vehicle;
   onBack: () => void;
   onNavigateToHealth: (plate: string) => void;
   onToast: (msg: string) => void;
+  lang?: WebsiteLanguage;
 }
 
 export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
@@ -40,7 +42,10 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
   onBack,
   onNavigateToHealth,
   onToast,
+  lang = 'fr',
 }) => {
+  const t = websiteI18n[lang].showroom;
+  const isEn = lang === 'en';
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isFitCover, setIsFitCover] = useState(false);
@@ -55,7 +60,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
   const [startDate, setStartDate] = useState(tomorrow.toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(inThreeDays.toISOString().split('T')[0]);
   const [withDriver, setWithDriver] = useState(false);
-  const [destination, setDestination] = useState('Douala intra-muros');
+  const [destination, setDestination] = useState(isEn ? 'Douala City Center' : 'Douala intra-muros');
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
@@ -84,7 +89,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName.trim() || !clientPhone.trim()) {
-      alert('Veuillez renseigner votre nom et votre numéro de téléphone.');
+      alert(isEn ? 'Please provide your full name and phone number.' : 'Veuillez renseigner votre nom et votre numéro de téléphone.');
       return;
     }
 
@@ -109,14 +114,18 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
     setSubmitting(false);
 
     if (res.success) {
-      onToast(`Demande de réservation enregistrée pour ${vehicle.brand} ${vehicle.model} ! Nos équipes vous contactent sans délai.`);
+      onToast(
+        isEn
+          ? `Booking request submitted for ${vehicle.brand} ${vehicle.model}! Our team will contact you promptly.`
+          : `Demande de réservation enregistrée pour ${vehicle.brand} ${vehicle.model} ! Nos équipes vous contactent sans délai.`
+      );
     }
   };
 
   const handlePurchaseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName.trim() || !clientPhone.trim()) {
-      alert('Veuillez renseigner votre nom et votre numéro de téléphone.');
+      alert(isEn ? 'Please provide your full name and phone number.' : 'Veuillez renseigner votre nom et votre numéro de téléphone.');
       return;
     }
 
@@ -133,7 +142,11 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
     setSubmitting(false);
 
     if (res.success) {
-      onToast(`Votre demande de devis proforma pour ${vehicle.brand} ${vehicle.model} a été reçue !`);
+      onToast(
+        isEn
+          ? `Your proforma quote request for ${vehicle.brand} ${vehicle.model} has been received!`
+          : `Votre demande de devis proforma pour ${vehicle.brand} ${vehicle.model} a été reçue !`
+      );
     }
   };
 
@@ -144,7 +157,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
         <div className="fct-showroom-top-nav">
           <button onClick={onBack} className="fct-back-link">
             <ChevronLeft size={16} />
-            <span>Retour au catalogue</span>
+            <span>{isEn ? 'Back to fleet' : 'Retour au catalogue'}</span>
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -156,7 +169,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
               </span>
             )}
             {vehicle.licensePlate && (
-              <div className="fct-showroom-plate-badge" title="Immatriculation CEMAC certifiée">
+              <div className="fct-showroom-plate-badge" title={isEn ? 'Certified CEMAC plate' : 'Immatriculation CEMAC certifiée'}>
                 <Shield size={12} style={{ color: '#38bdf8' }} />
                 <span>{vehicle.licensePlate}</span>
               </div>
@@ -174,14 +187,14 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
             <div className="fct-showroom-subtitle">
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 <MapPin size={14} color="var(--fct-blue-primary)" />
-                {vehicle.currentLocation || 'Agence FCT Bonamoussadi, Douala'}
+                {vehicle.currentLocation || (isEn ? 'FCT Bonamoussadi Agency, Douala' : 'Agence FCT Bonamoussadi, Douala')}
               </span>
               <span>•</span>
-              <span>Couleur : <strong>{vehicle.color}</strong></span>
+              <span>{isEn ? 'Color:' : 'Couleur :'} <strong>{vehicle.color}</strong></span>
               <span>•</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--fct-green-primary)', fontWeight: 700 }}>
                 <CheckCircle2 size={13} />
-                <span>{vehicle.status === 'AVAILABLE' ? 'Disponible au showroom' : 'En révision'}</span>
+                <span>{vehicle.status === 'AVAILABLE' ? (isEn ? 'Available in showroom' : 'Disponible au showroom') : (isEn ? 'In servicing' : 'En révision')}</span>
               </span>
             </div>
           </div>
@@ -189,8 +202,10 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
           {/* Boutons d'Action Rapide */}
           <div className="fct-showroom-actions-fast">
             <a
-              href={`https://wa.me/${FCT_AGENCY_INFO.whatsapp}?text=Bonjour%20FCT%20Automobile,%20je%20souhaite%20des%20informations%20sur%20le%20showroom%20du%20véhicule%20${encodeURIComponent(
-                vehicle.brand + ' ' + vehicle.model
+              href={`https://wa.me/${FCT_AGENCY_INFO.whatsapp}?text=${encodeURIComponent(
+                isEn
+                  ? `Hello FCT Automobile, I would like more information regarding the showroom vehicle ${vehicle.brand} ${vehicle.model}.`
+                  : `Bonjour FCT Automobile, je souhaite des informations sur le showroom du véhicule ${vehicle.brand} ${vehicle.model}.`
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -201,7 +216,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
             </a>
             <a href={`tel:${FCT_AGENCY_INFO.phone1}`} className="btn-secondary">
               <Phone size={16} />
-              <span>Appeler l'Agence</span>
+              <span>{isEn ? 'Call Agency' : "Appeler l'Agence"}</span>
             </a>
           </div>
         </div>
@@ -215,18 +230,18 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
               <div
                 className={`fct-gallery-main ${isFitCover ? 'fit-cover' : ''}`}
                 onClick={() => photos.length > 0 && setIsLightboxOpen(true)}
-                title="Cliquer pour afficher en plein écran haute résolution"
+                title={isEn ? 'Click to view full screen high resolution' : 'Cliquer pour afficher en plein écran haute résolution'}
               >
                 {photos.length > 0 ? (
                   <img
                     src={photos[activePhotoIdx]}
-                    alt={`${vehicle.brand} ${vehicle.model} - Vue Showroom Officielle FCT`}
+                    alt={`${vehicle.brand} ${vehicle.model} - ${isEn ? 'Official FCT Showroom' : 'Vue Showroom Officielle FCT'}`}
                   />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, color: '#94a3b8' }}>
                     <Car size={72} strokeWidth={1.4} />
                     <span style={{ fontSize: 13, fontWeight: 700, color: '#cbd5e1' }}>
-                      Showroom Officiel FCT Automobile Douala
+                      {isEn ? 'Official FCT Automobile Douala Showroom' : 'Showroom Officiel FCT Automobile Douala'}
                     </span>
                   </div>
                 )}
@@ -241,7 +256,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                         e.stopPropagation();
                         setActivePhotoIdx((prev) => (prev > 0 ? prev - 1 : photos.length - 1));
                       }}
-                      aria-label="Photo précédente"
+                      aria-label={isEn ? 'Previous photo' : 'Photo précédente'}
                     >
                       <ChevronLeft size={20} />
                     </button>
@@ -252,7 +267,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                         e.stopPropagation();
                         setActivePhotoIdx((prev) => (prev < photos.length - 1 ? prev + 1 : 0));
                       }}
-                      aria-label="Photo suivante"
+                      aria-label={isEn ? 'Next photo' : 'Photo suivante'}
                     >
                       <ChevronRight size={20} />
                     </button>
@@ -270,16 +285,16 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                     type="button"
                     className="fct-gallery-btn"
                     onClick={() => setIsFitCover(!isFitCover)}
-                    title={isFitCover ? "Afficher l'image entière sans coupure" : "Remplir le cadre"}
+                    title={isFitCover ? (isEn ? 'Show whole image' : "Afficher l'image entière sans coupure") : (isEn ? 'Fill frame' : 'Remplir le cadre')}
                   >
                     <Eye size={13} />
-                    <span>{isFitCover ? 'Vue Entière' : 'Remplir'}</span>
+                    <span>{isFitCover ? (isEn ? 'Full View' : 'Vue Entière') : (isEn ? 'Fill' : 'Remplir')}</span>
                   </button>
                   <button
                     type="button"
                     className="fct-gallery-btn"
                     onClick={() => setIsLightboxOpen(true)}
-                    title="Agrandir en plein écran"
+                    title={isEn ? 'Zoom full screen' : 'Agrandir en plein écran'}
                   >
                     <Maximize2 size={13} />
                     <span>Zoom HD</span>
@@ -295,9 +310,9 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                       key={idx}
                       onClick={() => setActivePhotoIdx(idx)}
                       className={`fct-thumb-btn ${idx === activePhotoIdx ? 'active' : ''}`}
-                      title={`Photo ${idx + 1}`}
+                      title={`${isEn ? 'Photo' : 'Photo'} ${idx + 1}`}
                     >
-                      <img src={p} alt={`Vue ${idx + 1}`} />
+                      <img src={p} alt={`${isEn ? 'View' : 'Vue'} ${idx + 1}`} />
                     </button>
                   ))}
                 </div>
@@ -310,8 +325,12 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                     <Settings2 size={18} />
                   </div>
                   <div className="fct-quick-spec-info">
-                    <small>Boîte</small>
-                    <strong>{vehicle.transmission === 'AUTOMATIQUE' ? 'Automatique' : 'Manuelle'}</strong>
+                    <small>{isEn ? 'Gearbox' : 'Boîte'}</small>
+                    <strong>
+                      {vehicle.transmission === 'AUTOMATIQUE'
+                        ? (isEn ? 'Automatic' : 'Automatique')
+                        : (isEn ? 'Manual' : 'Manuelle')}
+                    </strong>
                   </div>
                 </div>
 
@@ -320,7 +339,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                     <Fuel size={18} />
                   </div>
                   <div className="fct-quick-spec-info">
-                    <small>Énergie</small>
+                    <small>{isEn ? 'Fuel' : 'Énergie'}</small>
                     <strong>{vehicle.fuel}</strong>
                   </div>
                 </div>
@@ -330,8 +349,8 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                     <Users size={18} />
                   </div>
                   <div className="fct-quick-spec-info">
-                    <small>Capacité</small>
-                    <strong>{vehicle.seats} Places</strong>
+                    <small>{isEn ? 'Capacity' : 'Capacité'}</small>
+                    <strong>{vehicle.seats} {isEn ? 'Seats' : 'Places'}</strong>
                   </div>
                 </div>
 
@@ -340,8 +359,8 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                     <ShieldCheck size={18} />
                   </div>
                   <div className="fct-quick-spec-info">
-                    <small>Garantie</small>
-                    <strong>110 Pts Contrôlés</strong>
+                    <small>{isEn ? 'Warranty' : 'Garantie'}</small>
+                    <strong>{isEn ? '110 Checked Pts' : '110 Pts Contrôlés'}</strong>
                   </div>
                 </div>
               </div>
@@ -350,7 +369,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
             {/* Description Détaillée */}
             <div className="fct-showroom-specs-box" style={{ marginTop: 24 }}>
               <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--fct-blue-dark)' }}>
-                Présentation du Véhicule
+                {isEn ? 'Vehicle Overview' : 'Présentation du Véhicule'}
               </h3>
               <p style={{ marginTop: 12, fontSize: 15, color: 'var(--text-body)', lineHeight: 1.7 }}>
                 {vehicle.description}
@@ -360,7 +379,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
               {vehicle.features && vehicle.features.length > 0 && (
                 <div style={{ marginTop: 24 }}>
                   <h4 style={{ fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: 'var(--fct-blue-dark)', marginBottom: 12 }}>
-                    Équipements & Options de Prestige
+                    {isEn ? 'Standard & Premium Equipment' : 'Équipements & Options de Prestige'}
                   </h4>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
                     {vehicle.features.map((feat, i) => (
@@ -377,32 +396,36 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
             {/* Fiche Technique Complète */}
             <div className="fct-showroom-specs-box">
               <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--fct-blue-dark)' }}>
-                Fiche Technique Homologuée
+                {isEn ? 'Certified Technical Specs' : 'Fiche Technique Homologuée'}
               </h3>
               <div className="fct-specs-grid-full">
                 <div className="fct-spec-box">
-                  <strong>Transmission</strong>
-                  <span>{vehicle.transmission === 'AUTOMATIQUE' ? 'Boîte Automatique' : 'Boîte Manuelle'}</span>
+                  <strong>{isEn ? 'Transmission' : 'Transmission'}</strong>
+                  <span>
+                    {vehicle.transmission === 'AUTOMATIQUE'
+                      ? (isEn ? 'Automatic Gearbox' : 'Boîte Automatique')
+                      : (isEn ? 'Manual Gearbox' : 'Boîte Manuelle')}
+                  </span>
                 </div>
                 <div className="fct-spec-box">
-                  <strong>Carburation</strong>
+                  <strong>{isEn ? 'Fuel Type' : 'Carburation'}</strong>
                   <span>{vehicle.fuel}</span>
                 </div>
                 <div className="fct-spec-box">
-                  <strong>Capacité d'Accueil</strong>
-                  <span>{vehicle.seats} Places Assises</span>
+                  <strong>{isEn ? 'Seating Capacity' : "Capacité d'Accueil"}</strong>
+                  <span>{vehicle.seats} {isEn ? 'Seats' : 'Places Assises'}</span>
                 </div>
                 <div className="fct-spec-box">
-                  <strong>Kilométrage Compteur</strong>
-                  <span>{vehicle.mileage.toLocaleString('fr-FR')} km certifiés</span>
+                  <strong>{isEn ? 'Odometer' : 'Kilométrage Compteur'}</strong>
+                  <span>{vehicle.mileage.toLocaleString(isEn ? 'en-US' : 'fr-FR')} {isEn ? 'certified km' : 'km certifiés'}</span>
                 </div>
                 <div className="fct-spec-box">
-                  <strong>Motorisation</strong>
-                  <span>{vehicle.engineDisplacement || 'Conforme fiche constructeur'}</span>
+                  <strong>{isEn ? 'Engine' : 'Motorisation'}</strong>
+                  <span>{vehicle.engineDisplacement || (isEn ? 'Manufacturer standard' : 'Conforme fiche constructeur')}</span>
                 </div>
                 <div className="fct-spec-box">
-                  <strong>Puissance</strong>
-                  <span>{vehicle.horsepower || 'Tropicalisé'}</span>
+                  <strong>{isEn ? 'Power' : 'Puissance'}</strong>
+                  <span>{vehicle.horsepower || (isEn ? 'Tropicalized' : 'Tropicalisé')}</span>
                 </div>
               </div>
             </div>
@@ -415,10 +438,12 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                     <ShieldCheck size={24} color="#059669" />
                     <div>
                       <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--fct-blue-dark)' }}>
-                        Passeport d'Entretien Garanti
+                        {isEn ? 'Guaranteed Service Booklet' : "Passeport d'Entretien Garanti"}
                       </h3>
                       <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                        Interventions certifiées réalisées au garage FCT Central Bassa
+                        {isEn
+                          ? 'Certified operations performed at FCT Central Bassa workshop'
+                          : 'Interventions certifiées réalisées au garage FCT Central Bassa'}
                       </p>
                     </div>
                   </div>
@@ -427,7 +452,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                     className="btn-secondary"
                     style={{ padding: '6px 12px', fontSize: 12 }}
                   >
-                    Voir carnet complet
+                    {isEn ? 'View full booklet' : 'Voir carnet complet'}
                   </button>
                 </div>
 
@@ -449,7 +474,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                       </div>
                       <p style={{ color: 'var(--text-sub)', marginTop: 4 }}>{rec.workDescription}</p>
                       <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}>
-                        Validé par : <strong>{rec.certifiedBy}</strong> ({rec.mileageKm.toLocaleString('fr-FR')} km)
+                        {isEn ? 'Approved by:' : 'Validé par :'} <strong>{rec.certifiedBy}</strong> ({rec.mileageKm.toLocaleString(isEn ? 'en-US' : 'fr-FR')} km)
                       </div>
                     </div>
                   ))}
@@ -470,7 +495,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                     className={`btn-secondary ${activeTab === 'rent' ? 'btn-primary' : ''}`}
                     style={{ flex: 1, padding: '8px 12px', fontSize: 13 }}
                   >
-                    Louer ce véhicule
+                    {isEn ? 'Rent this vehicle' : 'Louer ce véhicule'}
                   </button>
                   <button
                     type="button"
@@ -478,7 +503,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                     className={`btn-secondary ${activeTab === 'buy' ? 'btn-primary' : ''}`}
                     style={{ flex: 1, padding: '8px 12px', fontSize: 13 }}
                   >
-                    Acheter ce véhicule
+                    {isEn ? 'Buy this vehicle' : 'Acheter ce véhicule'}
                   </button>
                 </div>
               )}
@@ -488,23 +513,23 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                 <form onSubmit={handleBookingSubmit}>
                   <div className="fct-showroom-price-box">
                     <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fct-blue-primary)', textTransform: 'uppercase' }}>
-                      Tarif Location Journalier
+                      {isEn ? 'Daily Rental Rate' : 'Tarif Location Journalier'}
                     </span>
                     <div className="fct-showroom-price-val">
-                      {formatXAF(vehicle.rentalDailyRate)} <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>/ jour</span>
+                      {formatXAF(vehicle.rentalDailyRate)} <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>{isEn ? '/ day' : '/ jour'}</span>
                     </div>
                     <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                      Caution remboursable : <strong>{formatXAF(vehicle.securityDepositRate)}</strong>
+                      {isEn ? 'Refundable deposit:' : 'Caution remboursable :'} <strong>{formatXAF(vehicle.securityDepositRate)}</strong>
                     </span>
                   </div>
 
                   <h4 style={{ fontSize: 16, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 14 }}>
-                    Réserver directement ce véhicule
+                    {isEn ? 'Direct Vehicle Reservation' : 'Réserver directement ce véhicule'}
                   </h4>
 
                   <div className="fct-form-row">
                     <div className="fct-field">
-                      <label className="fct-label">Date de départ</label>
+                      <label className="fct-label">{isEn ? 'Pick-up Date' : 'Date de départ'}</label>
                       <input
                         type="date"
                         value={startDate}
@@ -514,7 +539,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                       />
                     </div>
                     <div className="fct-field">
-                      <label className="fct-label">Date de restitution</label>
+                      <label className="fct-label">{isEn ? 'Return Date' : 'Date de restitution'}</label>
                       <input
                         type="date"
                         value={endDate}
@@ -526,17 +551,27 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                   </div>
 
                   <div className="fct-field">
-                    <label className="fct-label">Zone de déplacement</label>
+                    <label className="fct-label">{isEn ? 'Destination Area' : 'Zone de déplacement'}</label>
                     <select
                       value={destination}
                       onChange={(e) => setDestination(e.target.value)}
                       className="fct-select"
                     >
-                      <option value="Douala intra-muros">Douala intra-muros</option>
-                      <option value="Axe Douala - Yaoundé">Axe Douala - Yaoundé</option>
-                      <option value="Axe Douala - Kribi">Axe Douala - Kribi</option>
-                      <option value="Région Ouest / Bafoussam">Région Ouest / Bafoussam</option>
-                      <option value="Mission Nationale Cameroun">Mission Nationale Cameroun</option>
+                      <option value={isEn ? 'Douala City Center' : 'Douala intra-muros'}>
+                        {isEn ? 'Douala City Center' : 'Douala intra-muros'}
+                      </option>
+                      <option value={isEn ? 'Douala - Yaoundé Highway' : 'Axe Douala - Yaoundé'}>
+                        {isEn ? 'Douala - Yaoundé Highway' : 'Axe Douala - Yaoundé'}
+                      </option>
+                      <option value={isEn ? 'Douala - Kribi Seaside' : 'Axe Douala - Kribi'}>
+                        {isEn ? 'Douala - Kribi Seaside' : 'Axe Douala - Kribi'}
+                      </option>
+                      <option value={isEn ? 'West Region / Bafoussam' : 'Région Ouest / Bafoussam'}>
+                        {isEn ? 'West Region / Bafoussam' : 'Région Ouest / Bafoussam'}
+                      </option>
+                      <option value={isEn ? 'National Cameroon Mission' : 'Mission Nationale Cameroun'}>
+                        {isEn ? 'National Cameroon Mission' : 'Mission Nationale Cameroun'}
+                      </option>
                     </select>
                   </div>
 
@@ -562,15 +597,15 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                         onChange={(e) => setWithDriver(e.target.checked)}
                         style={{ width: 16, height: 16, accentColor: '#059669' }}
                       />
-                      <span>Option Chauffeur Professionnel FCT (+15 000 FCFA/j)</span>
+                      <span>{isEn ? 'Dedicated FCT Professional Chauffeur (+15,000 XAF/day)' : 'Option Chauffeur Professionnel FCT (+15 000 FCFA/j)'}</span>
                     </label>
                   </div>
 
                   <div className="fct-field">
-                    <label className="fct-label">Nom complet *</label>
+                    <label className="fct-label">{isEn ? 'Full Name *' : 'Nom complet *'}</label>
                     <input
                       type="text"
-                      placeholder="Ex: Alain BIYIK"
+                      placeholder={isEn ? 'e.g. Alain BIYIK' : 'Ex: Alain BIYIK'}
                       value={clientName}
                       onChange={(e) => setClientName(e.target.value)}
                       className="fct-input"
@@ -579,7 +614,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                   </div>
 
                   <div className="fct-field">
-                    <label className="fct-label">Numéro Téléphone / WhatsApp *</label>
+                    <label className="fct-label">{isEn ? 'Phone / WhatsApp *' : 'Numéro Téléphone / WhatsApp *'}</label>
                     <input
                       type="tel"
                       placeholder="+237 6XX XX XX XX"
@@ -591,10 +626,10 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                   </div>
 
                   <div className="fct-field">
-                    <label className="fct-label">Adresse Courriel</label>
+                    <label className="fct-label">{isEn ? 'Email Address' : 'Adresse Courriel'}</label>
                     <input
                       type="email"
-                      placeholder="votre.email@domaine.cm"
+                      placeholder={isEn ? 'your.email@domain.com' : 'votre.email@domaine.cm'}
                       value={clientEmail}
                       onChange={(e) => setClientEmail(e.target.value)}
                       className="fct-input"
@@ -613,17 +648,17 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span>Location ({totalDays} jour{totalDays > 1 ? 's' : ''})</span>
+                      <span>{isEn ? `Rental (${totalDays} day${totalDays > 1 ? 's' : ''})` : `Location (${totalDays} jour${totalDays > 1 ? 's' : ''})`}</span>
                       <strong>{formatXAF(rentalTotal)}</strong>
                     </div>
                     {withDriver && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, color: 'var(--fct-green-primary)' }}>
-                        <span>Chauffeur FCT ({totalDays} j)</span>
+                        <span>{isEn ? `FCT Chauffeur (${totalDays} d)` : `Chauffeur FCT (${totalDays} j)`}</span>
                         <strong>{formatXAF(driverTotal)}</strong>
                       </div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, color: 'var(--text-muted)' }}>
-                      <span>Caution (restituée)</span>
+                      <span>{isEn ? 'Security deposit (refundable)' : 'Caution (restituée)'}</span>
                       <span>{formatXAF(vehicle.securityDepositRate)}</span>
                     </div>
                     <div
@@ -637,7 +672,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                         color: 'var(--fct-blue-dark)',
                       }}
                     >
-                      <span>Montant Total</span>
+                      <span>{isEn ? 'Total Amount' : 'Montant Total'}</span>
                       <span>{formatXAF(totalRentalAmount)}</span>
                     </div>
                   </div>
@@ -649,7 +684,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                     style={{ width: '100%', justifyContent: 'center', padding: '14px 20px' }}
                   >
                     <KeyRound size={18} />
-                    <span>{submitting ? 'Envoi...' : 'Confirmer ma Réservation'}</span>
+                    <span>{submitting ? (isEn ? 'Sending...' : 'Envoi...') : (isEn ? 'Confirm Reservation' : 'Confirmer ma Réservation')}</span>
                   </button>
                 </form>
               )}
@@ -659,25 +694,25 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                 <form onSubmit={handlePurchaseSubmit}>
                   <div className="fct-showroom-price-box">
                     <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fct-blue-primary)', textTransform: 'uppercase' }}>
-                      Prix d'Acquisition Certifié
+                      {isEn ? 'Certified Purchase Price' : "Prix d'Acquisition Certifié"}
                     </span>
                     <div className="fct-showroom-price-val">
                       {formatXAF(vehicle.salePrice)}
                     </div>
                     <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
-                      TTC · Contrôlé 110 points · Papiers CEMAC inclus
+                      {isEn ? 'All Taxes incl. · 110-point check · CEMAC papers included' : 'TTC · Contrôlé 110 points · Papiers CEMAC inclus'}
                     </span>
                   </div>
 
                   <h4 style={{ fontSize: 16, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 14 }}>
-                    Demande de Devis Proforma Officiel
+                    {isEn ? 'Request Official Proforma Invoice' : 'Demande de Devis Proforma Officiel'}
                   </h4>
 
                   <div className="fct-field">
-                    <label className="fct-label">Nom et Prénom *</label>
+                    <label className="fct-label">{isEn ? 'Full Name *' : 'Nom et Prénom *'}</label>
                     <input
                       type="text"
-                      placeholder="Ex: Mme. Chantal EWANE"
+                      placeholder={isEn ? 'e.g. Mrs. Chantal EWANE' : 'Ex: Mme. Chantal EWANE'}
                       value={clientName}
                       onChange={(e) => setClientName(e.target.value)}
                       className="fct-input"
@@ -686,7 +721,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                   </div>
 
                   <div className="fct-field">
-                    <label className="fct-label">Téléphone / WhatsApp *</label>
+                    <label className="fct-label">{isEn ? 'Phone / WhatsApp *' : 'Téléphone / WhatsApp *'}</label>
                     <input
                       type="tel"
                       placeholder="+237 6XX XX XX XX"
@@ -698,10 +733,10 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                   </div>
 
                   <div className="fct-field">
-                    <label className="fct-label">Adresse Courriel</label>
+                    <label className="fct-label">{isEn ? 'Email Address' : 'Adresse Courriel'}</label>
                     <input
                       type="email"
-                      placeholder="direction@entreprise.cm"
+                      placeholder={isEn ? 'director@company.cm' : 'direction@entreprise.cm'}
                       value={clientEmail}
                       onChange={(e) => setClientEmail(e.target.value)}
                       className="fct-input"
@@ -730,15 +765,15 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                         onChange={(e) => setFinancingNeeded(e.target.checked)}
                         style={{ width: 16, height: 16, accentColor: '#1e3a8a' }}
                       />
-                      <span>Option Crédit-Bail / Leasing Société</span>
+                      <span>{isEn ? 'Hire Purchase / Corporate Lease Option' : 'Option Crédit-Bail / Leasing Société'}</span>
                     </label>
                   </div>
 
                   <div className="fct-field">
-                    <label className="fct-label">Précisions ou questions</label>
+                    <label className="fct-label">{isEn ? 'Specific requests or questions' : 'Précisions ou questions'}</label>
                     <textarea
                       rows={3}
-                      placeholder="Essai routier souhaité à Bonamoussadi, modalité de paiement..."
+                      placeholder={isEn ? 'Desired test drive in Douala, payment conditions...' : 'Essai routier souhaité à Bonamoussadi, modalité de paiement...'}
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       className="fct-textarea"
@@ -752,7 +787,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                     style={{ width: '100%', justifyContent: 'center', padding: '14px 20px' }}
                   >
                     <ShoppingBag size={18} />
-                    <span>{submitting ? 'Envoi...' : 'Demander la Facture Proforma'}</span>
+                    <span>{submitting ? (isEn ? 'Sending...' : 'Envoi...') : (isEn ? 'Request Proforma Invoice' : 'Demander la Facture Proforma')}</span>
                   </button>
                 </form>
               )}
@@ -768,14 +803,14 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
             type="button"
             className="fct-lightbox-close"
             onClick={() => setIsLightboxOpen(false)}
-            aria-label="Fermer le plein écran"
+            aria-label={isEn ? 'Close full screen' : 'Fermer le plein écran'}
           >
             <X size={22} />
           </button>
           <div className="fct-lightbox-img-wrap" onClick={(e) => e.stopPropagation()}>
             <img
               src={photos[activePhotoIdx]}
-              alt={`${vehicle.brand} ${vehicle.model} - Plein écran`}
+              alt={`${vehicle.brand} ${vehicle.model} - ${isEn ? 'Full screen' : 'Plein écran'}`}
             />
           </div>
         </div>

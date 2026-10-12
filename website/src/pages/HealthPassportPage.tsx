@@ -2,16 +2,22 @@ import React, { useState } from 'react';
 import { ShieldCheck, Search, CheckCircle2, Wrench, Calendar, Gauge, Award, FileText, ArrowRight } from 'lucide-react';
 import { CERTIFIED_HEALTH_RECORDS } from '../data/defaultCatalog.ts';
 import { formatDateFR } from '../utils/formatters.ts';
+import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
 
 interface HealthPassportPageProps {
   initialPlate?: string;
   onOpenShowroom: (vehicleId: string) => void;
+  lang?: WebsiteLanguage;
 }
 
 export const HealthPassportPage: React.FC<HealthPassportPageProps> = ({
   initialPlate = 'LT-8841-CE',
   onOpenShowroom,
+  lang = 'fr',
 }) => {
+  const t = websiteTranslations[lang].health;
+  const isEn = lang === 'en';
+
   const [inputPlate, setInputPlate] = useState(initialPlate);
   const [searchedPlate, setSearchedPlate] = useState(initialPlate);
 
@@ -29,12 +35,11 @@ export const HealthPassportPage: React.FC<HealthPassportPageProps> = ({
     <div style={{ paddingBottom: 80 }}>
       <div className="fct-page-header">
         <div className="fct-container">
-          <span className="fct-badge fct-badge-green">Innovation FCT Douala</span>
-          <h2>Carnet de Santé Numérique & Traçabilité Véhicule</h2>
-          <p>
-            Chaque véhicule de la franchise FCT Douala dispose d'un passeport de maintenance certifié
-            et horodaté. Consultez l'historique complet des vidanges, freins, pneumatiques et révisions.
-          </p>
+          <span className="fct-badge fct-badge-green">
+            {isEn ? 'FCT Douala Innovation' : 'Innovation FCT Douala'}
+          </span>
+          <h2>{t.title}</h2>
+          <p>{t.subtitle}</p>
         </div>
       </div>
 
@@ -52,220 +57,178 @@ export const HealthPassportPage: React.FC<HealthPassportPageProps> = ({
           }}
         >
           <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 6 }}>
-            Vérifier un Véhicule par Immatriculation Camerounaise
+            {isEn ? 'Verify a Vehicle by License Plate' : 'Vérifier un Véhicule par Immatriculation Camerounaise'}
           </h3>
           <p style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 18 }}>
-            Entrez la plaque (ex: LT-8841-CE, LT-5578-CD, LT-1100-AB) pour accéder au carnet d'atelier officiel.
+            {isEn
+              ? 'Enter plate (e.g. LT-8841-CE, LT-5578-CD, LT-1100-AB) to access the official workshop log.'
+              : 'Entrez la plaque (ex: LT-8841-CE, LT-5578-CD, LT-1100-AB) pour accéder au carnet d\'atelier officiel.'}
           </p>
 
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 12 }}>
-            <input
-              type="text"
-              placeholder="LT-XXXX-XX"
-              value={inputPlate}
-              onChange={(e) => setInputPlate(e.target.value)}
-              className="fct-input"
-              style={{
-                fontSize: 18,
-                fontWeight: 800,
-                fontFamily: 'var(--font-display)',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: 'var(--fct-blue-dark)',
-              }}
-            />
-            <button type="submit" className="btn-primary" style={{ padding: '0 24px' }}>
-              <Search size={18} />
-              <span>Vérifier</span>
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 240, position: 'relative' }}>
+              <Search
+                size={18}
+                style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
+              />
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={inputPlate}
+                onChange={(e) => setInputPlate(e.target.value)}
+                className="fct-input"
+                style={{ paddingLeft: 42, textTransform: 'uppercase', fontFamily: 'monospace', fontWeight: 800, letterSpacing: '1px' }}
+              />
+            </div>
+            <button type="submit" className="btn-primary" style={{ padding: '10px 22px' }}>
+              <span>{t.searchBtn}</span>
             </button>
           </form>
-
-          {/* Raccourcis Plaques */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>Plaques certifiées :</span>
-            {['LT-8841-CE', 'LT-5578-CD', 'LT-1100-AB'].map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => {
-                  setInputPlate(p);
-                  setSearchedPlate(p);
-                }}
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  background: 'var(--bg-surface-alt)',
-                  border: '1px solid var(--border-medium)',
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                  fontWeight: 700,
-                  color: 'var(--fct-blue-primary)',
-                  cursor: 'pointer',
-                }}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
         </div>
 
-        {/* Fiche Passeport Résultat */}
+        {/* Résultat du Carnet de Santé */}
         {data ? (
-          <div
-            style={{
-              background: 'white',
-              borderRadius: 20,
-              border: '1.5px solid rgba(5, 150, 105, 0.3)',
-              boxShadow: 'var(--shadow-md)',
-              overflow: 'hidden',
-              maxWidth: 900,
-              margin: '0 auto',
-            }}
-          >
-            {/* Bannière Certifiée */}
+          <div style={{ maxWidth: 900, margin: '0 auto' }}>
+            {/* Carte Synthèse Véhicule */}
             <div
               style={{
-                background: 'linear-gradient(135deg, var(--fct-green-soft) 0%, #d1fae5 100%)',
-                padding: '24px 32px',
-                borderBottom: '1px solid rgba(5, 150, 105, 0.2)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 16,
+                background: 'white',
+                borderRadius: 20,
+                border: '1px solid var(--border-subtle)',
+                padding: 32,
+                boxShadow: 'var(--shadow-sm)',
+                marginBottom: 32,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 12,
-                    background: 'var(--fct-green-primary)',
-                    color: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <ShieldCheck size={28} />
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
                 <div>
-                  <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--fct-green-primary)' }}>
-                    Passeport Technique Certifié FCT
-                  </span>
-                  <h3 style={{ fontSize: 22, fontWeight: 900, color: 'var(--fct-blue-dark)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <span
+                      style={{
+                        padding: '6px 14px',
+                        background: '#0f2a4a',
+                        color: 'white',
+                        borderRadius: 8,
+                        fontFamily: 'monospace',
+                        fontSize: 16,
+                        fontWeight: 900,
+                        letterSpacing: '1px',
+                      }}
+                    >
+                      {data.vehicle.licensePlate}
+                    </span>
+                    <span className="fct-badge fct-badge-green">
+                      <ShieldCheck size={14} />
+                      <span>{t.vehicleFound}</span>
+                    </span>
+                  </div>
+                  <h3 style={{ fontSize: 24, fontWeight: 900, color: 'var(--fct-blue-dark)' }}>
                     {data.vehicle.brand} {data.vehicle.model} ({data.vehicle.year})
                   </h3>
+                  <p style={{ color: 'var(--text-sub)', fontSize: 14 }}>
+                    {isEn ? 'VIN Chassis:' : 'Châssis VIN :'} <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{data.vehicle.vin || 'VF1-FCT-2026-CMR'}</span> · {isEn ? 'First registered:' : 'Mise en circulation :'} {data.vehicle.firstRegistrationDate || data.vehicle.year}
+                  </p>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block' }}>
+                    {t.generalCondition}
+                  </span>
+                  <strong style={{ fontSize: 20, color: 'var(--fct-green-primary)', fontWeight: 900 }}>
+                    {data.vehicle.conditionGrade || '10/10'} / A+
+                  </strong>
                 </div>
               </div>
 
-              <div style={{ textAlign: 'right' }}>
-                <span
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: 16,
-                    fontWeight: 800,
-                    padding: '6px 14px',
-                    borderRadius: 8,
-                    background: 'white',
-                    color: 'var(--fct-blue-dark)',
-                    border: '1.5px solid var(--border-medium)',
-                    display: 'inline-block',
-                  }}
-                >
-                  {data.vehicle.licensePlate}
-                </span>
-                <span style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                  Homologué République du Cameroun
-                </span>
+              {/* 3 Cartes de Métriques Clés */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginTop: 28 }}>
+                <div style={{ background: '#f8fafc', padding: 18, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                    {t.mileageCertified}
+                  </span>
+                  <strong style={{ fontSize: 18, color: 'var(--fct-blue-dark)' }}>
+                    {data.vehicle.mileage.toLocaleString(isEn ? 'en-US' : 'fr-FR')} km
+                  </strong>
+                </div>
+                <div style={{ background: '#f8fafc', padding: 18, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                    {isEn ? 'Last Inspection' : 'Dernière Révision'}
+                  </span>
+                  <strong style={{ fontSize: 18, color: 'var(--fct-blue-dark)' }}>
+                    {data.records[0]?.date || '2026-10-01'}
+                  </strong>
+                </div>
+                <div style={{ background: '#f8fafc', padding: 18, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                    {t.interventionsCount}
+                  </span>
+                  <strong style={{ fontSize: 18, color: 'var(--fct-green-primary)' }}>
+                    {data.records.length} {isEn ? 'operations logged' : 'actes enregistrés'}
+                  </strong>
+                </div>
               </div>
             </div>
 
-            {/* Statistiques Clés du Véhicule */}
-            <div style={{ padding: 32 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
-                <div style={{ background: 'var(--bg-surface-alt)', padding: 14, borderRadius: 10 }}>
-                  <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-                    Kilométrage Actuel
-                  </span>
-                  <strong style={{ display: 'block', fontSize: 18, color: 'var(--fct-blue-dark)', marginTop: 2 }}>
-                    {data.vehicle.mileage.toLocaleString('fr-FR')} km
-                  </strong>
-                </div>
-                <div style={{ background: 'var(--bg-surface-alt)', padding: 14, borderRadius: 10 }}>
-                  <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-                    Transmission
-                  </span>
-                  <strong style={{ display: 'block', fontSize: 18, color: 'var(--fct-blue-dark)', marginTop: 2 }}>
-                    {data.vehicle.transmission}
-                  </strong>
-                </div>
-                <div style={{ background: 'var(--bg-surface-alt)', padding: 14, borderRadius: 10 }}>
-                  <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-                    Carburant
-                  </span>
-                  <strong style={{ display: 'block', fontSize: 18, color: 'var(--fct-blue-dark)', marginTop: 2 }}>
-                    {data.vehicle.fuel}
-                  </strong>
-                </div>
-                <div style={{ background: 'var(--bg-surface-alt)', padding: 14, borderRadius: 10 }}>
-                  <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-                    Statut FCT
-                  </span>
-                  <strong style={{ display: 'block', fontSize: 18, color: 'var(--fct-green-primary)', marginTop: 2 }}>
-                    Conforme 100%
-                  </strong>
-                </div>
+            {/* Historique Détaillé des Interventions */}
+            <div style={{ background: 'white', borderRadius: 20, border: '1px solid var(--border-subtle)', padding: 32, boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+                <Wrench size={22} color="var(--fct-blue-primary)" />
+                <h4 style={{ fontSize: 20, fontWeight: 800, color: 'var(--fct-blue-dark)' }}>
+                  {t.historyTitle}
+                </h4>
               </div>
 
-              {/* Historique Chronologique des Opérations en Atelier */}
-              <h4 style={{ fontSize: 16, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 16 }}>
-                Historique des Révisions & Interventions en Atelier
-              </h4>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {data.records.map((rec) => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                {data.records.map((r, idx) => (
                   <div
-                    key={rec.id}
+                    key={idx}
                     style={{
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 12,
                       padding: 20,
-                      background: 'white',
+                      borderRadius: 14,
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 12,
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Wrench size={18} color="#059669" />
-                        <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--fct-blue-dark)' }}>
-                          {rec.type}
-                        </span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--fct-blue-dark)' }}>
+                            {r.type}
+                          </span>
+                          {r.isCertifiedFCT && (
+                            <span className="fct-badge fct-badge-green" style={{ fontSize: 10, padding: '2px 8px' }}>
+                              <Award size={11} />
+                              <span>{t.certifiedStamp}</span>
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+                          {isEn ? 'Performed at:' : 'Réalisé chez :'} <strong>{r.garageName}</strong> · {isEn ? 'Odometer:' : 'Kilométrage :'} <strong>{r.mileageKm.toLocaleString(isEn ? 'en-US' : 'fr-FR')} km</strong>
+                        </p>
                       </div>
-                      <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>
-                        {formatDateFR(rec.date)}
+
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>
+                        {r.date}
                       </span>
                     </div>
 
-                    <p style={{ fontSize: 14, color: 'var(--text-body)', lineHeight: 1.6 }}>
-                      {rec.workDescription}
-                    </p>
-
-                    {rec.partsReplaced && rec.partsReplaced.length > 0 && (
-                      <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>
-                          Pièces d'origine :
+                    {r.partsReplaced && r.partsReplaced.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', fontSize: 12 }}>
+                        <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
+                          {t.colParts} :
                         </span>
-                        {rec.partsReplaced.map((part, pIdx) => (
+                        {r.partsReplaced.map((part, pIdx) => (
                           <span
                             key={pIdx}
                             style={{
                               padding: '2px 8px',
-                              borderRadius: 4,
-                              background: 'var(--fct-blue-soft)',
-                              fontSize: 11,
-                              fontWeight: 600,
-                              color: 'var(--fct-blue-primary)',
+                              borderRadius: 6,
+                              background: '#e0f2fe',
+                              color: '#0369a1',
+                              fontWeight: 700,
                             }}
                           >
                             {part}
@@ -273,56 +236,15 @@ export const HealthPassportPage: React.FC<HealthPassportPageProps> = ({
                         ))}
                       </div>
                     )}
-
-                    <div
-                      style={{
-                        marginTop: 14,
-                        paddingTop: 10,
-                        borderTop: '1px solid #f1f5f9',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        fontSize: 12,
-                        color: 'var(--text-muted)',
-                      }}
-                    >
-                      <span>Atelier : <strong>{rec.garageName}</strong></span>
-                      <span>Compteur certifié : <strong>{rec.mileageKm.toLocaleString('fr-FR')} km</strong></span>
-                      <span>Signé : <strong>{rec.certifiedBy}</strong></span>
-                    </div>
                   </div>
                 ))}
-              </div>
-
-              {/* Bouton pour ouvrir le showroom de ce véhicule */}
-              <div style={{ marginTop: 28, textAlign: 'center' }}>
-                <button
-                  onClick={() => onOpenShowroom(data.vehicle.id)}
-                  className="btn-primary"
-                  style={{ padding: '12px 28px' }}
-                >
-                  <ArrowRight size={16} />
-                  <span>Voir la Fiche Complète dans le Showroom</span>
-                </button>
               </div>
             </div>
           </div>
         ) : (
-          <div
-            style={{
-              background: 'white',
-              padding: 40,
-              borderRadius: 16,
-              textAlign: 'center',
-              maxWidth: 600,
-              margin: '0 auto',
-              border: '1px solid var(--border-subtle)',
-            }}
-          >
+          <div style={{ background: 'white', padding: 50, borderRadius: 16, textAlign: 'center', border: '1px solid var(--border-subtle)', maxWidth: 600, margin: '0 auto' }}>
             <p style={{ color: 'var(--text-sub)', fontSize: 15 }}>
-              Aucun carnet public FCT pour la plaque <strong>{cleanPlate}</strong>.
-            </p>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 6 }}>
-              Vérifiez la saisie ou contactez notre agence au +237 699 45 88 12.
+              {t.noRecords}
             </p>
           </div>
         )}

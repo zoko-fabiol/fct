@@ -20,13 +20,17 @@ import {
 import { Vehicle } from '../types/index.ts';
 import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
 import { formatXAF } from '../utils/formatters.ts';
+import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
 
 interface HomePageProps {
   vehicles: Vehicle[];
   onNavigate: (page: 'location' | 'vente' | 'carnet-sante' | 'showroom', vehicleId?: string) => void;
+  lang?: WebsiteLanguage;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
+export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate, lang = 'fr' }) => {
+  const t = websiteTranslations[lang].home;
+  const isEn = lang === 'en';
   const featuredRentals = vehicles.filter((v) => v.isForRent).slice(0, 3);
   const featuredSales = vehicles.filter((v) => v.isForSale).slice(0, 3);
 
@@ -42,27 +46,34 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
                 <span>Douala · Carrefour Santa Barbara, Bonamoussadi</span>
               </div>
               <h1>
-                L'Automobile de Prestige à Douala,{' '}
-                <span style={{ color: 'var(--fct-blue-primary)' }}>en Location & Vente Certifiée</span>.
+                {isEn ? (
+                  <>
+                    Executive Automotive in Douala,{' '}
+                    <span style={{ color: 'var(--fct-blue-primary)' }}>Certified Rental & Sales</span>.
+                  </>
+                ) : (
+                  <>
+                    L'Automobile de Prestige à Douala,{' '}
+                    <span style={{ color: 'var(--fct-blue-primary)' }}>en Location & Vente Certifiée</span>.
+                  </>
+                )}
               </h1>
               <p className="fct-hero-lead">
-                Franchise Conseils Trading met à votre disposition une flotte rigoureusement inspectée
-                dans nos ateliers de Bassa. Profitez d'un service haut de gamme avec chauffeurs certifiés,
-                tarification transparente en FCFA et traçabilité par carnet de santé numérique.
+                {t.heroSubtitle}
               </p>
 
               <div className="fct-hero-buttons">
                 <button onClick={() => onNavigate('location')} className="btn-primary">
                   <KeyRound size={17} />
-                  <span>Explorer les Locations</span>
+                  <span>{t.exploreFleet}</span>
                 </button>
                 <button onClick={() => onNavigate('vente')} className="btn-secondary">
                   <ShoppingBag size={17} />
-                  <span>Véhicules en Vente</span>
+                  <span>{t.viewSales}</span>
                 </button>
                 <button onClick={() => onNavigate('carnet-sante')} className="btn-emerald">
                   <ShieldCheck size={17} />
-                  <span>Carnet de Santé</span>
+                  <span>{isEn ? 'Health Record' : 'Carnet de Santé'}</span>
                 </button>
               </div>
             </div>
@@ -71,13 +82,15 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
             <div className="fct-hero-visual">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div>
-                  <span className="fct-badge fct-badge-amber">Véhicule Signature</span>
+                  <span className="fct-badge fct-badge-amber">
+                    {isEn ? 'Signature Vehicle' : 'Véhicule Signature'}
+                  </span>
                   <h3 style={{ fontSize: 20, fontWeight: 800, marginTop: 4, color: 'var(--fct-blue-dark)' }}>
                     Toyota Land Cruiser Prado TX-L
                   </h3>
                 </div>
                 <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--fct-blue-primary)' }}>
-                  85 000 FCFA / j
+                  85 000 FCFA / {isEn ? 'day' : 'j'}
                 </span>
               </div>
 
@@ -111,7 +124,7 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
                     fontWeight: 800,
                   }}
                 >
-                  Inspection A+ Validée
+                  {isEn ? 'A+ Inspection Passed' : 'Inspection A+ Validée'}
                 </span>
                 <span
                   style={{
@@ -134,16 +147,16 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 16, fontSize: 12, textAlign: 'center' }}>
                 <div style={{ background: '#f8fafc', padding: '8px 4px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                  <strong>7 Places</strong>
-                  <span style={{ display: 'block', color: 'var(--text-muted)' }}>Cuir VIP</span>
+                  <strong>{isEn ? '7 Seats' : '7 Places'}</strong>
+                  <span style={{ display: 'block', color: 'var(--text-muted)' }}>{isEn ? 'VIP Leather' : 'Cuir VIP'}</span>
                 </div>
                 <div style={{ background: '#f8fafc', padding: '8px 4px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                  <strong>4x4 Permanent</strong>
-                  <span style={{ display: 'block', color: 'var(--text-muted)' }}>Tout-terrain</span>
+                  <strong>{isEn ? 'Full-Time 4WD' : '4x4 Permanent'}</strong>
+                  <span style={{ display: 'block', color: 'var(--text-muted)' }}>{isEn ? 'All-Terrain' : 'Tout-terrain'}</span>
                 </div>
                 <div style={{ background: '#f8fafc', padding: '8px 4px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                  <strong>Clim Tri-Zone</strong>
-                  <span style={{ display: 'block', color: 'var(--text-muted)' }}>Tropicalisée</span>
+                  <strong>{isEn ? 'Tri-Zone A/C' : 'Clim Tri-Zone'}</strong>
+                  <span style={{ display: 'block', color: 'var(--text-muted)' }}>{isEn ? 'Tropicalized' : 'Tropicalisée'}</span>
                 </div>
               </div>
 
@@ -152,7 +165,7 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
                 className="btn-primary"
                 style={{ width: '100%', marginTop: 16, justifyContent: 'center' }}
               >
-                <span>Accéder au Showroom Dédié</span>
+                <span>{isEn ? 'Open Virtual Showroom' : 'Accéder au Showroom Dédié'}</span>
                 <ArrowRight size={16} />
               </button>
             </div>
@@ -162,19 +175,19 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
           <div className="fct-stats-bar-light">
             <div className="fct-stat-cell">
               <strong>110 Points</strong>
-              <span>Contrôle Atelier Certifié</span>
+              <span>{isEn ? 'Certified Workshop Inspection' : 'Contrôle Atelier Certifié'}</span>
             </div>
             <div className="fct-stat-cell">
               <strong>500+</strong>
-              <span>Clients Entreprises & Particuliers</span>
+              <span>{isEn ? 'Corporate & VIP Clients' : 'Clients Entreprises & Particuliers'}</span>
             </div>
             <div className="fct-stat-cell">
               <strong style={{ color: 'var(--fct-green-primary)' }}>24/7</strong>
-              <span>Assistance Dépannage Douala</span>
+              <span>{isEn ? 'Douala Roadside Assistance' : 'Assistance Dépannage Douala'}</span>
             </div>
             <div className="fct-stat-cell">
               <strong>100% XAF</strong>
-              <span>Tarifs Clairs Sans Frais Cachés</span>
+              <span>{isEn ? 'Transparent Pricing Without Surprises' : 'Tarifs Clairs Sans Frais Cachés'}</span>
             </div>
           </div>
         </div>
@@ -185,16 +198,18 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
         <div className="fct-container">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 36, flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <span className="fct-badge fct-badge-blue">Location Immédiate</span>
+              <span className="fct-badge fct-badge-blue">
+                {isEn ? 'Immediate Rental' : 'Location Immédiate'}
+              </span>
               <h2 style={{ fontSize: 32, fontWeight: 900, marginTop: 8, color: 'var(--fct-blue-dark)' }}>
-                Véhicules en Vedette pour vos Déplacements
+                {t.featuredVehicles}
               </h2>
               <p style={{ color: 'var(--text-sub)', fontSize: 15 }}>
-                Flotte disponible sur le parking de Bonamoussadi avec option chauffeur professionnel.
+                {t.featuredSubtitle}
               </p>
             </div>
             <button onClick={() => onNavigate('location')} className="btn-secondary">
-              <span>Voir toute la flotte ({vehicles.filter((v) => v.isForRent).length})</span>
+              <span>{isEn ? `View Full Fleet (${vehicles.filter((v) => v.isForRent).length})` : `Voir toute la flotte (${vehicles.filter((v) => v.isForRent).length})`}</span>
               <ArrowRight size={16} />
             </button>
           </div>
@@ -241,7 +256,7 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
                   <div className="fct-card-specs-row">
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                       <Settings2 size={13} style={{ color: 'var(--fct-blue-primary)', flexShrink: 0 }} />
-                      <span>{v.transmission === 'AUTOMATIQUE' ? 'Automatique' : 'Manuelle'}</span>
+                      <span>{v.transmission === 'AUTOMATIQUE' ? (isEn ? 'Automatic' : 'Automatique') : (isEn ? 'Manual' : 'Manuelle')}</span>
                     </span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                       <Fuel size={13} style={{ color: 'var(--fct-blue-primary)', flexShrink: 0 }} />
@@ -249,25 +264,25 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
                     </span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                       <Users size={13} style={{ color: 'var(--fct-blue-primary)', flexShrink: 0 }} />
-                      <span>{v.seats} Places</span>
+                      <span>{v.seats} {isEn ? 'Seats' : 'Places'}</span>
                     </span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                       <Gauge size={13} style={{ color: 'var(--fct-blue-primary)', flexShrink: 0 }} />
-                      <span>{v.mileage.toLocaleString('fr-FR')} km</span>
+                      <span>{v.mileage.toLocaleString(isEn ? 'en-US' : 'fr-FR')} km</span>
                     </span>
                   </div>
 
                   <div className="fct-card-price-row">
                     <div>
                       <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-                        Tarif journalier
+                        {isEn ? 'Daily Rate' : 'Tarif journalier'}
                       </span>
                       <div className="fct-price-tag">
-                        {formatXAF(v.rentalDailyRate)} <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>/ j</span>
+                        {formatXAF(v.rentalDailyRate)} <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>/ {isEn ? 'day' : 'j'}</span>
                       </div>
                     </div>
                     <span className="btn-primary" style={{ padding: '8px 14px', fontSize: 12 }}>
-                      Voir Showroom
+                      {isEn ? 'View Showroom' : 'Voir Showroom'}
                     </span>
                   </div>
                 </div>
@@ -281,12 +296,16 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
       <section style={{ padding: '70px 0', background: 'var(--bg-page)', borderTop: '1px solid var(--border-subtle)' }}>
         <div className="fct-container">
           <div style={{ textAlign: 'center', maxWidth: 700, margin: '0 auto 48px' }}>
-            <span className="fct-badge fct-badge-green">Excellence & Sécurité</span>
+            <span className="fct-badge fct-badge-green">
+              {isEn ? 'Excellence & Security' : 'Excellence & Sécurité'}
+            </span>
             <h2 style={{ fontSize: 32, fontWeight: 900, marginTop: 8, color: 'var(--fct-blue-dark)' }}>
-              Pourquoi Choisir FCT Automobile à Douala ?
+              {t.whyChooseUs}
             </h2>
             <p style={{ color: 'var(--text-sub)', fontSize: 15 }}>
-              Des garanties contractuelles claires et une assistance réactive sur les axes Douala-Yaoundé, Kribi et Ouest.
+              {isEn
+                ? 'Certified contracts, responsive breakdown dispatch and full fleet coverage across Douala-Yaoundé, Kribi and West corridors.'
+                : 'Des garanties contractuelles claires et une assistance réactive sur les axes Douala-Yaoundé, Kribi et Ouest.'}
             </p>
           </div>
 
@@ -296,10 +315,10 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
                 <Wrench size={24} />
               </div>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 8 }}>
-                Atelier Agréé FCT Bassa
+                {isEn ? 'Certified Bassa Workshop' : 'Atelier Agréé FCT Bassa'}
               </h3>
               <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                Inspection préalable en 110 points et pièces de rechange d'origine certifiées pour chaque véhicule.
+                {t.reason1Desc}
               </p>
             </div>
 
@@ -308,10 +327,10 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
                 <UserCheck size={24} />
               </div>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 8 }}>
-                Chauffeurs VIP Certifiés
+                {isEn ? 'Certified VIP Chauffeurs' : 'Chauffeurs VIP Certifiés'}
               </h3>
               <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                Conducteurs professionnels, courtois et parfaitement formés aux exigences des entreprises et délégations.
+                {t.reason2Desc}
               </p>
             </div>
 
@@ -320,10 +339,12 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
                 <FileSpreadsheet size={24} />
               </div>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 8 }}>
-                Devis & Factures Proforma
+                {isEn ? 'Formal Invoices & Proformas' : 'Devis & Factures Proforma'}
               </h3>
               <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                Conformité fiscale camerounaise intégrale (TVA 19.25%, RC/DLA, NIU officiel) pour vos comptabilités d'entreprise.
+                {isEn
+                  ? 'Full Cameroonian tax and legal compliance (VAT 19.25%, RC/DLA, official Tax ID) for corporate accounting departments.'
+                  : 'Conformité fiscale camerounaise intégrale (TVA 19.25%, RC/DLA, NIU officiel) pour vos comptabilités d\'entreprise.'}
               </p>
             </div>
 
@@ -332,10 +353,10 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
                 <ShieldCheck size={24} />
               </div>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 8 }}>
-                Carnet de Santé Numérique
+                {isEn ? 'Digital Vehicle Health Record' : 'Carnet de Santé Numérique'}
               </h3>
               <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                Vérifiez en ligne l'historique complet d'un véhicule grâce à sa plaque d'immatriculation avant toute décision.
+                {t.reason3Desc}
               </p>
             </div>
           </div>

@@ -25,6 +25,8 @@ export interface Vehicle {
   horsepower?: string;
   conditionGrade?: string;
   licensePlate?: string;
+  vin?: string;
+  firstRegistrationDate?: string;
 }
 
 export interface BookingRequest {

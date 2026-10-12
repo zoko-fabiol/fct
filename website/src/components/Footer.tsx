@@ -1,13 +1,17 @@
 import React from 'react';
-import { Car, Phone, Mail, MapPin, ShieldCheck, Heart } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { AppPage } from '../types/router.ts';
 import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
+import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
 
 interface FooterProps {
   onNavigate: (page: AppPage) => void;
+  lang?: WebsiteLanguage;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+export const Footer: React.FC<FooterProps> = ({ onNavigate, lang = 'fr' }) => {
+  const t = websiteTranslations[lang].footer;
+
   const handleNav = (p: AppPage) => {
     onNavigate(p);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -33,8 +37,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               />
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6, marginBottom: 16 }}>
-              Société leader à Douala pour la location de SUV, 4x4 et berlines de prestige, la vente certifiée
-              en 110 points et le suivi numérique de santé technique.
+              {t.aboutText}
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               {FCT_AGENCY_INFO.legalInfo}
@@ -43,30 +46,30 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
           {/* Colonne 2 : Liens Location & Vente */}
           <div className="fct-footer-col">
-            <h4>Flotte & Services</h4>
+            <h4>{t.colFleet}</h4>
             <ul className="fct-footer-links">
-              <li><button onClick={() => handleNav('location')}>Location avec Chauffeur</button></li>
-              <li><button onClick={() => handleNav('location')}>Location sans Chauffeur</button></li>
-              <li><button onClick={() => handleNav('vente')}>Vente de Véhicules Certifiés</button></li>
-              <li><button onClick={() => handleNav('carnet-sante')} style={{ color: 'var(--fct-green-primary)', fontWeight: 700 }}>Carnet de Santé Numérique</button></li>
-              <li><button onClick={() => handleNav('espace-client')}>Espace Adhérent Client</button></li>
+              <li><button onClick={() => handleNav('location')}>{t.withDriver}</button></li>
+              <li><button onClick={() => handleNav('location')}>{t.withoutDriver}</button></li>
+              <li><button onClick={() => handleNav('vente')}>{t.certifiedSales}</button></li>
+              <li><button onClick={() => handleNav('carnet-sante')} style={{ color: 'var(--fct-green-primary)', fontWeight: 700 }}>{t.healthPassport}</button></li>
+              <li><button onClick={() => handleNav('espace-client')}>{t.clientPortal}</button></li>
             </ul>
           </div>
 
           {/* Colonne 3 : L'Agence */}
           <div className="fct-footer-col">
-            <h4>L'Entreprise</h4>
+            <h4>{t.colCompany}</h4>
             <ul className="fct-footer-links">
-              <li><button onClick={() => handleNav('agence')}>Agence Bonamoussadi</button></li>
-              <li><button onClick={() => handleNav('agence')}>Horaires & Plan d'Accès</button></li>
-              <li><a href={`https://wa.me/${FCT_AGENCY_INFO.whatsapp}`} target="_blank" rel="noopener noreferrer">Contact WhatsApp VIP</a></li>
-              <li><a href={`tel:${FCT_AGENCY_INFO.phone1}`}>Ligne Directe Douala</a></li>
+              <li><button onClick={() => handleNav('agence')}>{t.agencyBonamoussadi}</button></li>
+              <li><button onClick={() => handleNav('agence')}>{t.hoursAndMap}</button></li>
+              <li><a href={`https://wa.me/${FCT_AGENCY_INFO.whatsapp}`} target="_blank" rel="noopener noreferrer">{t.whatsappVip}</a></li>
+              <li><a href={`tel:${FCT_AGENCY_INFO.phone1}`}>{t.directLine}</a></li>
             </ul>
           </div>
 
           {/* Colonne 4 : Localisation Directe */}
           <div className="fct-footer-col">
-            <h4>Nous Trouver</h4>
+            <h4>{t.colLocation}</h4>
             <p style={{ fontSize: 13, color: 'var(--text-main)', fontWeight: 700, marginBottom: 4 }}>
               {FCT_AGENCY_INFO.address}
             </p>
@@ -74,8 +77,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               {FCT_AGENCY_INFO.landmark}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>
-              <span>Tél : <strong>{FCT_AGENCY_INFO.phone1}</strong></span>
-              <span>Urgences : <strong>{FCT_AGENCY_INFO.phone2}</strong></span>
+              <span>{t.tel} <strong>{FCT_AGENCY_INFO.phone1}</strong></span>
+              <span>{t.emergency} <strong>{FCT_AGENCY_INFO.phone2}</strong></span>
               <span style={{ color: 'var(--text-muted)' }}>{FCT_AGENCY_INFO.email}</span>
             </div>
           </div>
@@ -84,11 +87,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         {/* Barre Inférieure */}
         <div className="fct-footer-bottom">
           <div>
-            © {new Date().getFullYear()} Franchise Conseils Trading (FCT) Automobile Douala. Tous droits réservés.
+            © {new Date().getFullYear()} {t.copyright}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <ShieldCheck size={15} color="#059669" />
-            <span>Portail Officiel FCT Cameroun · RC/DLA/2020/B/1458</span>
+            <span>{t.officialPortal}</span>
           </div>
         </div>
       </div>
