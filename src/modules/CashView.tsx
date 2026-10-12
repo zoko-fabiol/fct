@@ -10,6 +10,7 @@ import { CloudinaryUploadDropzone } from '../components/ui/CloudinaryUploadDropz
 import { Language, translations } from '../services/i18n.ts';
 import { CashMovement, CashMovementCategory, CashMovementType, AppModule } from '../../packages/shared-types/index.ts';
 import { formatXAF, hasEffectivePermission } from '../../packages/business-rules/index.ts';
+import { CashDenominationGrid } from '../components/cash/CashDenominationGrid.tsx';
 import { DocumentPrintData } from '../components/DocumentModal.tsx';
 import { DocumentViewerModal } from '../components/ui/DocumentViewerModal.tsx';
 import {
@@ -103,8 +104,12 @@ export const CashView: React.FC<CashViewProps> = ({
 
   // Session Open/Close State
   const [openingBalance, setOpeningBalance] = useState(250000);
+  const [openBilletageSummary, setOpenBilletageSummary] = useState('');
   const [countedClosing, setCountedClosing] = useState(0);
+  const [closeBilletageSummary, setCloseBilletageSummary] = useState('');
   const [closingNotes, setClosingNotes] = useState('');
+  const [openMode, setOpenMode] = useState<'billetage' | 'quick'>('billetage');
+  const [closeMode, setCloseMode] = useState<'billetage' | 'quick'>('billetage');
 
   // Handle contextual deep link (from Billing, Rentals, or Sales)
   useEffect(() => {
@@ -175,6 +180,18 @@ export const CashView: React.FC<CashViewProps> = ({
     if (!activeSession) return;
     setFormError(null);
 
+    // Contrôles anti-fraude stricts pour les décaissements (OUTFLOW)
+    if (movementForm.type === 'OUTFLOW') {
+      if (!movementForm.receivedFromOrPaidTo.trim()) {
+        setFormError('Le tiers bénéficiaire du décaissement est strictement obligatoire.');
+        return;
+      }
+      if (movementForm.reason.trim().length < 5) {
+        setFormError('Le motif du décaissement doit être explicite (minimum 5 caractères).');
+        return;
+      }
+    }
+
     try {
       const recorded = dbStore.recordCashMovement({
         sessionId: activeSession.id,
@@ -233,7 +250,7 @@ export const CashView: React.FC<CashViewProps> = ({
       setIsOpenModalOpen(false);
       setActionAlert({
         type: 'success',
-        message: `Session de caisse ${session.sessionNumber} ouverte avec un fonds initial de ${formatXAF(openingBalance)}.`,
+        message: `Session de caisse ${session.sessionNumber} ouverte avec un fonds initial de ${formatXAF(openingBalance)}. ${openBilletageSummary ? openBilletageSummary : ''}`,
       });
       setTimeout(() => setActionAlert(null), 4000);
     } catch (err: any) {
@@ -246,14 +263,29 @@ export const CashView: React.FC<CashViewProps> = ({
     e.preventDefault();
     if (!activeSession) return;
 
+    const discrepancy = countedClosing - activeSession.calculatedExpectedBalanceXAF;
+    if (discrepancy !== 0 && !closingNotes.trim()) {
+      setActionAlert({
+        type: 'error',
+        message: `Un écart de caisse de ${formatXAF(discrepancy)} a été détecté. La justification écrite de cet écart est obligatoire avant scellement.`,
+      });
+      setTimeout(() => setActionAlert(null), 6000);
+      return;
+    }
+
+    const fullNotes = [
+      closingNotes.trim(),
+      closeBilletageSummary.trim()
+    ].filter(Boolean).join(' | ');
+
     try {
-      const session = dbStore.closeCashSession(activeSession.id, countedClosing, closingNotes);
+      const session = dbStore.closeCashSession(activeSession.id, countedClosing, fullNotes || undefined);
       setIsCloseModalOpen(false);
       setActionAlert({
         type: 'success',
-        message: `Session de caisse ${session.sessionNumber} clôturée. Solde théorique : ${formatXAF(
-          session.calculatedExpectedBalanceXAF
-        )}.`,
+        message: `Session de caisse ${session.sessionNumber} clôturée et scellée. Solde physique : ${formatXAF(
+          countedClosing
+        )} (Écart : ${formatXAF(session.discrepancyXAF || 0)}).`,
       });
       setTimeout(() => setActionAlert(null), 5000);
     } catch (err: any) {
@@ -1048,7 +1080,7 @@ export const CashView: React.FC<CashViewProps> = ({
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <Plus className="w-5 h-5 text-emerald-600" />
-              <span>Enregistrer une Écriture de Caisse</span>
+              <span>Enregistrer une Écriture de Caisse Certifiée</span>
             </h3>
 
             {formError && (
@@ -1089,6 +1121,17 @@ export const CashView: React.FC<CashViewProps> = ({
                 </div>
               </div>
 
+              {movementForm.type === 'OUTFLOW' && (
+                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] font-semibold flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Contrôle de conformité FCT Douala :</strong> Pour tout décaissement d'espèces,
+                    le tiers bénéficiaire, le motif détaillé et la pièce justificative (facturette, quittance) sont
+                    obligatoires.
+                  </span>
+                </div>
+              )}
+
               <div>
                 <label className="block text-slate-700 font-bold mb-1">Montant en Espèces (XAF) *</label>
                 <input
@@ -1102,26 +1145,43 @@ export const CashView: React.FC<CashViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Tiers (Payeur / Bénéficiaire) *</label>
+                <label className="block text-slate-700 font-bold mb-1">
+                  {movementForm.type === 'OUTFLOW' ? 'Bénéficiaire du décaissement *' : 'Tiers Payeur (Client / Partenaire) *'}
+                </label>
                 <input
                   type="text"
                   value={movementForm.receivedFromOrPaidTo}
                   onChange={(e) => setMovementForm({ ...movementForm, receivedFromOrPaidTo: e.target.value })}
-                  placeholder="Ex: Christian Eboa Eboa"
+                  placeholder={movementForm.type === 'OUTFLOW' ? 'Ex: Station Total Bonamoussadi, Garage Rapide' : 'Ex: Christian Eboa Eboa'}
                   className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Motif / Justification *</label>
+                <label className="block text-slate-700 font-bold mb-1">Motif / Justification détaillée *</label>
                 <input
                   type="text"
                   value={movementForm.reason}
                   onChange={(e) => setMovementForm({ ...movementForm, reason: e.target.value })}
-                  placeholder="Ex: Acompte location Land Cruiser 3 jours"
+                  placeholder={movementForm.type === 'OUTFLOW' ? 'Ex: Plein carburant Prado LT 502 (Ticket #84920)' : 'Ex: Acompte location Land Cruiser 3 jours'}
                   className="w-full p-2.5 rounded-lg border border-slate-200 font-medium"
                   required
+                />
+              </div>
+
+              {/* Pièce Justificative (Cloudinary Dropzone) */}
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Pièce Justificative / Bon de Caisse {movementForm.type === 'OUTFLOW' ? '(Recommandé / Audit)' : '(Optionnel)'}
+                </label>
+                <CloudinaryUploadDropzone
+                  folder="fct_automobile/cash"
+                  label="Téléverser le ticket / facturette / bon émargé :"
+                  helperText="Scan ou photo du ticket de caisse, reçu station ou bon de décaissement émargé"
+                  currentValue={movementForm.justificationReceiptUrl}
+                  onUploadSuccess={(url) => setMovementForm({ ...movementForm, justificationReceiptUrl: url })}
+                  onClear={() => setMovementForm({ ...movementForm, justificationReceiptUrl: '' })}
                 />
               </div>
 
@@ -1148,25 +1208,61 @@ export const CashView: React.FC<CashViewProps> = ({
       {/* Open Session Modal */}
       {isOpenModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
-            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-              <Unlock className="w-5 h-5 text-blue-900" />
-              <span>Ouvrir une Session de Caisse</span>
-            </h3>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Unlock className="w-5 h-5 text-blue-900" />
+                <span>Ouvrir une Session de Caisse</span>
+              </h3>
+              <div className="flex bg-slate-100 p-0.5 rounded-lg text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setOpenMode('billetage')}
+                  className={`px-2 py-1 rounded-md transition cursor-pointer ${
+                    openMode === 'billetage' ? 'bg-white text-blue-900 shadow-2xs' : 'text-slate-600'
+                  }`}
+                >
+                  Billetage BEAC
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpenMode('quick')}
+                  className={`px-2 py-1 rounded-md transition cursor-pointer ${
+                    openMode === 'quick' ? 'bg-white text-blue-900 shadow-2xs' : 'text-slate-600'
+                  }`}
+                >
+                  Saisie Rapide
+                </button>
+              </div>
+            </div>
 
             <form onSubmit={handleOpenSession} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Fonds de caisse initial (XAF) *</label>
-                <input
-                  type="number"
-                  value={openingBalance}
-                  onChange={(e) => setOpeningBalance(Number(e.target.value))}
-                  className="w-full p-2.5 rounded-lg border border-slate-200 font-black text-sm"
-                  required
-                />
-              </div>
+              {openMode === 'billetage' ? (
+                <div>
+                  <CashDenominationGrid
+                    onTotalChange={(tot, summary) => {
+                      setOpeningBalance(tot);
+                      setOpenBilletageSummary(summary);
+                    }}
+                  />
+                  <div className="mt-2 text-slate-500 text-[11px]">
+                    Fonds de caisse calculé : <strong className="text-slate-900">{formatXAF(openingBalance)}</strong>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Fonds de caisse initial (XAF) *</label>
+                  <input
+                    type="number"
+                    value={openingBalance}
+                    onChange={(e) => setOpeningBalance(Number(e.target.value))}
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-black text-sm"
+                    required
+                  />
+                </div>
+              )}
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsOpenModalOpen(false)}
@@ -1178,7 +1274,7 @@ export const CashView: React.FC<CashViewProps> = ({
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Ouvrir Caisse
+                  Ouvrir Caisse ({formatXAF(openingBalance)})
                 </button>
               </div>
             </form>
@@ -1189,39 +1285,104 @@ export const CashView: React.FC<CashViewProps> = ({
       {/* Close Session Modal */}
       {isCloseModalOpen && activeSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
-            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-              <Lock className="w-5 h-5 text-rose-700" />
-              <span>Clôturer la Session de Caisse</span>
-            </h3>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Lock className="w-5 h-5 text-rose-700" />
+                <span>Clôturer la Session de Caisse</span>
+              </h3>
+              <div className="flex bg-slate-100 p-0.5 rounded-lg text-[11px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setCloseMode('billetage')}
+                  className={`px-2 py-1 rounded-md transition cursor-pointer ${
+                    closeMode === 'billetage' ? 'bg-white text-rose-700 shadow-2xs' : 'text-slate-600'
+                  }`}
+                >
+                  Billetage BEAC
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCloseMode('quick')}
+                  className={`px-2 py-1 rounded-md transition cursor-pointer ${
+                    closeMode === 'quick' ? 'bg-white text-rose-700 shadow-2xs' : 'text-slate-600'
+                  }`}
+                >
+                  Saisie Directe
+                </button>
+              </div>
+            </div>
 
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-              <div>Solde théorique calculé : <strong className="text-slate-900">{formatXAF(activeSession.calculatedExpectedBalanceXAF)}</strong></div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs flex items-center justify-between">
+              <div>
+                <span className="text-slate-500 font-medium">Solde théorique calculé :</span>{' '}
+                <strong className="text-slate-900 text-sm ml-1">{formatXAF(activeSession.calculatedExpectedBalanceXAF)}</strong>
+              </div>
+              <div className="text-[11px] text-slate-500">
+                Session {activeSession.sessionNumber}
+              </div>
             </div>
 
             <form onSubmit={handleCloseSession} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Montant physique compté (XAF) *</label>
-                <input
-                  type="number"
-                  value={countedClosing}
-                  onChange={(e) => setCountedClosing(Number(e.target.value))}
-                  className="w-full p-2.5 rounded-lg border border-slate-200 font-black text-sm"
-                  required
-                />
-              </div>
+              {closeMode === 'billetage' ? (
+                <div>
+                  <CashDenominationGrid
+                    expectedBalanceXAF={activeSession.calculatedExpectedBalanceXAF}
+                    showDiscrepancy={true}
+                    onTotalChange={(tot, summary) => {
+                      setCountedClosing(tot);
+                      setCloseBilletageSummary(summary);
+                    }}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">Montant physique compté (XAF) *</label>
+                  <input
+                    type="number"
+                    value={countedClosing}
+                    onChange={(e) => setCountedClosing(Number(e.target.value))}
+                    className="w-full p-2.5 rounded-lg border border-slate-200 font-black text-sm"
+                    required
+                  />
+                  <div className="mt-1 text-xs font-bold">
+                    Écart :{' '}
+                    <span
+                      className={
+                        countedClosing === activeSession.calculatedExpectedBalanceXAF
+                          ? 'text-emerald-700'
+                          : countedClosing > activeSession.calculatedExpectedBalanceXAF
+                          ? 'text-amber-700'
+                          : 'text-rose-700'
+                      }
+                    >
+                      {formatXAF(countedClosing - activeSession.calculatedExpectedBalanceXAF)}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Notes / Justification écarts éventuels</label>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Justification des écarts / Notes de clôture{' '}
+                  {countedClosing !== activeSession.calculatedExpectedBalanceXAF && (
+                    <span className="text-rose-600 font-black">* OBLIGATOIRE (Écart détecté)</span>
+                  )}
+                </label>
                 <textarea
                   value={closingNotes}
                   onChange={(e) => setClosingNotes(e.target.value)}
+                  placeholder={
+                    countedClosing !== activeSession.calculatedExpectedBalanceXAF
+                      ? "Expliquez obligatoirement l'origine de l'écart (ex: monnaie non rendue, dépense en attente de justificatif)"
+                      : "Remarques ou observations sur la vacation de caisse (optionnel)"
+                  }
                   rows={2}
                   className="w-full p-2.5 rounded-lg border border-slate-200"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsCloseModalOpen(false)}
@@ -1233,7 +1394,7 @@ export const CashView: React.FC<CashViewProps> = ({
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-rose-700 hover:bg-rose-600 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Clôturer &amp; Sceller
+                  Clôturer &amp; Sceller ({formatXAF(countedClosing)})
                 </button>
               </div>
             </form>

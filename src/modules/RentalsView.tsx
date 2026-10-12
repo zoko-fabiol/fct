@@ -102,6 +102,9 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
   const [returnFuel, setReturnFuel] = useState<number>(8);
   const [penaltiesAmount, setPenaltiesAmount] = useState<number>(0);
   const [penaltyNotes, setPenaltyNotes] = useState<string>('');
+  const [returnCleanliness, setReturnCleanliness] = useState<'CLEAN' | 'DIRTY'>('CLEAN');
+  const [returnSpareWheel, setReturnSpareWheel] = useState<boolean>(true);
+  const [returnJackTools, setReturnJackTools] = useState<boolean>(true);
 
   const [editForm, setEditForm] = useState({
     startDate: '',
@@ -322,19 +325,75 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
     }
   };
 
+  const handlePrintReturnInspection = (contract: RentalContract, veh: any) => {
+    const customer = state.customers.find((c) => c.id === contract.customerId);
+    const insp = contract.inspectionRetour;
+    const distanceKm = insp && veh ? Math.max(0, insp.mileage - (veh.mileage || 0)) : 0;
+    const printData: DocumentPrintData = {
+      title: 'PROCÈS-VERBAL DE RESTITUTION & QUITTANCE DE CAUTION',
+      docNumber: `PV-RET-${contract.contractNumber}`,
+      date: new Date().toISOString().split('T')[0],
+      customerName: contract.customerName,
+      customerPhone: customer?.phone,
+      customerAddress: customer?.address,
+      items: [
+        {
+          description: `Restitution véhicule ${contract.vehicleName} (Immatriculation : ${veh?.licensePlate || '-'})`,
+          qty: 1,
+          unitPrice: 0,
+          total: 0,
+        },
+        {
+          description: `Kilométrage certifié au retour : ${insp?.mileage?.toLocaleString() || '-'} km (Distance parcourue : ${distanceKm.toLocaleString()} km)`,
+          qty: 1,
+          unitPrice: 0,
+          total: 0,
+        },
+        {
+          description: `Jauge carburant au retour : ${insp?.fuelLevel !== undefined ? insp.fuelLevel + '/8' : 'Conforme'} - État : ${insp?.cleanlinessCondition === 'CLEAN' ? 'Propre' : 'Nettoyage requis'}`,
+          qty: 1,
+          unitPrice: 0,
+          total: 0,
+        },
+        {
+          description: `Caution initiale consignée : ${formatXAF(contract.securityDepositXAF)} | Pénalités déduites : ${formatXAF(contract.penaltiesXAF || 0)}`,
+          qty: 1,
+          unitPrice: 0,
+          total: 0,
+        },
+        {
+          description: `SOLDE NET DE CAUTION RESTITUÉ AU CLIENT EN CAISSE`,
+          qty: 1,
+          unitPrice: contract.depositReturnedXAF || 0,
+          total: contract.depositReturnedXAF || 0,
+        },
+      ],
+      totalAmountXAF: contract.depositReturnedXAF || 0,
+      total: contract.depositReturnedXAF || 0,
+      depositAmount: contract.securityDepositXAF,
+      notes: `Observations contradictoires : ${contract.penaltyReason || insp?.bodyConditionNotes || 'Véhicule restitué conforme sans litige'}. Signature certifiée FCT Automobile Douala.`,
+      signatureRole1: 'Le Client (Bon pour accord restitution)',
+      signatureRole2: "L'Inspecteur / Responsable d'Agence FCT",
+    };
+    onOpenPrintModal(printData);
+  };
+
   const handleConfirmReturn = (e: React.FormEvent) => {
     e.preventDefault();
     if (!returnModalContract) return;
 
+    const contractToReturn = returnModalContract;
+    const veh = state.vehicles.find((v) => v.id === contractToReturn.vehicleId);
+
     dbStore.checkOutReturn(
-      returnModalContract.id,
+      contractToReturn.id,
       {
         fuelLevel: returnFuel,
         mileage: returnMileage,
         bodyConditionNotes: penaltyNotes || 'Restitution standard conforme',
-        cleanlinessCondition: penaltiesAmount > 0 ? 'DIRTY' : 'CLEAN',
-        hasSpareWheel: true,
-        hasJackAndTools: true,
+        cleanlinessCondition: returnCleanliness,
+        hasSpareWheel: returnSpareWheel,
+        hasJackAndTools: returnJackTools,
         inspectorName: dbStore.getCurrentUser().fullName,
         photos: [],
         signatureDate: new Date().toISOString(),
@@ -343,17 +402,19 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
       penaltyNotes
     );
 
-    if (selectedContract?.id === returnModalContract.id) {
-      const updated = state.contracts.find((c) => c.id === returnModalContract.id);
-      if (updated) setSelectedContract(updated);
+    const updated = state.contracts.find((c) => c.id === contractToReturn.id) || contractToReturn;
+    if (selectedContract?.id === contractToReturn.id) {
+      setSelectedContract(updated);
     }
 
     setReturnModalContract(null);
     setActionAlert({
       type: 'success',
-      message: `Restitution validée pour le contrat ${returnModalContract.contractNumber}. Véhicule remis en circulation.`,
+      message: `Restitution validée pour le contrat ${contractToReturn.contractNumber}. Véhicule remis en circulation. PV prêt pour impression.`,
     });
     setTimeout(() => setActionAlert(null), 5000);
+
+    handlePrintReturnInspection(updated, veh);
   };
 
   const handlePrintContract = (contract: RentalContract) => {
@@ -929,89 +990,180 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
           )}
         </EntityShowroomLayout>
 
-        {/* Modal d'inspection de retour */}
-        {returnModalContract && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                <span>Inspection de Restitution &amp; Fin de Location</span>
-              </h3>
+        {/* Modal d'inspection de retour certifié */}
+        {returnModalContract && (() => {
+          const veh = state.vehicles.find((v) => v.id === returnModalContract.vehicleId);
+          const departKm = veh?.mileage || 0;
+          const drivenKm = Math.max(0, returnMileage - departKm);
+          const netCautionRefund = Math.max(0, returnModalContract.securityDepositXAF - penaltiesAmount);
 
-              <p className="text-xs text-slate-600">
-                Contrat <strong className="text-slate-900">{returnModalContract.contractNumber}</strong> • Client :{' '}
-                <strong className="text-slate-900">{returnModalContract.customerName}</strong>
-              </p>
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
+                <div className="border-b border-slate-200 pb-3">
+                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    <span>État des Lieux Contradictoire &amp; Restitution</span>
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Contrat <strong className="text-slate-900">{returnModalContract.contractNumber}</strong> • Client :{' '}
+                    <strong className="text-slate-900">{returnModalContract.customerName}</strong>
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Véhicule : <strong className="text-slate-800">{veh?.brand} {veh?.model}</strong> (Immat: <strong className="text-blue-900">{veh?.licensePlate || '-'}</strong>)
+                  </p>
+                </div>
 
-              <form onSubmit={handleConfirmReturn} className="space-y-3 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <form onSubmit={handleConfirmReturn} className="space-y-3.5 text-xs">
+                  {/* Kilométrage contradictoire */}
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between font-bold text-slate-700">
+                      <span className="flex items-center gap-1.5">
+                        <Gauge className="w-4 h-4 text-blue-700" />
+                        Relevé Kilométrique Contradictoire
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        Départ : <strong>{departKm.toLocaleString()} km</strong>
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Compteur au retour *</label>
+                        <input
+                          type="number"
+                          min={departKm}
+                          value={returnMileage}
+                          onChange={(e) => setReturnMileage(Number(e.target.value))}
+                          className="w-full p-2 rounded-lg border border-slate-200 font-black text-sm text-slate-900 bg-white"
+                          required
+                        />
+                      </div>
+                      <div className="flex flex-col justify-end">
+                        <div className="p-2 bg-white rounded-lg border border-slate-200 text-center">
+                          <span className="text-[10px] text-slate-500 uppercase font-black block">Distance Parcourue</span>
+                          <span className="font-black text-blue-900 text-sm">+{drivenKm.toLocaleString()} km</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Jauge Carburant & Équipements */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
+                        <Fuel className="w-3.5 h-3.5 text-amber-600" />
+                        Jauge Carburant au retour *
+                      </label>
+                      <select
+                        value={returnFuel}
+                        onChange={(e) => setReturnFuel(Number(e.target.value))}
+                        className="w-full p-2 rounded-lg border border-slate-200 font-bold bg-white"
+                      >
+                        {[8, 7, 6, 5, 4, 3, 2, 1, 0].map((level) => (
+                          <option key={level} value={level}>
+                            {level}/8 {level === 8 ? '(Plein complet)' : level === 4 ? '(Demi-plein)' : level <= 2 ? '(Réserve)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-700 font-bold mb-1">Propreté du véhicule *</label>
+                      <select
+                        value={returnCleanliness}
+                        onChange={(e) => setReturnCleanliness(e.target.value as any)}
+                        className="w-full p-2 rounded-lg border border-slate-200 font-bold bg-white"
+                      >
+                        <option value="CLEAN">Propre / Conforme</option>
+                        <option value="DIRTY">Lavage agence requis (Salissures)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Checklist des accessoires */}
+                  <div className="flex items-center gap-4 py-1.5 px-2 bg-slate-50 rounded-lg border border-slate-200 text-[11px] font-semibold text-slate-700">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={returnSpareWheel}
+                        onChange={(e) => setReturnSpareWheel(e.target.checked)}
+                        className="rounded border-slate-300 text-blue-900"
+                      />
+                      <span>Roue de secours présente</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={returnJackTools}
+                        onChange={(e) => setReturnJackTools(e.target.checked)}
+                        className="rounded border-slate-300 text-blue-900"
+                      />
+                      <span>Cric &amp; Outils complets</span>
+                    </label>
+                  </div>
+
+                  {/* Décompte Financier de la Caution */}
+                  <div className="bg-emerald-50/60 p-3 rounded-xl border border-emerald-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+                        <Wallet className="w-4 h-4 text-emerald-700" />
+                        Règlement de Caution (Dépôt : {formatXAF(returnModalContract.securityDepositXAF)})
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="block text-slate-700 font-bold mb-1">Pénalités déduites (XAF)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={returnModalContract.securityDepositXAF}
+                          value={penaltiesAmount}
+                          onChange={(e) => setPenaltiesAmount(Number(e.target.value))}
+                          placeholder="0"
+                          className="w-full p-2 rounded-lg border border-slate-200 font-black text-rose-700 bg-white"
+                        />
+                      </div>
+                      <div className="p-2 bg-white rounded-lg border border-emerald-300 flex flex-col justify-center text-center">
+                        <span className="text-[10px] text-slate-500 uppercase font-black">Restitution Nette au Client</span>
+                        <span className="font-black text-emerald-700 text-sm">{formatXAF(netCautionRefund)}</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">Kilométrage au retour *</label>
-                    <input
-                      type="number"
-                      value={returnMileage}
-                      onChange={(e) => setReturnMileage(Number(e.target.value))}
-                      className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
-                      required
+                    <label className="block text-slate-700 font-bold mb-1">Observations d'état de retour / Carrosserie / Motif pénalités</label>
+                    <textarea
+                      value={penaltyNotes}
+                      onChange={(e) => setPenaltyNotes(e.target.value)}
+                      placeholder="Ex: Véhicule restitué en parfait état, carrosserie intacte, accessoires vérifiés."
+                      rows={2}
+                      className="w-full p-2 rounded-lg border border-slate-200"
                     />
                   </div>
-                  <div>
-                    <label className="block text-slate-700 font-bold mb-1">Jauge Carburant (sur 8) *</label>
-                    <select
-                      value={returnFuel}
-                      onChange={(e) => setReturnFuel(Number(e.target.value))}
-                      className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setReturnModalContract(null)}
+                      className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                     >
-                      {[8, 7, 6, 5, 4, 3, 2, 1, 0].map((level) => (
-                        <option key={level} value={level}>
-                          {level}/8 {level === 8 ? '(Plein complet)' : level <= 2 ? '(Réserve)' : ''}
-                        </option>
-                      ))}
-                    </select>
+                      Annuler
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs flex items-center gap-1.5"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Valider &amp; Imprimer PV de Restitution</span>
+                    </button>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Pénalités éventuelles retenues sur caution (XAF)</label>
-                  <input
-                    type="number"
-                    value={penaltiesAmount}
-                    onChange={(e) => setPenaltiesAmount(Number(e.target.value))}
-                    placeholder="0"
-                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Observations d'état de retour / Carrosserie</label>
-                  <textarea
-                    value={penaltyNotes}
-                    onChange={(e) => setPenaltyNotes(e.target.value)}
-                    placeholder="Ex: Véhicule restitué propre, aucune rayure supplémentaire constatée."
-                    rows={2}
-                    className="w-full p-2.5 rounded-lg border border-slate-200"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setReturnModalContract(null)}
-                    className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs"
-                  >
-                    Valider le Retour &amp; Clôturer
-                  </button>
-                </div>
-              </form>
+                </form>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Modal d'ajout de document */}
         {isAddDocModalOpen && (
@@ -1435,89 +1587,180 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
 
       
 
-      {/* Return Inspection Modal */}
-      {returnModalContract && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
-            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Inspection de Restitution &amp; Fin de Location</span>
-            </h3>
+      {/* Return Inspection Modal (Liste / Tableau) */}
+      {returnModalContract && (() => {
+        const veh = state.vehicles.find((v) => v.id === returnModalContract.vehicleId);
+        const departKm = veh?.mileage || 0;
+        const drivenKm = Math.max(0, returnMileage - departKm);
+        const netCautionRefund = Math.max(0, returnModalContract.securityDepositXAF - penaltiesAmount);
 
-            <p className="text-xs text-slate-600">
-              Contrat <strong className="text-slate-900">{returnModalContract.contractNumber}</strong> • Client :{' '}
-              <strong className="text-slate-900">{returnModalContract.customerName}</strong>
-            </p>
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
+              <div className="border-b border-slate-200 pb-3">
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  <span>État des Lieux Contradictoire &amp; Restitution</span>
+                </h3>
+                <p className="text-xs text-slate-600 mt-1">
+                  Contrat <strong className="text-slate-900">{returnModalContract.contractNumber}</strong> • Client :{' '}
+                  <strong className="text-slate-900">{returnModalContract.customerName}</strong>
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  Véhicule : <strong className="text-slate-800">{veh?.brand} {veh?.model}</strong> (Immat: <strong className="text-blue-900">{veh?.licensePlate || '-'}</strong>)
+                </p>
+              </div>
 
-            <form onSubmit={handleConfirmReturn} className="space-y-3 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <form onSubmit={handleConfirmReturn} className="space-y-3.5 text-xs">
+                {/* Kilométrage contradictoire */}
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between font-bold text-slate-700">
+                    <span className="flex items-center gap-1.5">
+                      <Gauge className="w-4 h-4 text-blue-700" />
+                      Relevé Kilométrique Contradictoire
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Départ : <strong>{departKm.toLocaleString()} km</strong>
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-slate-700 font-bold mb-1">Compteur au retour *</label>
+                      <input
+                        type="number"
+                        min={departKm}
+                        value={returnMileage}
+                        onChange={(e) => setReturnMileage(Number(e.target.value))}
+                        className="w-full p-2 rounded-lg border border-slate-200 font-black text-sm text-slate-900 bg-white"
+                        required
+                      />
+                    </div>
+                    <div className="flex flex-col justify-end">
+                      <div className="p-2 bg-white rounded-lg border border-slate-200 text-center">
+                        <span className="text-[10px] text-slate-500 uppercase font-black block">Distance Parcourue</span>
+                        <span className="font-black text-blue-900 text-sm">+{drivenKm.toLocaleString()} km</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Jauge Carburant & Équipements */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
+                      <Fuel className="w-3.5 h-3.5 text-amber-600" />
+                      Jauge Carburant au retour *
+                    </label>
+                    <select
+                      value={returnFuel}
+                      onChange={(e) => setReturnFuel(Number(e.target.value))}
+                      className="w-full p-2 rounded-lg border border-slate-200 font-bold bg-white"
+                    >
+                      {[8, 7, 6, 5, 4, 3, 2, 1, 0].map((level) => (
+                        <option key={level} value={level}>
+                          {level}/8 {level === 8 ? '(Plein complet)' : level === 4 ? '(Demi-plein)' : level <= 2 ? '(Réserve)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">Propreté du véhicule *</label>
+                    <select
+                      value={returnCleanliness}
+                      onChange={(e) => setReturnCleanliness(e.target.value as any)}
+                      className="w-full p-2 rounded-lg border border-slate-200 font-bold bg-white"
+                    >
+                      <option value="CLEAN">Propre / Conforme</option>
+                      <option value="DIRTY">Lavage agence requis (Salissures)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Checklist des accessoires */}
+                <div className="flex items-center gap-4 py-1.5 px-2 bg-slate-50 rounded-lg border border-slate-200 text-[11px] font-semibold text-slate-700">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={returnSpareWheel}
+                      onChange={(e) => setReturnSpareWheel(e.target.checked)}
+                      className="rounded border-slate-300 text-blue-900"
+                    />
+                    <span>Roue de secours présente</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={returnJackTools}
+                      onChange={(e) => setReturnJackTools(e.target.checked)}
+                      className="rounded border-slate-300 text-blue-900"
+                    />
+                    <span>Cric &amp; Outils complets</span>
+                  </label>
+                </div>
+
+                {/* Décompte Financier de la Caution */}
+                <div className="bg-emerald-50/60 p-3 rounded-xl border border-emerald-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+                      <Wallet className="w-4 h-4 text-emerald-700" />
+                      Règlement de Caution (Dépôt : {formatXAF(returnModalContract.securityDepositXAF)})
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-slate-700 font-bold mb-1">Pénalités déduites (XAF)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={returnModalContract.securityDepositXAF}
+                        value={penaltiesAmount}
+                        onChange={(e) => setPenaltiesAmount(Number(e.target.value))}
+                        placeholder="0"
+                        className="w-full p-2 rounded-lg border border-slate-200 font-black text-rose-700 bg-white"
+                      />
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border border-emerald-300 flex flex-col justify-center text-center">
+                      <span className="text-[10px] text-slate-500 uppercase font-black">Restitution Nette au Client</span>
+                      <span className="font-black text-emerald-700 text-sm">{formatXAF(netCautionRefund)}</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Kilométrage au retour *</label>
-                  <input
-                    type="number"
-                    value={returnMileage}
-                    onChange={(e) => setReturnMileage(Number(e.target.value))}
-                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
-                    required
+                  <label className="block text-slate-700 font-bold mb-1">Observations d'état de retour / Carrosserie / Motif pénalités</label>
+                  <textarea
+                    value={penaltyNotes}
+                    onChange={(e) => setPenaltyNotes(e.target.value)}
+                    placeholder="Ex: Véhicule restitué en parfait état, carrosserie intacte, accessoires vérifiés."
+                    rows={2}
+                    className="w-full p-2 rounded-lg border border-slate-200"
                   />
                 </div>
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">Jauge Carburant (sur 8) *</label>
-                  <select
-                    value={returnFuel}
-                    onChange={(e) => setReturnFuel(Number(e.target.value))}
-                    className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setReturnModalContract(null)}
+                    className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                   >
-                    {[8, 7, 6, 5, 4, 3, 2, 1, 0].map((level) => (
-                      <option key={level} value={level}>
-                        {level}/8 {level === 8 ? '(Plein complet)' : level <= 2 ? '(Réserve)' : ''}
-                      </option>
-                    ))}
-                  </select>
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Valider &amp; Imprimer PV de Restitution</span>
+                  </button>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Pénalités éventuelles retenues sur caution (XAF)</label>
-                <input
-                  type="number"
-                  value={penaltiesAmount}
-                  onChange={(e) => setPenaltiesAmount(Number(e.target.value))}
-                  placeholder="0"
-                  className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">Observations d'état de retour / Carrosserie</label>
-                <textarea
-                  value={penaltyNotes}
-                  onChange={(e) => setPenaltyNotes(e.target.value)}
-                  placeholder="Ex: Véhicule restitué propre, aucune rayure supplémentaire constatée."
-                  rows={2}
-                  className="w-full p-2.5 rounded-lg border border-slate-200"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setReturnModalContract(null)}
-                  className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs"
-                >
-                  Valider le Retour &amp; Clôturer
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* New Contract Modal */}
       {isCreateModalOpen && (
