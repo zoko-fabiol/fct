@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { DatabaseState } from '../services/dbStore.ts';
 import { Language } from '../services/i18n.ts';
 import { formatXAF } from '../../packages/business-rules/index.ts';
+import { exportCollectionToExcel } from '../utils/excelExport.ts';
 import {
   BarChart3,
   Download,
@@ -82,62 +83,95 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
   const totalLeadsCount = state.leads?.length || 0;
   const convertedLeadsCount = state.leads?.filter((l) => l.stage === 'CONVERTED').length || 0;
 
-  // CSV Exports
-  const exportVehiclesCSV = () => {
-    const headers = 'ID,Plaque,Marque,Modele,Categorie,Annee,Statut,TarifJourXAF,PrixVenteXAF,Kilometrage\n';
-    const rows = state.vehicles
-      .map(
-        (v) =>
-          `"${v.id}","${v.licensePlate}","${v.brand}","${v.model}","${v.category}",${v.year},"${v.status}",${v.rentalDailyRate},${v.salePrice},${v.mileage}`
-      )
-      .join('\n');
-    downloadCSV(headers + rows, 'fct_parc_vehicules_douala.csv');
+  // Exports Excel Professionnels FCT
+  const exportVehiclesExcel = () => {
+    exportCollectionToExcel({
+      filename: `FCT_Parc_Vehicules_Douala_${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Parc Véhicules',
+      title: 'FCT AUTOMOBILE DOUALA — ÉTAT ANALYTIQUE DU PARC AUTOMOBILE',
+      subtitle: `Export officiel certifié FCT • ${state.vehicles.length} véhicule(s) enregistrés`,
+      columns: [
+        { header: 'ID', key: 'id', width: 14 },
+        { header: 'Immatriculation', key: 'licensePlate', width: 18 },
+        { header: 'Marque', key: 'brand', width: 18 },
+        { header: 'Modèle', key: 'model', width: 22 },
+        { header: 'Catégorie', key: 'category', width: 16 },
+        { header: 'Année', key: 'year', width: 10 },
+        { header: 'Statut', key: 'status', width: 14 },
+        { header: 'Tarif Jour (XAF)', key: 'rentalDailyRate', width: 18 },
+        { header: 'Prix Vente (XAF)', key: 'salePrice', width: 18 },
+        { header: 'Kilométrage (km)', key: 'mileage', width: 16 },
+      ],
+      data: state.vehicles,
+    });
   };
 
-  const exportCashMovementsCSV = () => {
-    const headers = 'Recu,Date,Type,Categorie,Tiers,MontantXAF,Caissier,EstContrePassation,Motif\n';
-    const rows = state.cashMovements
-      .map(
-        (m) =>
-          `"${m.receiptNumber}","${m.createdAt}","${m.type}","${m.category}","${m.receivedFromOrPaidTo}",${m.amountXAF},"${m.performedByName}",${m.isReversal},"${m.reason || ''}"`
-      )
-      .join('\n');
-    downloadCSV(headers + rows, 'fct_journal_caisse_xaf.csv');
+  const exportCashMovementsExcel = () => {
+    exportCollectionToExcel({
+      filename: `FCT_Journal_Caisse_${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Journal Caisse',
+      title: 'FCT AUTOMOBILE DOUALA — JOURNAL ANALYTIQUE DE CAISSE XAF',
+      subtitle: `Export officiel certifié FCT • ${state.cashMovements.length} mouvement(s)`,
+      columns: [
+        { header: 'N° Reçu', key: 'receiptNumber', width: 16 },
+        { header: 'Date & Heure', key: 'createdAt', width: 22 },
+        { header: 'Flux', key: 'type', width: 12 },
+        { header: 'Catégorie', key: 'category', width: 20 },
+        { header: 'Tiers Payeur / Bénéficiaire', key: 'receivedFromOrPaidTo', width: 28 },
+        { header: 'Montant (XAF)', key: 'amountXAF', width: 18 },
+        { header: 'Caissier', key: 'performedByName', width: 20 },
+        { header: 'Motif de l\'opération', key: 'reason', width: 32 },
+      ],
+      data: state.cashMovements,
+    });
   };
 
-  const exportInvoicesCSV = () => {
-    const headers = 'Numero,Type,Client,DateEmission,Echeance,MontantTotalXAF,PayeXAF,SoldeXAF,Statut\n';
-    const rows = state.invoices
-      .map(
-        (i) =>
-          `"${i.invoiceNumber}","${i.type}","${i.customerName}","${i.issueDate}","${i.dueDate}",${i.totalAmountXAF},${i.paidAmountXAF},${i.balanceXAF},"${i.status}"`
-      )
-      .join('\n');
-    downloadCSV(headers + rows, 'fct_factures_et_creances.csv');
+  const exportInvoicesExcel = () => {
+    exportCollectionToExcel({
+      filename: `FCT_Factures_Creances_${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Factures & Créances',
+      title: 'FCT AUTOMOBILE DOUALA — REGISTRE DES FACTURES & CRÉANCES',
+      subtitle: `Export officiel certifié FCT • ${state.invoices.length} facture(s)`,
+      columns: [
+        { header: 'N° Facture', key: 'invoiceNumber', width: 16 },
+        { header: 'Type', key: 'type', width: 14 },
+        { header: 'Client', key: 'customerName', width: 26 },
+        { header: 'Date Émission', key: 'issueDate', width: 14 },
+        { header: 'Date Échéance', key: 'dueDate', width: 14 },
+        { header: 'Total (XAF)', key: 'totalAmountXAF', width: 18 },
+        { header: 'Réglé (XAF)', key: 'paidAmountXAF', width: 18 },
+        { header: 'Solde Dû (XAF)', key: 'balanceXAF', width: 18 },
+        { header: 'Statut', key: 'status', width: 14 },
+      ],
+      data: state.invoices,
+    });
   };
 
-  const exportMaintenanceCSV = () => {
-    const headers = 'Numero,Vehicule,Immatriculation,Date,Type,Prestataire,Statut,PiecesXAF,MainOeuvreXAF,TotalXAF\n';
-    const rows = state.maintenance
-      .map(
-        (m) => {
-          const partsCost = m.partsUsed.reduce((sum, p) => sum + p.totalXAF, 0);
-          return `"${m.recordNumber}","${m.vehicleName}","${m.licensePlate}","${m.startDate}","${m.type}","${m.garageName}","${m.status}",${partsCost},${m.laborCostXAF},${m.totalCostXAF}`;
-        }
-      )
-      .join('\n');
-    downloadCSV(headers + rows, 'fct_bilan_maintenance_parc.csv');
-  };
+  const exportMaintenanceExcel = () => {
+    const data = state.maintenance.map((m) => ({
+      ...m,
+      partsCostXAF: m.partsUsed.reduce((sum, p) => sum + p.totalXAF, 0),
+    }));
 
-  const downloadCSV = (content: string, filename: string) => {
-    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportCollectionToExcel({
+      filename: `FCT_Maintenance_Atelier_${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Maintenance Parc',
+      title: 'FCT AUTOMOBILE DOUALA — BILAN ATELIER & ENTRETIEN DU PARC',
+      subtitle: `Export officiel certifié FCT • ${state.maintenance.length} intervention(s)`,
+      columns: [
+        { header: 'N° Fiche', key: 'recordNumber', width: 16 },
+        { header: 'Véhicule', key: 'vehicleName', width: 26 },
+        { header: 'Immatriculation', key: 'licensePlate', width: 18 },
+        { header: 'Date', key: 'startDate', width: 14 },
+        { header: 'Type Entretien', key: 'type', width: 16 },
+        { header: 'Garage Prestataire', key: 'garageName', width: 24 },
+        { header: 'Pièces (XAF)', key: 'partsCostXAF', width: 16 },
+        { header: 'Main d\'œuvre (XAF)', key: 'laborCostXAF', width: 18 },
+        { header: 'Total Intervention (XAF)', key: 'totalCostXAF', width: 22 },
+        { header: 'Statut', key: 'status', width: 14 },
+      ],
+      data,
+    });
   };
 
   return (
@@ -156,32 +190,32 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
 
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={exportVehiclesCSV}
+            onClick={exportVehiclesExcel}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold shadow transition cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>Parc (CSV)</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Parc (Excel)</span>
           </button>
           <button
-            onClick={exportCashMovementsCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow transition cursor-pointer"
+            onClick={exportCashMovementsExcel}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold shadow transition cursor-pointer"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>Caisse (CSV)</span>
+            <span>Caisse (Excel)</span>
           </button>
           <button
-            onClick={exportInvoicesCSV}
+            onClick={exportInvoicesExcel}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-700 hover:bg-purple-600 text-white text-xs font-semibold shadow transition cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>Factures (CSV)</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
+            <span>Factures (Excel)</span>
           </button>
           <button
-            onClick={exportMaintenanceCSV}
+            onClick={exportMaintenanceExcel}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold shadow transition cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>Maintenance (CSV)</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 text-teal-300" />
+            <span>Maintenance (Excel)</span>
           </button>
         </div>
       </div>

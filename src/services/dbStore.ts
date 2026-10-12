@@ -101,98 +101,7 @@ export interface FctDocument {
   relatedCashMovementId?: string;
 }
 
-export const initialDocuments: FctDocument[] = [
-  {
-    id: 'doc_1',
-    title: 'Carte Grise CEMAC - Toyota Prado TX (LT-8841-CE)',
-    category: 'VEHICLE_GREY_CARD',
-    categoryLabel: 'Carte Grise',
-    isPrivate: true,
-    size: '2.4 MB',
-    updatedAt: '2026-09-15',
-    uploadedAt: '2026-09-15T10:00:00.000Z',
-    fileUrl: 'https://res.cloudinary.com/c58pcgcp/image/upload/v1791555435/fct_automobile/_tests/fct_test_rpvnzf.pdf',
-    relatedModule: 'vehicles',
-    relatedEntityId: 'veh_1',
-    relatedVehicleId: 'veh_1',
-    relatedEntityName: 'Toyota Prado TX-L (LT-8841-CE)',
-    type: 'PDF',
-    author: 'Directeur Général',
-    expiryDate: '2029-09-15',
-  },
-  {
-    id: 'doc_2',
-    title: 'Police d’Assurance Tous Risques Activa Cameroun (Police n° AC-44912)',
-    category: 'INSURANCE',
-    categoryLabel: 'Assurance',
-    isPrivate: true,
-    size: '1.8 MB',
-    updatedAt: '2026-10-01',
-    uploadedAt: '2026-10-01T14:30:00.000Z',
-    fileUrl: 'https://res.cloudinary.com/c58pcgcp/image/upload/v1791555435/fct_automobile/_tests/fct_test_rpvnzf.pdf',
-    relatedModule: 'vehicles',
-    relatedEntityId: 'veh_2',
-    relatedVehicleId: 'veh_2',
-    relatedEntityName: 'Flotte Complète FCT Douala',
-    type: 'PDF',
-    author: 'Direction Administrative',
-    expiryDate: '2027-10-01',
-  },
-  {
-    id: 'doc_3',
-    title: 'Attestation Visite Technique Sécurisée Douala - Mercedes GLE (LT-1100-AB)',
-    category: 'TECHNICAL_INSPECTION',
-    categoryLabel: 'Visite Technique',
-    isPrivate: false,
-    size: '850 KB',
-    updatedAt: '2026-08-12',
-    uploadedAt: '2026-08-12T09:15:00.000Z',
-    fileUrl: 'https://res.cloudinary.com/c58pcgcp/image/upload/v1791555435/fct_automobile/_tests/fct_test_rpvnzf.pdf',
-    relatedModule: 'vehicles',
-    relatedEntityId: 'veh_3',
-    relatedVehicleId: 'veh_3',
-    relatedEntityName: 'Mercedes-Benz GLE 450 (LT-1100-AB)',
-    type: 'PDF',
-    author: 'Contrôle Technique Douala Bassa',
-    expiryDate: '2027-02-12',
-  },
-  {
-    id: 'doc_4',
-    title: 'CNI Client Certifiée - Christian Eboa Eboa',
-    category: 'CLIENT_ID',
-    categoryLabel: 'Pièce Identité',
-    isPrivate: true,
-    size: '1.1 MB',
-    updatedAt: '2026-10-04',
-    uploadedAt: '2026-10-04T11:00:00.000Z',
-    fileUrl: 'https://res.cloudinary.com/c58pcgcp/image/upload/v1791555435/fct_automobile/_tests/fct_test_rpvnzf.pdf',
-    relatedModule: 'crm',
-    relatedEntityId: 'cust_1',
-    relatedCustomerId: 'cust_1',
-    relatedEntityName: 'Christian Eboa Eboa',
-    type: 'PDF',
-    author: 'Agent Commercial',
-    expiryDate: '2030-05-20',
-  },
-  {
-    id: 'doc_5',
-    title: 'Contrat Signé SOCTRAN SA (CTR-2026-0034)',
-    category: 'CONTRACT',
-    categoryLabel: 'Contrat Signé',
-    isPrivate: true,
-    size: '3.5 MB',
-    updatedAt: '2026-10-05',
-    uploadedAt: '2026-10-05T16:20:00.000Z',
-    fileUrl: 'https://res.cloudinary.com/c58pcgcp/image/upload/v1791555435/fct_automobile/_tests/fct_test_rpvnzf.pdf',
-    relatedModule: 'rentals',
-    relatedEntityId: 'ctr_1',
-    relatedContractId: 'ctr_1',
-    relatedEntityName: 'SOCTRAN SA',
-    type: 'PDF',
-    author: 'Agent de Location',
-    expiryDate: '2026-10-20',
-  },
-];
+export const initialDocuments: FctDocument[] = [];
 
 export interface DatabaseState {
   settings: AgencySettings;
@@ -1355,6 +1264,21 @@ class DatabaseStore {
     this.deleteFromFirestore('reservations', id);
     this.notify();
     return true;
+  }
+
+  public cancelReservation(id: string, reason?: string): Reservation {
+    const res = this.state.reservations.find((r) => r.id === id);
+    if (!res) throw new Error('Réservation introuvable');
+    if (res.status === 'CONVERTED') throw new Error('Impossible d\'annuler une réservation déjà convertie en contrat.');
+    if (res.status === 'CANCELLED') throw new Error('Cette réservation est déjà annulée.');
+    const updated: Reservation = { ...res, status: 'CANCELLED' };
+    this.state.reservations = this.state.reservations.map((r) =>
+      r.id === id ? updated : r
+    );
+    this.createAuditLog('UPDATE', 'reservations', id, `Annulation de la réservation ${res.reservationNumber}${reason ? ` (Motif: ${reason})` : ''}`);
+    this.mirrorToFirestore('reservations', id, updated);
+    this.notify();
+    return updated;
   }
 
   public updateReservationStatus(id: string, status: Reservation['status']) {

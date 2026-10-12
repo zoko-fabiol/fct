@@ -28,11 +28,13 @@ import {
   compareRolePermissions,
 } from '../../packages/business-rules/index.ts';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal.tsx';
+import { exportCollectionToExcel } from '../utils/excelExport.ts';
 import {
   ShieldCheck,
   Shield,
   KeyRound,
   Lock,
+  FileSpreadsheet,
   Search,
   Filter,
   Plus,
@@ -397,32 +399,30 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
     });
   }, [state.securityAuditLogs, auditSearch, auditActionFilter]);
 
-  const handleExportAuditCSV = () => {
+  const handleExportAuditExcel = () => {
     const logs = filteredSecurityLogs;
     if (logs.length === 0) {
       showAlert(lang === 'fr' ? 'Aucun événement à exporter.' : 'No security events to export.', 'warning');
       return;
     }
-    const headers = ['ID', 'Date/Heure', 'Auteur', 'Rôle Auteur', 'Type Action', 'Cible', 'Rôle Cible', 'Résumé', 'Détails'];
-    const rows = logs.map((l) => [
-      l.id,
-      l.timestamp,
-      `"${l.performedByName}"`,
-      l.performedByRole,
-      l.actionType,
-      `"${l.targetUserName || '-'}"`,
-      l.targetRole || '-',
-      `"${l.summary.replace(/"/g, '""')}"`,
-      `"${(l.details || '').replace(/"/g, '""')}"`,
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(';'), ...rows.map((e) => e.join(';'))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `FCT_Audit_Securite_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportCollectionToExcel({
+      filename: `FCT_Audit_Securite_${new Date().toISOString().split('T')[0]}`,
+      sheetName: 'Journal Audit',
+      title: 'FCT AUTOMOBILE DOUALA — REGISTRE D\'AUDIT DE SÉCURITÉ & TRAÇABILITÉ',
+      subtitle: `Export officiel certifié • ${logs.length} événement(s) de sécurité`,
+      columns: [
+        { header: 'ID Log', key: 'id', width: 16 },
+        { header: 'Date & Heure', key: 'timestamp', width: 22 },
+        { header: 'Auteur', key: 'performedByName', width: 24 },
+        { header: 'Rôle Auteur', key: 'performedByRole', width: 18 },
+        { header: 'Type Action', key: 'actionType', width: 20 },
+        { header: 'Utilisateur Cible', key: 'targetUserName', width: 24 },
+        { header: 'Rôle Cible', key: 'targetRole', width: 18 },
+        { header: 'Résumé Action', key: 'summary', width: 34 },
+        { header: 'Détails Techniques', key: 'details', width: 30 },
+      ],
+      data: logs,
+    });
   };
 
   // Helpers de rendu visuel
@@ -1264,11 +1264,11 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 <span>Append-Only Immuable</span>
               </span>
               <button
-                onClick={handleExportAuditCSV}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+                onClick={handleExportAuditExcel}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shadow-xs cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export CSV</span>
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Export Excel (.xlsx)</span>
               </button>
             </div>
           </div>

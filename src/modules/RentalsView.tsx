@@ -16,6 +16,8 @@ import {
   hasEffectivePermission,
 } from '../../packages/business-rules/index.ts';
 import { DocumentPrintData } from '../components/DocumentModal.tsx';
+import { formatAmountPlain } from '../utils/invoicePdf.ts';
+import { exportCollectionToExcel } from '../utils/excelExport.ts';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal.tsx';
 import { DocumentViewerModal } from '../components/ui/DocumentViewerModal.tsx';
 import {
@@ -59,6 +61,7 @@ import {
   Fuel,
   FileCheck,
   ClipboardList,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface RentalsViewProps {
@@ -384,7 +387,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
       tax: 0,
       total: contract.totalAmountXAF,
       depositAmount: contract.securityDepositXAF,
-      notes: `Caution consigné obligatoire : ${formatXAF(contract.securityDepositXAF)}. Le locataire s'engage à respecter les conditions générales d'assurance et d'utilisation du réseau FCT Douala.`,
+      notes: `Caution consignée obligatoire : ${formatAmountPlain(contract.securityDepositXAF)} FCFA. Le locataire s'engage à respecter les conditions générales d'assurance et d'utilisation du réseau FCT Douala.`,
     };
 
     onOpenPrintModal(printData);
@@ -1114,18 +1117,51 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
           </p>
         </div>
 
-        {hasEffectivePermission(currentUser, 'rentals', 'create') && (
+        <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => {
-              setFormError(null);
-              setIsCreateModalOpen(true);
+              exportCollectionToExcel({
+                filename: `FCT_Contrats_Location_${new Date().toISOString().split('T')[0]}`,
+                sheetName: 'Contrats Location',
+                title: 'FCT AUTOMOBILE DOUALA — REGISTRE DES CONTRATS DE LOCATION',
+                subtitle: `Exporté le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')} • ${filteredContracts.length} contrat(s)`,
+                columns: [
+                  { header: 'N° Contrat', key: 'contractNumber', width: 16 },
+                  { header: 'Client', key: 'customerName', width: 26 },
+                  { header: 'Véhicule', key: 'vehicleName', width: 28 },
+                  { header: 'Immatriculation', key: 'licensePlate', width: 18 },
+                  { header: 'Début', key: 'startDate', width: 14 },
+                  { header: 'Fin', key: 'endDate', width: 14 },
+                  { header: 'Jours', key: 'totalDays', width: 10 },
+                  { header: 'Tarif Jour (XAF)', key: 'dailyRateXAF', width: 18 },
+                  { header: 'Total (XAF)', key: 'totalAmountXAF', width: 18 },
+                  { header: 'Encaissé (XAF)', key: 'paidAmountXAF', width: 18 },
+                  { header: 'Solde (XAF)', key: 'remainingAmountXAF', width: 18 },
+                  { header: 'Caution (XAF)', key: 'securityDepositXAF', width: 18 },
+                  { header: 'Statut', key: 'status', width: 14 },
+                ],
+                data: filteredContracts,
+              });
             }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#0f2a4a] hover:bg-[#163a66] text-white text-xs font-bold shadow-xs transition cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
-            <span>Émettre un Nouveau Contrat</span>
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <span>Exporter Excel (.xlsx)</span>
           </button>
-        )}
+          {hasEffectivePermission(currentUser, 'rentals', 'create') && (
+            <button
+              onClick={() => {
+                setFormError(null);
+                setIsCreateModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Émettre un Nouveau Contrat</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Action Notification Alert */}

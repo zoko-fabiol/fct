@@ -11,9 +11,9 @@
  * - Archivage sécurisé en 1 clic dans Cloudinary FCT & rattachement au coffre-fort
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Printer, Download, CloudUpload, CheckCircle2, Loader2, X, ShieldCheck } from 'lucide-react';
+import { Printer, Download, X, FileSpreadsheet } from 'lucide-react';
 import { printElementById } from '../utils/printDocument.ts';
 import {
   amountInWordsFCFA,
@@ -21,9 +21,9 @@ import {
   formatAmountPlain,
   buildPdfFileName,
 } from '../utils/invoiceFormat.ts';
-import { downloadInvoicePdf, getInvoicePdfBlob } from '../utils/invoicePdf.ts';
-import { uploadToCloudinary } from '../services/cloudinaryService.ts';
-import { dbStore } from '../services/dbStore.ts';
+import { downloadInvoicePdf } from '../utils/invoicePdf.ts';
+import { FCT_LOGO_BASE64 } from '../utils/logoBase64.ts';
+import { exportDocumentToExcel } from '../utils/excelExport.ts';
 
 export interface DocumentPrintData {
   title: string;
@@ -55,9 +55,6 @@ interface DocumentModalProps {
 }
 
 export const DocumentModal: React.FC<DocumentModalProps> = ({ data, onClose }) => {
-  const [isArchiving, setIsArchiving] = useState(false);
-  const [archivedUrl, setArchivedUrl] = useState<string | null>(null);
-  const [archiveError, setArchiveError] = useState<string | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
 
   if (!data) return null;
@@ -94,45 +91,11 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({ data, onClose }) =
 
   const handleDownloadPdf = async () => {
     const qrDataUrl = await getQrDataUrl();
-    downloadInvoicePdf(data, { qrDataUrl });
+    downloadInvoicePdf(data, { qrDataUrl, logoDataUrl: FCT_LOGO_BASE64 });
   };
 
-  const handleArchiveToCloudinary = async () => {
-    setIsArchiving(true);
-    setArchiveError(null);
-    try {
-      const qrDataUrl = await getQrDataUrl();
-      const pdfBlob = getInvoicePdfBlob(data, { qrDataUrl });
-      const fileName = buildPdfFileName(data.title, data.docNumber);
-      const uploadRes = await uploadToCloudinary(pdfBlob, {
-        folder: 'fct_automobile/factures',
-        fileName,
-        context: {
-          docNumber: data.docNumber,
-          customer: data.customerName,
-          title: data.title,
-        },
-      });
-
-      // Rattachement au store central FCT
-      dbStore.addDocument({
-        title: `${data.title} - ${data.docNumber}`,
-        category: 'FACTURE_OFFICIELLE',
-        categoryLabel: data.title,
-        fileUrl: uploadRes.secure_url,
-        size: `${(pdfBlob.size / 1024).toFixed(0)} KB`,
-        relatedEntityName: `${data.customerName} (${data.docNumber})`,
-        relatedModule: 'billing',
-        type: 'PDF',
-        notes: `Archivage automatique certifié Cloudinary pour le document ${data.docNumber}`,
-      });
-
-      setArchivedUrl(uploadRes.secure_url);
-    } catch (err: any) {
-      setArchiveError(err.message || "Échec de l'archivage sur Cloudinary");
-    } finally {
-      setIsArchiving(false);
-    }
+  const handleDownloadExcel = () => {
+    exportDocumentToExcel(data);
   };
 
   const qrPayload = buildVerificationPayload(data);
@@ -171,17 +134,12 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({ data, onClose }) =
 
             <button
               type="button"
-              onClick={handleArchiveToCloudinary}
-              disabled={isArchiving}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-600 disabled:opacity-50 text-white text-xs font-bold shadow-xs transition cursor-pointer"
-              title="Téléverser et archiver cette facture dans Cloudinary"
+              onClick={handleDownloadExcel}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+              title="Télécharger ce document sous format Microsoft Excel (.xlsx)"
             >
-              {isArchiving ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <CloudUpload className="w-3.5 h-3.5" />
-              )}
-              <span>Archiver Cloudinary</span>
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Télécharger Excel</span>
             </button>
 
             <button
@@ -194,40 +152,6 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({ data, onClose }) =
             </button>
           </div>
         </div>
-
-        {/* FEEDBACK ARCHIVAGE */}
-        {archivedUrl && (
-          <div className="no-print bg-emerald-50 border-b border-emerald-200 px-5 py-2 text-xs flex items-center justify-between text-emerald-900">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>
-                Document archivé avec succès sur Cloudinary et rattaché au Coffre-fort FCT.
-              </span>
-            </div>
-            <a
-              href={archivedUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="font-bold underline text-emerald-800 hover:text-emerald-950 ml-2"
-            >
-              Voir le PDF en ligne
-            </a>
-          </div>
-        )}
-
-        {archiveError && (
-          <div className="no-print bg-rose-50 border-b border-rose-200 px-5 py-2 text-xs text-rose-800 flex items-center justify-between">
-            <span>{archiveError}</span>
-            <button
-              type="button"
-              onClick={() => setArchiveError(null)}
-              className="text-rose-600 hover:text-rose-800 p-1 ml-2 transition"
-              aria-label="Fermer l'alerte"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        )}
 
         {/* FEUILLE OFFICIELLE IMPRIMABLE (A4 NORMÉE) */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100 flex justify-center">

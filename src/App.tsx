@@ -12,6 +12,8 @@ import { hasPermission, hasEffectivePermission } from '../packages/business-rule
 import { Navbar } from './components/Navbar.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
 import { DocumentModal, DocumentPrintData } from './components/DocumentModal.tsx';
+import { ProfileSecurityModal } from './components/ProfileSecurityModal.tsx';
+import { LockScreenModal } from './components/LockScreenModal.tsx';
 import { AppLoader } from './components/auth/AppLoader.tsx';
 import { LoginView } from './components/auth/LoginView.tsx';
 import { authService } from './services/firebase.ts';
@@ -68,11 +70,18 @@ export default function App() {
 
   const [printDocData, setPrintDocData] = useState<DocumentPrintData | null>(null);
   const [isSessionLocked, setIsSessionLocked] = useState(false);
+  const [isProfileSecurityOpen, setIsProfileSecurityOpen] = useState(false);
 
-  // Sécurité Inactivité (Auto-Lock après 15 minutes)
+  // Sécurité Inactivité Dynamique & Code PIN FCT
   useEffect(() => {
     if (!currentUser || isSessionLocked) return;
-    const INACTIVITY_MS = 15 * 60 * 1000;
+
+    const isEnabled = localStorage.getItem(`fct_autolock_enabled_${currentUser.id}`) !== 'false';
+    if (!isEnabled) return;
+
+    const savedMinutes = Number(localStorage.getItem(`fct_lock_timeout_${currentUser.id}`)) || 5;
+    const INACTIVITY_MS = savedMinutes * 60 * 1000;
+
     let timer = setTimeout(() => {
       setIsSessionLocked(true);
     }, INACTIVITY_MS);
@@ -345,6 +354,8 @@ export default function App() {
         lang={lang}
         onLanguageChange={handleLanguageChange}
         onLogout={handleLogout}
+        onOpenProfileSecurity={() => setIsProfileSecurityOpen(true)}
+        onLockNow={() => setIsSessionLocked(true)}
         onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
       />
 
@@ -559,52 +570,28 @@ export default function App() {
       {/* Official FCT Document Print Modal */}
       <DocumentModal data={printDocData} onClose={() => setPrintDocData(null)} />
 
-      {/* Verrouillage Automatique de Session (Protection Agence FCT) */}
-      {isSessionLocked && currentUser && (
-        <div className="fixed inset-0 z-[9999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-slate-200 text-center space-y-6">
-            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto border border-amber-500/20 shadow-xs">
-              <Lock className="w-8 h-8" />
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="text-lg font-black text-slate-900">Session Verrouillée</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Par mesure de sécurité pour l’agence FCT, la session a été mise en veille après inactivité prolongée.
-              </p>
-            </div>
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-left flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#0a264a] text-white font-bold flex items-center justify-center text-sm">
-                {currentUser.fullName.charAt(0)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-slate-900 truncate">{currentUser.fullName}</div>
-                <div className="text-[11px] text-slate-500 truncate">{currentUser.email}</div>
-              </div>
-            </div>
-            <div className="space-y-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setIsSessionLocked(false)}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#0a264a] to-[#0f3460] hover:from-[#0d315f] hover:to-[#123e72] text-white font-bold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2"
-              >
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Déverrouiller et Reprendre</span>
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  await authService.logout();
-                  dbStore.setCurrentUser(null);
-                  setCurrentUser(null);
-                  setIsSessionLocked(false);
-                }}
-                className="w-full py-2 px-4 rounded-xl text-slate-500 hover:text-slate-800 text-xs font-semibold transition cursor-pointer"
-              >
-                Se déconnecter
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Modal Mon Profil Collaborateur & Code PIN */}
+      {currentUser && (
+        <ProfileSecurityModal
+          isOpen={isProfileSecurityOpen}
+          onClose={() => setIsProfileSecurityOpen(false)}
+          currentUser={currentUser}
+          lang={lang}
+          onLockNow={() => {
+            setIsProfileSecurityOpen(false);
+            setIsSessionLocked(true);
+          }}
+        />
+      )}
+
+      {/* Écran de Verrouillage Sécurisé PIN (Protection Agence FCT & Inactivité) */}
+      {currentUser && (
+        <LockScreenModal
+          isLocked={isSessionLocked}
+          currentUser={currentUser}
+          onUnlock={() => setIsSessionLocked(false)}
+          onLogout={handleLogout}
+        />
       )}
     </div>
   );

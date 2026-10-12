@@ -13,6 +13,9 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { DocumentPrintData } from '../components/DocumentModal.tsx';
 import { amountInWordsFCFA, buildPdfFileName, formatAmountPlain } from './invoiceFormat.ts';
+import { FCT_LOGO_BASE64 } from './logoBase64.ts';
+
+export { formatAmountPlain };
 
 export const FCT_COMPANY = {
   name: 'FRANCHISE CONSEILS TRADING (FCT)',
@@ -45,37 +48,37 @@ export function buildInvoicePdf(data: DocumentPrintData, options: InvoicePdfOpti
   const M = 14;
   let y = M;
 
-  // --- En-tête société ---------------------------------------------------
-  if (options.logoDataUrl) {
+  const logoToUse = options.logoDataUrl || FCT_LOGO_BASE64;
+
+  // --- En-tête société avec Logo Officiel FCT -----------------------------
+  let textStartX = M + 20;
+  if (logoToUse) {
     try {
-      doc.addImage(options.logoDataUrl, 'PNG', M, y, 22, 14, undefined, 'FAST');
-    } catch {
+      doc.addImage(logoToUse, 'PNG', M, y, 30, 15, undefined, 'FAST');
+      textStartX = M + 33;
+    } catch (e) {
+      console.warn('Erreur rendu logo jsPDF:', e);
       doc.setFillColor(...NAVY);
-      doc.roundedRect(M, y, 18, 18, 2, 2, 'F');
+      doc.roundedRect(M, y, 16, 16, 2, 2, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('FCT', M + 9, y + 11.5, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text('FCT', M + 8, y + 10.5, { align: 'center' });
+      textStartX = M + 20;
     }
-  } else {
-    doc.setFillColor(...NAVY);
-    doc.roundedRect(M, y, 18, 18, 2, 2, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('FCT', M + 9, y + 11.5, { align: 'center' });
   }
 
   doc.setTextColor(...NAVY);
-  doc.setFontSize(12.5);
-  doc.text(FCT_COMPANY.name, M + 22, y + 5);
+  doc.setFontSize(11.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text(FCT_COMPANY.name, textStartX, y + 4.5);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(...SLATE);
-  doc.text(FCT_COMPANY.tagline, M + 22, y + 9.5);
-  doc.text(FCT_COMPANY.address, M + 22, y + 13.5);
+  doc.text(FCT_COMPANY.tagline, textStartX, y + 8.5);
+  doc.text(FCT_COMPANY.address, textStartX, y + 12.5);
   doc.setFontSize(7.5);
-  doc.text(FCT_COMPANY.legal, M + 22, y + 17.5);
+  doc.text(FCT_COMPANY.legal, textStartX, y + 16.5);
 
   // Bloc titre / numéro à droite
   const rightX = pageW - M;

@@ -6,11 +6,11 @@
 
 import React, { useState, useMemo } from 'react';
 import { DatabaseState, dbStore } from '../services/dbStore.ts';
-import { CloudinaryUploadDropzone } from '../components/ui/CloudinaryUploadDropzone.tsx';
 import { DocumentViewerModal } from '../components/ui/DocumentViewerModal.tsx';
 import { Language } from '../services/i18n.ts';
 import { AppModule } from '../../packages/shared-types/index.ts';
 import { hasEffectivePermission } from '../../packages/business-rules/index.ts';
+import { exportCollectionToExcel } from '../utils/excelExport.ts';
 import {
   EntityActivitySummary,
   EntitySearchFilters,
@@ -43,6 +43,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   X,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface DocumentsViewProps {
@@ -122,86 +123,8 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
     }
   };
 
-  const demoDocuments = [
-    {
-      id: 'doc_1',
-      title: 'Carte Grise CEMAC - Toyota Prado TX (LT-8841-CE)',
-      category: 'VEHICLE_GREY_CARD',
-      categoryLabel: 'Carte Grise',
-      isPrivate: true,
-      size: '2.4 MB',
-      updatedAt: '2026-09-15',
-      relatedModule: 'vehicles' as AppModule,
-      relatedEntityId: state.vehicles[0]?.id || '',
-      relatedEntityName: state.vehicles[0] ? `${state.vehicles[0].brand} ${state.vehicles[0].model} (${state.vehicles[0].licensePlate})` : 'Toyota Prado TX-L',
-      type: 'PDF',
-      author: 'Directeur Général',
-      expiryDate: '2029-09-15',
-    },
-    {
-      id: 'doc_2',
-      title: 'Police d’Assurance Tous Risques Activa Cameroun (Police n° AC-44912)',
-      category: 'INSURANCE',
-      categoryLabel: 'Assurance',
-      isPrivate: true,
-      size: '1.8 MB',
-      updatedAt: '2026-10-01',
-      relatedModule: 'vehicles' as AppModule,
-      relatedEntityId: state.vehicles[1]?.id || '',
-      relatedEntityName: 'Flotte Complète FCT Douala',
-      type: 'PDF',
-      author: 'Direction Administrative',
-      expiryDate: '2027-10-01',
-    },
-    {
-      id: 'doc_3',
-      title: 'Attestation Visite Technique Sécurisée Douala - Mercedes GLE (LT-1100-AB)',
-      category: 'TECHNICAL_INSPECTION',
-      categoryLabel: 'Visite Technique',
-      isPrivate: false,
-      size: '850 KB',
-      updatedAt: '2026-08-12',
-      relatedModule: 'vehicles' as AppModule,
-      relatedEntityId: state.vehicles[2]?.id || '',
-      relatedEntityName: state.vehicles[2] ? `${state.vehicles[2].brand} ${state.vehicles[2].model}` : 'Mercedes-Benz GLE 450',
-      type: 'PDF',
-      author: 'Contrôle Technique Douala Bassa',
-      expiryDate: '2027-02-12',
-    },
-    {
-      id: 'doc_4',
-      title: 'CNI Client Certifiée - Christian Eboa Eboa',
-      category: 'CLIENT_ID',
-      categoryLabel: 'Pièce Identité',
-      isPrivate: true,
-      size: '1.1 MB',
-      updatedAt: '2026-10-04',
-      relatedModule: 'crm' as AppModule,
-      relatedEntityId: state.customers[0]?.id || '',
-      relatedEntityName: state.customers[0]?.fullName || 'Christian Eboa Eboa',
-      type: 'JPG',
-      author: 'Agent Commercial',
-      expiryDate: '2030-05-20',
-    },
-    {
-      id: 'doc_5',
-      title: 'Contrat Signé SOCTRAN SA (CTR-2026-0034)',
-      category: 'CONTRACT',
-      categoryLabel: 'Contrat Signé',
-      isPrivate: true,
-      size: '3.5 MB',
-      updatedAt: '2026-10-05',
-      relatedModule: 'rentals' as AppModule,
-      relatedEntityId: state.contracts[0]?.id || '',
-      relatedEntityName: state.contracts[0]?.customerName || 'SOCTRAN SA',
-      type: 'PDF',
-      author: 'Agent de Location',
-      expiryDate: '2026-10-20',
-    },
-  ];
-
   const allDocs = useMemo(() => {
-    return state.documents && state.documents.length > 0 ? state.documents : demoDocuments;
+    return state.documents || [];
   }, [state.documents]);
 
   const filteredDocs = useMemo(() => {
@@ -441,15 +364,44 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
           </p>
         </div>
 
-        {hasEffectivePermission(currentUser, 'documents', 'create') && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setIsUploadModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+            type="button"
+            onClick={() => {
+              exportCollectionToExcel({
+                filename: `FCT_Documents_Coffre_${new Date().toISOString().split('T')[0]}`,
+                sheetName: 'Documents FCT',
+                title: 'FCT AUTOMOBILE DOUALA — REGISTRE DU COFFRE-FORT NUMÉRIQUE',
+                subtitle: `Exporté le ${new Date().toLocaleDateString('fr-FR')} • ${filteredDocs.length} document(s)`,
+                columns: [
+                  { header: 'ID Document', key: 'id', width: 16 },
+                  { header: 'Titre', key: 'title', width: 34 },
+                  { header: 'Catégorie', key: 'categoryLabel', width: 20 },
+                  { header: 'Entité Liée', key: 'relatedEntityName', width: 28 },
+                  { header: 'Module', key: 'relatedModule', width: 14 },
+                  { header: 'Type Fichier', key: 'type', width: 12 },
+                  { header: 'Auteur', key: 'author', width: 22 },
+                  { header: 'Date Mise à Jour', key: 'updatedAt', width: 16 },
+                  { header: 'Échéance', key: 'expiryDate', width: 16 },
+                ],
+                data: filteredDocs,
+              });
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#0f2a4a] hover:bg-[#163a66] text-white text-xs font-bold shadow-xs transition cursor-pointer"
           >
-            <Upload className="w-4 h-4" />
-            <span>Déposer un Document Sécurisé</span>
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <span>Exporter Excel (.xlsx)</span>
           </button>
-        )}
+          {hasEffectivePermission(currentUser, 'documents', 'create') && (
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Déposer un Document</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Action Alert Banner */}
@@ -481,19 +433,6 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
         </div>
       )}
 
-      {/* Cloudinary Architecture Notice */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-900/10 to-emerald-900/10 border border-blue-200/80 text-xs text-slate-700 flex items-start gap-3 shadow-2xs">
-        <ShieldAlert className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-bold text-blue-950 block mb-0.5">
-            Architecture Cloudinary &amp; Coffre-fort Numérique FCT
-          </span>
-          <p className="text-slate-600 leading-relaxed text-[11px]">
-            Les photos de véhicules sont publiques et optimisées pour le showroom web. Les pièces d'identité, cartes grises et contrats confidentiels sont stockés dans un espace authentifié restreint avec génération de signatures temporaires éphémères côté serveur Cloud Functions (sans divulgation des secrets d'administration).
-          </p>
-        </div>
-      </div>
-
       {/* Top Activity Summary KPIs */}
       <EntityActivitySummary items={kpis} columns={3} />
 
@@ -505,7 +444,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         tabs={[
-          { id: 'ALL', label: `Tous les documents (${demoDocuments.length})` },
+          { id: 'ALL', label: `Tous les documents (${allDocs.length})` },
           { id: 'VEHICLE_GREY_CARD', label: 'Cartes Grises' },
           { id: 'INSURANCE', label: 'Assurances' },
           { id: 'TECHNICAL_INSPECTION', label: 'Visites Techniques' },
@@ -747,14 +686,53 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                 </div>
               </div>
 
-              <CloudinaryUploadDropzone
-                folder="fct_automobile/vault"
-                label="Fichier numérisé (Téléversement Cloudinary Sécurisé) :"
-                helperText="Glissez ou sélectionnez le fichier PDF, PNG ou JPG à chiffrer"
-                currentValue={newDocForm.fileUrl}
-                onUploadSuccess={(url) => setNewDocForm({ ...newDocForm, fileUrl: url })}
-                onClear={() => setNewDocForm({ ...newDocForm, fileUrl: '' })}
-              />
+              <div className="space-y-1.5">
+                <label className="block text-slate-700 font-bold">Fichier numérisé (PDF ou Image) *</label>
+                <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-emerald-500 transition bg-slate-50">
+                  <input
+                    type="file"
+                    id="docFileInput"
+                    accept="application/pdf,image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (uploadEvent) => {
+                          const res = uploadEvent.target?.result as string;
+                          setNewDocForm({
+                            ...newDocForm,
+                            fileUrl: res,
+                            title: newDocForm.title || file.name.replace(/\.[^/.]+$/, ''),
+                          });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  {newDocForm.fileUrl ? (
+                    <div className="flex items-center justify-between p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs">
+                      <span className="font-bold flex items-center gap-1.5 truncate max-w-[240px]">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        Fichier chargé dans la plateforme FCT
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setNewDocForm({ ...newDocForm, fileUrl: '' })}
+                        className="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer"
+                      >
+                        Retirer
+                      </button>
+                    </div>
+                  ) : (
+                    <label htmlFor="docFileInput" className="cursor-pointer flex flex-col items-center gap-1.5">
+                      <Upload className="w-6 h-6 text-emerald-600" />
+                      <span className="text-xs font-bold text-slate-700">Cliquez pour sélectionner un document (PDF / Image)</span>
+                      <span className="text-[11px] text-slate-400">Le fichier reste sécurisé dans la plateforme FCT sans dépendance externe</span>
+                    </label>
+                  )}
+                </div>
+              </div>
 
               <div className="flex items-center gap-2 pt-1">
                 <input

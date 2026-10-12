@@ -19,7 +19,9 @@ import {
   Clock,
   Menu,
   LogOut,
+  Lock,
 } from 'lucide-react';
+import { FCT_LOGO_BASE64 } from '../utils/logoBase64.ts';
 
 interface NavbarProps {
   state: DatabaseState;
@@ -27,6 +29,8 @@ interface NavbarProps {
   lang: Language;
   onLanguageChange: (lang: Language) => void;
   onLogout: () => void;
+  onOpenProfileSecurity?: () => void;
+  onLockNow?: () => void;
   onToggleMobileSidebar?: () => void;
 }
 
@@ -36,6 +40,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   lang,
   onLanguageChange,
   onLogout,
+  onOpenProfileSecurity,
+  onLockNow,
   onToggleMobileSidebar,
 }) => {
   const t = translations[lang];
@@ -63,7 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <div className="bg-white px-2 py-1 rounded-lg border border-white/20 shadow-sm flex items-center justify-center shrink-0">
             <img
-              src="/fct-logo.png"
+              src={FCT_LOGO_BASE64}
               alt="FCT Automobile Douala"
               className="h-7 sm:h-8 w-auto max-w-[120px] object-contain"
             />
@@ -166,10 +172,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
-          {/* Collaborateur Authentifié & Rôle RBAC */}
-          <div className="flex items-center bg-slate-800/90 rounded-lg border border-slate-700/80 px-2.5 py-1 gap-2 text-xs">
+          {/* Collaborateur Authentifié & Rôle RBAC (Cliquable pour ouvrir Profil & PIN) */}
+          <button
+            type="button"
+            onClick={onOpenProfileSecurity}
+            title="Gérer mon profil, mot de passe et code PIN de sécurité"
+            className="flex items-center bg-slate-800/90 hover:bg-slate-700/90 rounded-lg border border-slate-700/80 px-2.5 py-1 gap-2 text-xs transition cursor-pointer text-left"
+          >
             <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-            <div className="max-w-[130px] sm:max-w-[200px] truncate">
+            <div className="max-w-[130px] sm:max-w-[180px] truncate">
               <span className="font-bold text-white truncate block">
                 {currentUser.fullName}
               </span>
@@ -177,7 +188,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="hidden md:inline px-1.5 py-0.5 rounded bg-blue-900/90 text-[10px] text-blue-200 font-bold uppercase shrink-0">
               {t.roles[currentUser.role]}
             </span>
-          </div>
+          </button>
+
+          {/* Bouton Verrouiller l'écran maintenant */}
+          {onLockNow && (
+            <button
+              type="button"
+              onClick={onLockNow}
+              title="Verrouiller l'écran immédiatement (Code PIN)"
+              className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-amber-600/20 text-slate-300 hover:text-amber-300 border border-slate-700 transition cursor-pointer"
+            >
+              <Lock className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           {/* Déconnexion de la session Firebase */}
           <button
