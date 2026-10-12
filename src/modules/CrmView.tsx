@@ -1724,6 +1724,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
         isOpen={Boolean(viewerDoc)}
         onClose={() => setViewerDoc(null)}
         document={viewerDoc}
+        lang={lang}
       />
     </div>
   );

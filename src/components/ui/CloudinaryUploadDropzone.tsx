@@ -7,6 +7,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, CheckCircle2, AlertCircle, Loader2, FileText, Image as ImageIcon, X, Link } from 'lucide-react';
 import { uploadToCloudinary, CloudinaryUploadResult, getOptimizedCloudinaryUrl, getDocumentKind, isCloudinaryUrl } from '../../services/cloudinaryService.ts';
+import { Language, translations } from '../../services/i18n.ts';
 
 interface CloudinaryUploadDropzoneProps {
   onUploadSuccess: (secureUrl: string, result?: CloudinaryUploadResult) => void;
@@ -18,6 +19,7 @@ interface CloudinaryUploadDropzoneProps {
   helperText?: string;
   currentValue?: string;
   onClear?: () => void;
+  lang?: Language;
 }
 
 export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> = ({
@@ -26,11 +28,16 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
   multiple = false,
   folder = 'fct_automobile/documents',
   accept = 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt',
-  label = 'Téléverser un document ou une photo',
-  helperText = 'Glissez-déposez ou cliquez pour sélectionner un fichier (JPG, PNG, WEBP, PDF, Word, Excel — 25 Mo max)',
+  label,
+  helperText,
   currentValue,
   onClear,
+  lang = 'fr',
 }) => {
+  const t = translations[lang].uploadDropzone;
+  const isEn = lang === 'en';
+  const effectiveLabel = label || t.defaultLabel;
+  const effectiveHelper = helperText || t.defaultHelper;
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [progress, setProgress] = useState(0);
@@ -124,7 +131,7 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
   return (
     <div className="space-y-2 text-xs">
       <div className="flex items-center justify-between">
-        <label className="block text-slate-700 font-bold">{label}</label>
+        <label className="block text-slate-700 font-bold">{effectiveLabel}</label>
         <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[11px]">
           <button
             type="button"
@@ -133,7 +140,7 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
               mode === 'FILE' ? 'bg-white text-blue-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            Fichier Cloudinary
+            {t.fileMode}
           </button>
           <button
             type="button"
@@ -142,7 +149,7 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
               mode === 'URL' ? 'bg-white text-blue-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            Lien URL
+            {t.urlMode}
           </button>
         </div>
       </div>
@@ -164,7 +171,7 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
             <div className="overflow-hidden">
               <div className="flex items-center gap-1 font-bold text-emerald-950 text-xs">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Fichier téléversé sur Cloudinary FCT</span>
+                <span>{isEn ? 'File uploaded to Cloudinary FCT' : 'Fichier téléversé sur Cloudinary FCT'}</span>
               </div>
               <a
                 href={uploadedUrl}
@@ -181,7 +188,7 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
             type="button"
             onClick={handleRemove}
             className="p-1.5 rounded-lg bg-white/80 hover:bg-white text-slate-500 hover:text-rose-600 border border-emerald-200 cursor-pointer shadow-2xs transition shrink-0"
-            title="Supprimer ce fichier"
+            title={isEn ? 'Remove file' : 'Supprimer ce fichier'}
           >
             <X className="w-4 h-4" />
           </button>
@@ -214,7 +221,7 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
             <div className="flex flex-col items-center gap-1.5 py-2">
               <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
               <span className="font-bold text-blue-900 text-xs text-center max-w-xs">
-                {uploadStatus || `Téléversement vers Cloudinary… ${progress}%`}
+                {uploadStatus || `${t.uploadingFile} ${progress}%`}
               </span>
               <div className="w-48 h-1.5 bg-blue-100 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-600 transition-all" style={{ width: `${progress}%` }} />
@@ -227,9 +234,9 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
               </div>
               <div>
                 <p className="font-bold text-slate-800 text-xs">
-                  Cliquez ou glissez un fichier ici
+                  {t.dragFilesHere} {t.orBrowse}
                 </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">{helperText}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">{effectiveHelper}</p>
               </div>
             </>
           )}
@@ -242,7 +249,7 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
             onChange={(e) => setUrlInput(e.target.value)}
             placeholder={
               multiple
-                ? 'https://... (ou plusieurs URLs séparées par des virgules)'
+                ? (isEn ? 'https://... (or multiple comma-separated URLs)' : 'https://... (ou plusieurs URLs séparées par des virgules)')
                 : 'https://res.cloudinary.com/...'
             }
             className="flex-1 p-2.5 rounded-xl border border-slate-200 text-xs"
@@ -252,7 +259,7 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
             onClick={handleApplyUrl}
             className="px-3.5 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs cursor-pointer shadow-xs"
           >
-            Appliquer
+            {t.applyUrl}
           </button>
         </div>
       )}

@@ -1172,6 +1172,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
         isOpen={Boolean(viewerDoc)}
         onClose={() => setViewerDoc(null)}
         document={viewerDoc}
+        lang={lang}
       />
     </div>
   );

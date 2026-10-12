@@ -1118,6 +1118,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
         isOpen={Boolean(viewerDoc)}
         onClose={() => setViewerDoc(null)}
         document={viewerDoc}
+        lang={lang}
       />
     </div>
   );

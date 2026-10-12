@@ -453,6 +453,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
         isOpen={Boolean(viewerDoc)}
         onClose={() => setViewerDoc(null)}
         document={viewerDoc}
+        lang={lang}
       />
     </>
   );

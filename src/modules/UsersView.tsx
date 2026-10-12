@@ -79,6 +79,8 @@ type UserDetailTab = 'OVERVIEW' | 'EFFECTIVE_RIGHTS' | 'OVERRIDES' | 'AUDIT';
 
 export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate }) => {
   const t = translations[lang];
+  const up = t.usersPage;
+  const isEn = lang === 'en';
   const currentUser = dbStore.getCurrentUser();
 
   // Navigation par sous-onglets du module
@@ -451,13 +453,13 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
   const getStatusBadge = (status: UserAccountStatus) => {
     switch (status) {
       case 'ACTIVE':
-        return <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">Actif</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">{up.statusActive}</span>;
       case 'INVITED':
-        return <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">Invitation</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">{up.statusPending}</span>;
       case 'SUSPENDED':
-        return <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 font-bold text-[10px]">Suspendu</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 font-bold text-[10px]">{up.statusSuspended}</span>;
       case 'DISABLED':
-        return <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px]">Désactivé</span>;
+        return <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px]">{isEn ? 'Disabled' : 'Désactivé'}</span>;
     }
   };
 
@@ -468,10 +470,10 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <ShieldCheck className="w-6 h-6 text-emerald-600" />
-            <span>Gestion des Utilisateurs, Rôles &amp; Sécurité RBAC</span>
+            <span>{up.title}</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Administration des comptes collaborateurs, matrice granulaire des 18 modules, surcharges individuelles et journal d'audit immuable
+            {up.subtitle}
           </p>
         </div>
 
@@ -482,7 +484,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow transition cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
-            <span>Inviter / Créer Collaborateur</span>
+            <span>{up.newUserBtn}</span>
           </button>
         )}
       </div>
@@ -519,7 +521,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>1. Utilisateurs &amp; Collaborateurs</span>
+          <span>1. {up.tabUsers}</span>
           <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px]">
             {kpis.total}
           </span>
@@ -534,9 +536,9 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
           }`}
         >
           <Sliders className="w-4 h-4" />
-          <span>2. Rôles &amp; Matrice de Permissions</span>
+          <span>2. {up.tabRoles}</span>
           <span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px]">
-            8 Rôles
+            8 {isEn ? 'Roles' : 'Rôles'}
           </span>
         </button>
 
@@ -549,9 +551,9 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
           }`}
         >
           <KeyRound className="w-4 h-4" />
-          <span>3. Exceptions &amp; Droits Individuels</span>
+          <span>3. {up.tabOverrides}</span>
           <span className="px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px]">
-            {kpis.withOverrides} actif(s)
+            {kpis.withOverrides} {isEn ? 'active' : 'actif(s)'}
           </span>
         </button>
 
@@ -564,7 +566,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
           }`}
         >
           <History className="w-4 h-4" />
-          <span>4. Journal de Sécurité &amp; Audit</span>
+          <span>4. {up.tabAudit}</span>
           <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px]">
             {(state.securityAuditLogs || []).length}
           </span>
@@ -579,30 +581,30 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
           {/* Baromètre KPIs synthétiques */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Collaborateurs</div>
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{isEn ? 'Total Staff' : 'Total Collaborateurs'}</div>
               <div className="text-xl font-black text-slate-900 mt-1">{kpis.total}</div>
             </div>
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Comptes Actifs</div>
+              <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">{up.activeStaff}</div>
               <div className="text-xl font-black text-emerald-600 mt-1">{kpis.active}</div>
             </div>
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Invitations en attente</div>
+              <div className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">{isEn ? 'Pending Invites' : 'Invitations en attente'}</div>
               <div className="text-xl font-black text-amber-600 mt-1">{kpis.invited}</div>
             </div>
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Suspendus / Révoqués</div>
+              <div className="text-[10px] font-bold text-rose-700 uppercase tracking-wider">{isEn ? 'Suspended / Revoked' : 'Suspendus / Révoqués'}</div>
               <div className="text-xl font-black text-rose-600 mt-1">{kpis.suspended}</div>
             </div>
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">Super Administrateurs</div>
+              <div className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">{up.superAdmins}</div>
               <div className="text-xl font-black text-purple-600 mt-1 flex items-center gap-1.5">
                 <span>{kpis.superAdmins}</span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">Protégé</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">{isEn ? 'Protected' : 'Protégé'}</span>
               </div>
             </div>
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Exceptions Actives</div>
+              <div className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">{up.customOverrides}</div>
               <div className="text-xl font-black text-blue-600 mt-1">{kpis.withOverrides}</div>
             </div>
           </div>
@@ -614,7 +616,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Rechercher par nom, e-mail, téléphone ou fonction..."
+                  placeholder={up.searchPlaceholder}
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
@@ -623,16 +625,16 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
 
               {/* Filtre Rôle */}
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-slate-500 font-bold">Rôle:</span>
+                <span className="text-xs text-slate-500 font-bold">{isEn ? 'Role:' : 'Rôle :'}</span>
                 <select
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
                   className="py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-emerald-500"
                 >
-                  <option value="ALL">Tous les Rôles ({state.users.length})</option>
+                  <option value="ALL">{up.allRoles} ({state.users.length})</option>
                   {ROLE_DEFINITIONS.map((r) => (
                     <option key={r.id} value={r.id}>
-                      {r.name}
+                      {t.roles[r.id] || r.name}
                     </option>
                   ))}
                 </select>
@@ -640,17 +642,17 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
 
               {/* Filtre Statut */}
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-slate-500 font-bold">Statut:</span>
+                <span className="text-xs text-slate-500 font-bold">{isEn ? 'Status:' : 'Statut :'}</span>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-emerald-500"
                 >
-                  <option value="ALL">Tous les Statuts</option>
-                  <option value="ACTIVE">Actif</option>
-                  <option value="INVITED">Invitation</option>
-                  <option value="SUSPENDED">Suspendu</option>
-                  <option value="DISABLED">Désactivé</option>
+                  <option value="ALL">{up.allStatuses}</option>
+                  <option value="ACTIVE">{up.statusActive}</option>
+                  <option value="INVITED">{up.statusPending}</option>
+                  <option value="SUSPENDED">{up.statusSuspended}</option>
+                  <option value="DISABLED">{isEn ? 'Disabled' : 'Désactivé'}</option>
                 </select>
               </div>
             </div>
@@ -663,7 +665,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   viewMode === 'CARDS' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Cartes
+                {isEn ? 'Cards' : 'Cartes'}
               </button>
               <button
                 onClick={() => setViewMode('TABLE')}
@@ -671,7 +673,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   viewMode === 'TABLE' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Tableau
+                {isEn ? 'Table' : 'Tableau'}
               </button>
             </div>
           </div>
@@ -680,8 +682,8 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
           {filteredUsers.length === 0 ? (
             <div className="bg-white p-12 text-center rounded-xl border border-slate-200 space-y-2">
               <UserX className="w-10 h-10 text-slate-300 mx-auto" />
-              <div className="text-sm font-bold text-slate-700">Aucun utilisateur ne correspond à votre recherche.</div>
-              <div className="text-xs text-slate-400">Modifiez vos filtres ou effectuez une recherche différente.</div>
+              <div className="text-sm font-bold text-slate-700">{isEn ? 'No staff member matches your search.' : 'Aucun utilisateur ne correspond à votre recherche.'}</div>
+              <div className="text-xs text-slate-400">{isEn ? 'Adjust your filters or try a different search.' : 'Modifiez vos filtres ou effectuez une recherche différente.'}</div>
             </div>
           ) : viewMode === 'CARDS' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -741,12 +743,12 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                       {/* Modules autorisés & exceptions */}
                       <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
                         <span className="text-slate-500">
-                          Accès modules : <strong className="text-slate-900">{readableModulesCount} / 18</strong>
+                          {isEn ? 'Module access:' : 'Accès modules :'} <strong className="text-slate-900">{readableModulesCount} / 18</strong>
                         </span>
                         {hasOverrides && (
                           <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-bold text-[10px] border border-purple-200 flex items-center gap-1">
                             <Sparkles className="w-3 h-3" />
-                            <span>Exceptions</span>
+                            <span>{isEn ? 'Overrides' : 'Exceptions'}</span>
                           </span>
                         )}
                       </div>
@@ -754,7 +756,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
 
                     {/* Footer : Bouton Showroom */}
                     <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-700 font-bold group-hover:text-blue-800">
-                      <span>Consulter la fiche détaillée</span>
+                      <span>{up.viewDetails}</span>
                       <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
@@ -768,13 +770,13 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 <table className="w-full text-xs text-left">
                   <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                     <tr>
-                      <th className="py-3 px-4">Collaborateur</th>
-                      <th className="py-3 px-4">Fonction</th>
-                      <th className="py-3 px-4">E-mail Professionnel</th>
-                      <th className="py-3 px-4">Téléphone</th>
-                      <th className="py-3 px-4">Rôle</th>
-                      <th className="py-3 px-4 text-center">Statut</th>
-                      <th className="py-3 px-4 text-center">Actions</th>
+                      <th className="py-3 px-4">{isEn ? 'Staff Member' : 'Collaborateur'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Job Title' : 'Fonction'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Work Email' : 'E-mail Professionnel'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Phone' : 'Téléphone'}</th>
+                      <th className="py-3 px-4">{up.colRole}</th>
+                      <th className="py-3 px-4 text-center">{up.colStatus}</th>
+                      <th className="py-3 px-4 text-center">{up.colActions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">

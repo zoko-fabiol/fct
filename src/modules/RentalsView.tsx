@@ -2007,6 +2007,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
         isOpen={Boolean(viewerDoc)}
         onClose={() => setViewerDoc(null)}
         document={viewerDoc}
+        lang={lang}
       />
     </div>
   );

@@ -41,6 +41,7 @@ import {
   isCloudinaryUrl,
 } from '../../services/cloudinaryService.ts';
 import { printElementById } from '../../utils/printDocument.ts';
+import { Language, translations } from '../../services/i18n.ts';
 
 export interface ViewerDocument {
   id?: string;
@@ -61,13 +62,17 @@ interface DocumentViewerModalProps {
   isOpen: boolean;
   onClose: () => void;
   document: ViewerDocument | null;
+  lang?: Language;
 }
 
 export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
   isOpen,
   onClose,
   document: doc,
+  lang = 'fr',
 }) => {
+  const t = translations[lang].viewerModal;
+  const isEn = lang === 'en';
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -145,7 +150,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                   type="button"
                   onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2)))}
                   className="p-1 hover:bg-slate-700 rounded text-slate-300 hover:text-white"
-                  title="Zoom arrière"
+                  title={t.zoomOut}
                 >
                   <ZoomOut className="w-3.5 h-3.5" />
                 </button>
@@ -156,7 +161,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                   type="button"
                   onClick={() => setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2)))}
                   className="p-1 hover:bg-slate-700 rounded text-slate-300 hover:text-white"
-                  title="Zoom avant"
+                  title={t.zoomIn}
                 >
                   <ZoomIn className="w-3.5 h-3.5" />
                 </button>
@@ -164,7 +169,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                   type="button"
                   onClick={() => setRotation((r) => (r + 90) % 360)}
                   className="p-1 hover:bg-slate-700 rounded text-slate-300 hover:text-white ml-1 border-l border-slate-700 pl-1.5"
-                  title="Pivoter de 90°"
+                  title={t.rotate}
                 >
                   <RotateCw className="w-3.5 h-3.5" />
                 </button>
@@ -175,27 +180,27 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               type="button"
               onClick={handlePrint}
               className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition"
-              title="Imprimer ce document"
+              title={t.print}
             >
               <Printer className="w-3.5 h-3.5 text-blue-400" />
-              <span className="hidden md:inline">Imprimer</span>
+              <span className="hidden md:inline">{t.print}</span>
             </button>
 
             <button
               type="button"
               onClick={handleDownload}
               className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
-              title="Télécharger le fichier original"
+              title={t.download}
             >
               <Download className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Télécharger</span>
+              <span className="hidden md:inline">{isEn ? 'Download' : 'Télécharger'}</span>
             </button>
 
             <button
               type="button"
               onClick={handleCopyLink}
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
-              title="Copier le lien du document"
+              title={copied ? t.linkCopied : t.copyLink}
             >
               {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
             </button>
@@ -205,7 +210,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               target="_blank"
               rel="noreferrer"
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
-              title="Ouvrir dans un nouvel onglet"
+              title={isEn ? 'Open in new tab' : 'Ouvrir dans un nouvel onglet'}
             >
               <ExternalLink className="w-4 h-4" />
             </a>
@@ -214,7 +219,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               type="button"
               onClick={() => setIsFullscreen((f) => !f)}
               className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition hidden sm:block"
-              title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+              title={isFullscreen ? t.exitFullscreen : t.fullscreen}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
@@ -223,7 +228,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               type="button"
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-rose-600/80 transition ml-1"
-              title="Fermer"
+              title={t.close}
             >
               <X className="w-5 h-5" />
             </button>
@@ -362,30 +367,30 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
           <div className="w-full md:w-80 bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 p-5 space-y-4 overflow-y-auto text-xs text-slate-300">
             <div className="flex items-center gap-2 font-bold text-slate-100 text-xs border-b border-slate-800 pb-2.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Coffre-fort FCT Douala</span>
+              <span>{isEn ? 'FCT Vault Douala' : 'Coffre-fort FCT Douala'}</span>
             </div>
 
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] uppercase font-bold text-slate-500 block mb-0.5">
-                  Titre du document
+                  {isEn ? 'Document title' : 'Titre du document'}
                 </label>
                 <p className="font-semibold text-slate-100 break-words">{doc.title}</p>
               </div>
 
               <div>
                 <label className="text-[10px] uppercase font-bold text-slate-500 block mb-0.5">
-                  Catégorie
+                  {t.category}
                 </label>
                 <span className="inline-block px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-700/50 font-semibold text-[11px]">
-                  {doc.categoryLabel || doc.category || 'Document Commercial'}
+                  {doc.categoryLabel || doc.category || (isEn ? 'Commercial Document' : 'Document Commercial')}
                 </span>
               </div>
 
               {doc.relatedEntityName && (
                 <div>
                   <label className="text-[10px] uppercase font-bold text-slate-500 block mb-0.5">
-                    Entité rattachée
+                    {t.relatedEntity}
                   </label>
                   <p className="text-slate-200 font-medium">{doc.relatedEntityName}</p>
                 </div>
@@ -394,7 +399,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-800">
                 <div>
                   <label className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1 mb-0.5">
-                    <Calendar className="w-3 h-3 text-slate-400" /> Date d'ajout
+                    <Calendar className="w-3 h-3 text-slate-400" /> {t.uploadDate}
                   </label>
                   <p className="text-slate-300">
                     {doc.uploadedAt ? doc.uploadedAt.split('T')[0] : doc.updatedAt || 'N/A'}
@@ -403,16 +408,16 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
                 <div>
                   <label className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1 mb-0.5">
-                    <HardDrive className="w-3 h-3 text-slate-400" /> Taille
+                    <HardDrive className="w-3 h-3 text-slate-400" /> {isEn ? 'Size' : 'Taille'}
                   </label>
-                  <p className="text-slate-300">{doc.size || 'Certifié Cloudinary'}</p>
+                  <p className="text-slate-300">{doc.size || (isEn ? 'Cloudinary Certified' : 'Certifié Cloudinary')}</p>
                 </div>
               </div>
 
               {doc.author && (
                 <div>
                   <label className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1 mb-0.5">
-                    <User className="w-3 h-3 text-slate-400" /> Opérateur / Dépositaire
+                    <User className="w-3 h-3 text-slate-400" /> {t.uploadedBy}
                   </label>
                   <p className="text-slate-300">{doc.author}</p>
                 </div>
@@ -420,24 +425,24 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
               {doc.notes && (
                 <div className="p-3 bg-slate-800/80 rounded-xl border border-slate-700/80 text-[11px] text-slate-300 space-y-1">
-                  <span className="font-bold text-slate-200 block">Observations :</span>
+                  <span className="font-bold text-slate-200 block">{isEn ? 'Remarks:' : 'Observations :'}</span>
                   <p className="italic text-slate-400">{doc.notes}</p>
                 </div>
               )}
 
               <div className="pt-2 border-t border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400">Stockage Cloud</span>
+                  <span className="text-slate-400">{isEn ? 'Cloud Storage' : 'Stockage Cloud'}</span>
                   <span className="font-mono text-emerald-400 font-bold">Cloudinary FCT</span>
                 </div>
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400">Chiffrement SSL</span>
+                  <span className="text-slate-400">{isEn ? 'SSL Encryption' : 'Chiffrement SSL'}</span>
                   <span className="text-slate-300">HTTPS TLS 1.3</span>
                 </div>
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400">Protection</span>
+                  <span className="text-slate-400">{isEn ? 'Privacy' : 'Protection'}</span>
                   <span className="text-amber-300 font-semibold">
-                    {doc.isPrivate !== false ? 'Confidentiel Interne' : 'Public'}
+                    {doc.isPrivate !== false ? (isEn ? 'Internal Confidential' : 'Confidentiel Interne') : (isEn ? 'Public' : 'Public')}
                   </span>
                 </div>
               </div>

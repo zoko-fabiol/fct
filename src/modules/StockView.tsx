@@ -1482,6 +1482,7 @@ export const StockView: React.FC<StockViewProps> = ({
         isOpen={Boolean(viewerDoc)}
         onClose={() => setViewerDoc(null)}
         document={viewerDoc}
+        lang={lang}
       />
     </div>
   );

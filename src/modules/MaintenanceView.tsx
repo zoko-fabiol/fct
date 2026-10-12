@@ -1633,6 +1633,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
         isOpen={Boolean(viewerDoc)}
         onClose={() => setViewerDoc(null)}
         document={viewerDoc}
+        lang={lang}
       />
     </div>
   );

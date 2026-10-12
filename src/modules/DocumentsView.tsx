@@ -772,6 +772,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
         isOpen={!!viewerDoc}
         onClose={() => setViewerDoc(null)}
         document={viewerDoc}
+        lang={lang}
       />
     </div>
   );

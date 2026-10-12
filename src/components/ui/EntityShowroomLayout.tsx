@@ -8,6 +8,7 @@ import React from 'react';
 import { ArrowLeft, Printer, Share2, LucideIcon } from 'lucide-react';
 import { EntityTabs, EntityStatusBadge } from './EntityComponents.tsx';
 import { printElementById } from '../../utils/printDocument.ts';
+import { Language } from '../../services/i18n.ts';
 
 export interface ShowroomKpiItem {
   label: string;
@@ -41,6 +42,7 @@ interface EntityShowroomLayoutProps {
   activeTab?: string;
   onTabChange?: (tabId: string) => void;
   children: React.ReactNode;
+  lang?: Language;
 }
 
 export const EntityShowroomLayout: React.FC<EntityShowroomLayoutProps> = ({
@@ -60,7 +62,9 @@ export const EntityShowroomLayout: React.FC<EntityShowroomLayoutProps> = ({
   activeTab,
   onTabChange,
   children,
+  lang = 'fr',
 }) => {
+  const isEn = lang === 'en';
   return (
     <div id="fct-showroom-printable-content" className="space-y-6 animate-fadeIn pb-12">
       {/* 1. Barre d'outils supérieure de navigation (Pleine Page) */}
@@ -93,11 +97,11 @@ export const EntityShowroomLayout: React.FC<EntityShowroomLayoutProps> = ({
           <button
             type="button"
             onClick={() => printElementById('fct-showroom-printable-content', `Fiche_${referenceId || title || 'Showroom'}`)}
-            title="Imprimer cette fiche"
+            title={isEn ? 'Print this sheet' : 'Imprimer cette fiche'}
             className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden md:inline">Imprimer Fiche</span>
+            <span className="hidden md:inline">{isEn ? 'Print Sheet' : 'Imprimer Fiche'}</span>
           </button>
         </div>
       </div>

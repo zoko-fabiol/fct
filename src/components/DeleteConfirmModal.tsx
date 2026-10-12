@@ -50,7 +50,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
 
   const handleConfirm = () => {
     if (requireReason && !reason.trim()) {
-      setError('Veuillez indiquer un motif pour la traçabilité comptable/audit.');
+      setError(lang === 'fr' ? 'Veuillez indiquer un motif pour la traçabilité comptable/audit.' : 'Please provide a reason for accounting/audit traceability.');
       return;
     }
     setError(null);
@@ -69,7 +69,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black text-slate-900">{title}</h3>
-              <p className="text-xs text-slate-500">Action irréversible et auditée</p>
+              <p className="text-xs text-slate-500">{lang === 'fr' ? 'Action irréversible et auditée' : 'Irreversible and audited action'}</p>
             </div>
           </div>
           <button
