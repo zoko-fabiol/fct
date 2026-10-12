@@ -64,6 +64,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
   contextEntityId,
 }) => {
   const currentUser = dbStore.getCurrentUser();
+  const t = translations[lang];
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
@@ -292,7 +293,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-blue-900" />
-                <h3 className="text-base font-bold text-slate-900">Modifier le Chauffeur</h3>
+                <h3 className="text-base font-bold text-slate-900">{lang === 'en' ? 'Edit Driver' : 'Modifier le Chauffeur'}</h3>
               </div>
               <button
                 type="button"
@@ -305,7 +306,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
 
             <form onSubmit={handleSaveEditDriver} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Nom complet *</label>
+                <label className="block text-slate-600 font-bold mb-1">{t.driversPage.fullNameLabel}</label>
                 <input
                   type="text"
                   required
@@ -316,7 +317,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Téléphone mobile *</label>
+                <label className="block text-slate-600 font-bold mb-1">{t.driversPage.phoneLabel}</label>
                 <input
                   type="text"
                   required
@@ -327,7 +328,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Numéro de Permis *</label>
+                <label className="block text-slate-600 font-bold mb-1">{t.driversPage.licenseNumberLabel}</label>
                 <input
                   type="text"
                   required
@@ -338,7 +339,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Catégories de Permis</label>
+                <label className="block text-slate-600 font-bold mb-1">{t.driversPage.licenseCategoriesLabel}</label>
                 <div className="flex gap-2">
                   {['A', 'B', 'C', 'D', 'E'].map((cat) => {
                     const isChecked = (editForm.licenseCategories || []).includes(cat);
@@ -366,7 +367,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Expiration Permis</label>
+                  <label className="block text-slate-600 font-bold mb-1">{t.driversPage.licenseExpiryLabel}</label>
                   <input
                     type="date"
                     value={editForm.licenseExpiryDate}
@@ -375,7 +376,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Visite Médicale</label>
+                  <label className="block text-slate-600 font-bold mb-1">{lang === 'en' ? 'Medical Checkup Expiry' : 'Visite Médicale'}</label>
                   <input
                     type="date"
                     value={editForm.medicalExamExpiryDate}
@@ -387,19 +388,19 @@ export const DriversView: React.FC<DriversViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Statut d'activité</label>
+                  <label className="block text-slate-600 font-bold mb-1">{lang === 'en' ? 'Activity Status' : "Statut d'activité"}</label>
                   <select
                     value={editForm.status}
                     onChange={(e) => setEditForm({ ...editForm, status: e.target.value as any })}
                     className="w-full px-3 py-2 border rounded-lg bg-white font-semibold"
                   >
-                    <option value="AVAILABLE">Disponible</option>
-                    <option value="ON_TRIP">En Mission</option>
-                    <option value="LEAVE">En Congé</option>
+                    <option value="AVAILABLE">{lang === 'en' ? 'Available' : 'Disponible'}</option>
+                    <option value="ON_TRIP">{lang === 'en' ? 'On Mission' : 'En Mission'}</option>
+                    <option value="LEAVE">{lang === 'en' ? 'On Leave' : 'En Congé'}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Note (1 à 5)</label>
+                  <label className="block text-slate-600 font-bold mb-1">{lang === 'en' ? 'Rating (1 to 5)' : 'Note (1 à 5)'}</label>
                   <input
                     type="number"
                     min={1}
@@ -418,13 +419,13 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   onClick={() => setIsEditDriverModalOpen(false)}
                   className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer font-semibold"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-blue-900 text-white font-bold hover:bg-blue-800 cursor-pointer shadow-sm"
                 >
-                  Enregistrer les modifications
+                  {lang === 'en' ? 'Save Changes' : 'Enregistrer les modifications'}
                 </button>
               </div>
             </form>
@@ -435,9 +436,13 @@ export const DriversView: React.FC<DriversViewProps> = ({
       {deleteConfirmDriver && (
         <DeleteConfirmModal
           isOpen={!!deleteConfirmDriver}
-          title="Supprimer le chauffeur"
+          title={lang === 'en' ? 'Delete Driver' : 'Supprimer le chauffeur'}
           itemName={deleteConfirmDriver.fullName}
-          warningMessage="Êtes-vous sûr de vouloir supprimer définitivement ce chauffeur ? Cette action sera tracée dans le journal d'audit."
+          warningMessage={
+            lang === 'en'
+              ? 'Are you sure you want to permanently delete this driver? This action will be logged in the security audit journal.'
+              : "Êtes-vous sûr de vouloir supprimer définitivement ce chauffeur ? Cette action sera tracée dans le journal d'audit."
+          }
           onConfirm={handleConfirmDelete}
           onCancel={() => setDeleteConfirmDriver(null)}
         />
@@ -471,18 +476,18 @@ export const DriversView: React.FC<DriversViewProps> = ({
     return (
       <>
         <EntityShowroomLayout
-        backLabel="Retour à la liste des chauffeurs"
+        backLabel={t.driversPage.backToDrivers}
         onBack={() => setSelectedDriver(null)}
         title={selectedDriver.fullName}
-        subtitle="Chauffeur Professionnel Agréé FCT — Douala, Cameroun"
+        subtitle={lang === 'en' ? 'FCT Certified Professional Chauffeur — Douala, Cameroon' : 'Chauffeur Professionnel Agréé FCT — Douala, Cameroun'}
         referenceId={selectedDriver.licenseNumber}
         status={selectedDriver.status}
         statusLabel={
           selectedDriver.status === 'AVAILABLE'
-            ? 'Disponible'
+            ? (lang === 'en' ? 'Available' : 'Disponible')
             : selectedDriver.status === 'ON_TRIP'
-            ? 'En Mission'
-            : 'En Congé'
+            ? (lang === 'en' ? 'On Mission' : 'En Mission')
+            : (lang === 'en' ? 'On Leave' : 'En Congé')
         }
         avatarText={selectedDriver.fullName.charAt(0)}
         actions={
@@ -495,7 +500,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Ajouter Document</span>
+                  <span>{lang === 'en' ? 'Add Document' : 'Ajouter Document'}</span>
                 </button>
                 <button
                   type="button"
@@ -503,7 +508,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                 >
                   <Pencil className="w-3.5 h-3.5" />
-                  <span>Modifier Profil</span>
+                  <span>{lang === 'en' ? 'Edit Profile' : 'Modifier Profil'}</span>
                 </button>
               </>
             )}
@@ -514,42 +519,42 @@ export const DriversView: React.FC<DriversViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs shadow-2xs transition cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Supprimer</span>
+                <span className="hidden sm:inline">{t.delete}</span>
               </button>
             )}
           </div>
         }
         kpis={[
           {
-            label: 'N° Permis Officiel',
+            label: lang === 'en' ? 'Official License #' : 'N° Permis Officiel',
             value: selectedDriver.licenseNumber,
             icon: ShieldCheck,
-            sublabel: `Catégories ${selectedDriver.licenseCategories.join(', ')}`,
+            sublabel: `${lang === 'en' ? 'Categories' : 'Catégories'} ${selectedDriver.licenseCategories.join(', ')}`,
           },
           {
-            label: 'Validité Visite Médicale',
+            label: lang === 'en' ? 'Medical Checkup Validity' : 'Validité Visite Médicale',
             value: selectedDriver.medicalExamExpiryDate,
             icon: Activity,
-            sublabel: 'Visite médicale d\'aptitude',
+            sublabel: lang === 'en' ? 'Fitness medical checkup' : "Visite médicale d'aptitude",
           },
           {
-            label: 'Véhicule Assigné',
-            value: assignedVehicle ? assignedVehicle.licensePlate : 'Aucun',
+            label: lang === 'en' ? 'Assigned Vehicle' : 'Véhicule Assigné',
+            value: assignedVehicle ? assignedVehicle.licensePlate : (lang === 'en' ? 'None' : 'Aucun'),
             icon: Car,
-            sublabel: assignedVehicle ? `${assignedVehicle.brand} ${assignedVehicle.model}` : 'Flotte libre',
+            sublabel: assignedVehicle ? `${assignedVehicle.brand} ${assignedVehicle.model}` : (lang === 'en' ? 'Free fleet' : 'Flotte libre'),
           },
           {
-            label: 'Missions Conclues',
-            value: `${driverTrips.length} missions`,
+            label: lang === 'en' ? 'Completed Missions' : 'Missions Conclues',
+            value: `${driverTrips.length} ${lang === 'en' ? 'trips' : 'missions'}`,
             icon: Briefcase,
-            sublabel: `Évaluation certifiée : ${selectedDriver.rating} / 5.0`,
+            sublabel: `${lang === 'en' ? 'Certified rating' : 'Évaluation certifiée'} : ${selectedDriver.rating} / 5.0`,
           },
         ]}
         tabs={[
-          { id: 'OVERVIEW', label: 'Profil & Permis', icon: UserSquare2 },
-          { id: 'DOCS', label: 'Documents & Permis Numérisés', icon: FileText, badge: driverDocs.length + 2 },
-          { id: 'VEHICLE', label: 'Véhicule Assigné', icon: Car },
-          { id: 'TRIPS', label: 'Missions & Contrats Liés', icon: Briefcase, badge: driverTrips.length },
+          { id: 'OVERVIEW', label: t.driversPage.tabProfile, icon: UserSquare2 },
+          { id: 'DOCS', label: t.driversPage.tabDocs, icon: FileText, badge: driverDocs.length + 2 },
+          { id: 'VEHICLE', label: t.driversPage.tabVehicle, icon: Car },
+          { id: 'TRIPS', label: t.driversPage.tabMissions, icon: Briefcase, badge: driverTrips.length },
         ]}
         activeTab={driverDetailTab}
         onTabChange={(t) => setDriverDetailTab(t)}
@@ -1172,10 +1177,10 @@ export const DriversView: React.FC<DriversViewProps> = ({
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <UserSquare2 className="w-6 h-6 text-emerald-600" />
-            <span>Chauffeurs Professionnels &amp; Affectations Flotte ({state.drivers.length})</span>
+            <span>{t.driversPage.title} ({state.drivers.length})</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Conducteurs certifiés FCT, permis B/C/D, validité visites médicales et missions terrain à Douala
+            {t.driversPage.subtitle}
           </p>
         </div>
 
@@ -1186,7 +1191,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-sm transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Nouveau Chauffeur</span>
+              <span>{t.driversPage.newDriverBtn}</span>
             </button>
           )}
         </div>
@@ -1215,34 +1220,34 @@ export const DriversView: React.FC<DriversViewProps> = ({
         items={[
           {
             id: 'total',
-            label: 'Total Chauffeurs',
+            label: t.driversPage.totalDrivers,
             value: kpis.total,
             icon: UserSquare2,
-            sublabel: 'Effectif certifié FCT',
+            sublabel: lang === 'en' ? 'FCT certified team' : 'Effectif certifié FCT',
             colorVariant: 'blue',
           },
           {
             id: 'available',
-            label: 'Disponibles Agence',
+            label: t.driversPage.availableDrivers,
             value: kpis.available,
             icon: CheckCircle2,
-            sublabel: 'Prêts pour départ immédiat',
+            sublabel: lang === 'en' ? 'Ready for immediate dispatch' : 'Prêts pour départ immédiat',
             colorVariant: 'emerald',
           },
           {
             id: 'on_trip',
-            label: 'En Mission Active',
+            label: t.driversPage.assignedDrivers,
             value: kpis.onTrip,
             icon: Car,
-            sublabel: 'Sur les axes routiers',
+            sublabel: lang === 'en' ? 'Currently on road trip' : 'Sur les axes routiers',
             colorVariant: 'purple',
           },
           {
             id: 'leave',
-            label: 'En Congé / Repos',
+            label: t.driversPage.onLeaveTab,
             value: kpis.leave,
             icon: Clock,
-            sublabel: 'Repos réglementaire',
+            sublabel: lang === 'en' ? 'Regulatory rest' : 'Repos réglementaire',
             colorVariant: 'amber',
           },
         ]}
@@ -1251,16 +1256,16 @@ export const DriversView: React.FC<DriversViewProps> = ({
 
       {/* Outils de recherche, filtre et bascule de vue */}
       <EntitySearchFilters
-        searchPlaceholder="Rechercher par nom, téléphone, numéro de permis..."
+        searchPlaceholder={t.driversPage.searchPlaceholder}
         search={search}
         onSearchChange={setSearch}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         tabs={[
-          { id: 'ALL', label: 'Tous', count: state.drivers.length },
-          { id: 'AVAILABLE', label: 'Disponibles', count: kpis.available },
-          { id: 'ON_TRIP', label: 'En Mission', count: kpis.onTrip },
-          { id: 'LEAVE', label: 'En Congé', count: kpis.leave },
+          { id: 'ALL', label: t.driversPage.allTab, count: state.drivers.length },
+          { id: 'AVAILABLE', label: t.driversPage.availableTab, count: kpis.available },
+          { id: 'ON_TRIP', label: t.driversPage.onMissionTab, count: kpis.onTrip },
+          { id: 'LEAVE', label: t.driversPage.onLeaveTab, count: kpis.leave },
         ]}
         activeTab={statusFilter}
         onTabChange={setStatusFilter}
@@ -1269,12 +1274,12 @@ export const DriversView: React.FC<DriversViewProps> = ({
       {/* Grille Showroom ou Tableau */}
       {filteredDrivers.length === 0 ? (
         <EmptyState
-          title="Aucun chauffeur trouvé"
-          description="Aucun conducteur ne correspond à vos critères de recherche ou de filtre."
+          title={t.driversPage.emptyDriversTitle}
+          description={t.driversPage.emptyDriversDesc}
           icon={UserSquare2}
           action={
             hasEffectivePermission(currentUser, 'drivers', 'create')
-              ? { label: 'Ajouter un Chauffeur', onClick: () => setIsNewDriverModalOpen(true) }
+              ? { label: t.driversPage.newDriverBtn, onClick: () => setIsNewDriverModalOpen(true) }
               : undefined
           }
         />
@@ -1302,7 +1307,11 @@ export const DriversView: React.FC<DriversViewProps> = ({
                           : 'bg-amber-100 text-amber-800'
                       }`}
                     >
-                      {drv.status === 'AVAILABLE' ? 'Disponible' : drv.status === 'ON_TRIP' ? 'En Mission' : 'En Congé'}
+                      {drv.status === 'AVAILABLE'
+                        ? (lang === 'en' ? 'Available' : 'Disponible')
+                        : drv.status === 'ON_TRIP'
+                        ? (lang === 'en' ? 'On Mission' : 'En Mission')
+                        : (lang === 'en' ? 'On Leave' : 'En Congé')}
                     </span>
                     <div className="flex items-center gap-1 text-amber-500 font-bold text-xs">
                       <Star className="w-3.5 h-3.5 fill-amber-400" />
@@ -1326,9 +1335,9 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   </div>
 
                   <div className="space-y-1.5 mt-4 pt-3 border-t border-slate-100 text-xs text-slate-600">
-                    <div>Permis n° : <span className="font-mono font-semibold text-slate-800">{drv.licenseNumber}</span></div>
-                    <div>Catégories : <span className="font-bold text-blue-900">{drv.licenseCategories.join(', ')}</span></div>
-                    <div>Validité médicale : <span className="font-semibold text-slate-800">{drv.medicalExamExpiryDate}</span></div>
+                    <div>{lang === 'en' ? 'License # :' : 'Permis n° :'} <span className="font-mono font-semibold text-slate-800">{drv.licenseNumber}</span></div>
+                    <div>{lang === 'en' ? 'Categories :' : 'Catégories :'} <span className="font-bold text-blue-900">{drv.licenseCategories.join(', ')}</span></div>
+                    <div>{lang === 'en' ? 'Medical Validity :' : 'Validité médicale :'} <span className="font-semibold text-slate-800">{drv.medicalExamExpiryDate}</span></div>
                   </div>
 
                   {assignedVehicle && (
@@ -1340,7 +1349,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-700 font-bold group-hover:text-blue-800">
-                  <span>Consulter le showroom chauffeur</span>
+                  <span>{lang === 'en' ? 'View driver showroom' : 'Consulter le showroom chauffeur'}</span>
                   <div className="flex items-center gap-2">
                     {hasEffectivePermission(currentUser, 'drivers', 'update') && (
                       <button
@@ -1349,7 +1358,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                           e.stopPropagation();
                           handleOpenEdit(drv);
                         }}
-                        title="Modifier ce chauffeur"
+                        title={t.edit}
                         className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 transition cursor-pointer"
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -1368,13 +1377,13 @@ export const DriversView: React.FC<DriversViewProps> = ({
             <table className="w-full text-xs text-left min-w-[700px]">
             <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
               <tr>
-                <th className="py-3 px-4">Chauffeur</th>
-                <th className="py-3 px-4">Téléphone</th>
-                <th className="py-3 px-4">N° Permis</th>
-                <th className="py-3 px-4">Catégories</th>
-                <th className="py-3 px-4">Validité Médicale</th>
-                <th className="py-3 px-4 text-center">Statut</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-3 px-4">{lang === 'en' ? 'Driver' : 'Chauffeur'}</th>
+                <th className="py-3 px-4">{lang === 'en' ? 'Phone' : 'Téléphone'}</th>
+                <th className="py-3 px-4">{lang === 'en' ? 'License #' : 'N° Permis'}</th>
+                <th className="py-3 px-4">{lang === 'en' ? 'Categories' : 'Catégories'}</th>
+                <th className="py-3 px-4">{lang === 'en' ? 'Medical Validity' : 'Validité Médicale'}</th>
+                <th className="py-3 px-4 text-center">{t.status}</th>
+                <th className="py-3 px-4 text-right">{t.actions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1401,7 +1410,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                     {hasEffectivePermission(currentUser, 'drivers', 'update') && (
                       <button
                         onClick={() => handleOpenEdit(drv)}
-                        title="Modifier"
+                        title={t.edit}
                         className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 inline-flex"
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -1410,7 +1419,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                     {hasEffectivePermission(currentUser, 'drivers', 'delete') && (
                       <button
                         onClick={() => setDeleteConfirmDriver(drv)}
-                        title="Supprimer"
+                        title={t.delete}
                         className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 inline-flex"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1430,7 +1439,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-base font-bold text-slate-900">Enregistrer un Chauffeur</h3>
+              <h3 className="text-base font-bold text-slate-900">{t.driversPage.newDriverModalTitle}</h3>
               <button onClick={() => setIsNewDriverModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
@@ -1438,19 +1447,19 @@ export const DriversView: React.FC<DriversViewProps> = ({
 
             <form onSubmit={handleCreateDriver} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Nom complet *</label>
+                <label className="block text-slate-600 font-bold mb-1">{t.driversPage.fullNameLabel}</label>
                 <input
                   type="text"
                   required
                   value={driverForm.fullName}
                   onChange={(e) => setDriverForm({ ...driverForm, fullName: e.target.value })}
-                  placeholder="Ex: Paul Mbarga"
+                  placeholder={lang === 'en' ? 'e.g. Paul Mbarga' : 'Ex: Paul Mbarga'}
                   className="w-full px-3 py-2 border rounded-lg outline-hidden"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Téléphone mobile *</label>
+                <label className="block text-slate-600 font-bold mb-1">{t.driversPage.phoneLabel}</label>
                 <input
                   type="text"
                   required
@@ -1461,7 +1470,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Numéro de Permis *</label>
+                <label className="block text-slate-600 font-bold mb-1">{t.driversPage.licenseNumberLabel}</label>
                 <input
                   type="text"
                   required
@@ -1472,7 +1481,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Catégories de Permis</label>
+                <label className="block text-slate-600 font-bold mb-1">{t.driversPage.licenseCategoriesLabel}</label>
                 <div className="flex gap-2">
                   {['A', 'B', 'C', 'D', 'E'].map((cat) => {
                     const isChecked = (driverForm.licenseCategories || []).includes(cat);
@@ -1500,7 +1509,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Expiration Permis</label>
+                  <label className="block text-slate-600 font-bold mb-1">{t.driversPage.licenseExpiryLabel}</label>
                   <input
                     type="date"
                     value={driverForm.licenseExpiryDate}
@@ -1509,7 +1518,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Visite Médicale</label>
+                  <label className="block text-slate-600 font-bold mb-1">{lang === 'en' ? 'Medical Checkup Expiry' : 'Visite Médicale'}</label>
                   <input
                     type="date"
                     value={driverForm.medicalExamExpiryDate}
@@ -1525,13 +1534,13 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   onClick={() => setIsNewDriverModalOpen(false)}
                   className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer font-semibold"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-blue-900 text-white font-bold hover:bg-blue-800 cursor-pointer"
                 >
-                  Créer Chauffeur
+                  {lang === 'en' ? 'Create Driver' : 'Créer Chauffeur'}
                 </button>
               </div>
             </form>

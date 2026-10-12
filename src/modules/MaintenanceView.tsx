@@ -79,6 +79,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
   contextEntityId,
 }) => {
   const currentUser = dbStore.getCurrentUser();
+  const t = translations[lang];
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
@@ -174,31 +175,31 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
   const kpis = [
     {
       id: 'kpi-total',
-      label: 'Dossiers Atelier',
+      label: lang === 'en' ? 'Workshop Files' : 'Dossiers Atelier',
       value: totalInterventions,
-      sublabel: `${state.maintenance.filter((m) => m.status === 'COMPLETED').length} clôturés`,
+      sublabel: `${state.maintenance.filter((m) => m.status === 'COMPLETED').length} ${lang === 'en' ? 'completed' : 'clôturés'}`,
       icon: Wrench,
       colorVariant: 'blue' as const,
     },
     {
       id: 'kpi-active',
-      label: 'En Atelier Actif',
+      label: t.maintenancePage.activeRepairs,
       value: inProgressCount,
-      sublabel: 'Immobilisation active',
+      sublabel: lang === 'en' ? 'Active immobilization' : 'Immobilisation active',
       icon: Clock,
       colorVariant: inProgressCount > 0 ? ('amber' as const) : ('slate' as const),
     },
     {
       id: 'kpi-scheduled',
-      label: 'Programmés',
+      label: t.maintenancePage.scheduledTab,
       value: scheduledCount,
-      sublabel: 'Prochains RDV CFAO/Garage',
+      sublabel: lang === 'en' ? 'Upcoming garage bookings' : 'Prochains RDV CFAO/Garage',
       icon: Calendar,
       colorVariant: 'purple' as const,
     },
     {
       id: 'kpi-cost',
-      label: 'Budget Cumulé',
+      label: t.maintenancePage.totalMaintenanceCost,
       value: formatXAF(totalCost),
       sublabel: 'Pièces & Main-d’œuvre XAF',
       icon: Boxes,
@@ -451,14 +452,18 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
 
     return (
       <EntityShowroomLayout
-        backLabel="Retour aux interventions atelier"
+        backLabel={t.maintenancePage.backToMaintenance}
         onBack={() => setSelectedRecord(null)}
-        title={`Ordre de Réparation ${selectedRecord.recordNumber}`}
-        subtitle={`${selectedRecord.vehicleName} • Prestataire : ${selectedRecord.garageName}`}
+        title={`${lang === 'en' ? 'Repair Order' : 'Ordre de Réparation'} ${selectedRecord.recordNumber}`}
+        subtitle={`${selectedRecord.vehicleName} • ${lang === 'en' ? 'Garage' : 'Prestataire'} : ${selectedRecord.garageName}`}
         referenceId={selectedRecord.recordNumber}
         status={selectedRecord.status}
         statusLabel={
-          isCompleted ? 'Clôturée & Conforme' : selectedRecord.status === 'IN_PROGRESS' ? 'En Atelier' : 'Programmée'
+          isCompleted
+            ? (lang === 'en' ? 'Closed & Verified' : 'Clôturée & Conforme')
+            : selectedRecord.status === 'IN_PROGRESS'
+            ? (lang === 'en' ? 'In Workshop' : 'En Atelier')
+            : (lang === 'en' ? 'Scheduled' : 'Programmée')
         }
         avatarIcon={Wrench}
         actions={
@@ -470,7 +475,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Clôturer Travaux</span>
+                <span>{t.maintenancePage.completeOrderBtn}</span>
               </button>
             )}
             <button
@@ -479,7 +484,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
               className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>Rattacher Facture / Devis</span>
+              <span>{lang === 'en' ? 'Attach Invoice / Estimate' : 'Rattacher Facture / Devis'}</span>
             </button>
             {linkedVeh && (
               <button
@@ -488,7 +493,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Imprimer Bilan Santé</span>
+                <span className="hidden sm:inline">{lang === 'en' ? 'Print Health Report' : 'Imprimer Bilan Santé'}</span>
               </button>
             )}
             {onNavigate && linkedVeh && (
@@ -501,53 +506,53 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <Car className="w-3.5 h-3.5" />
-                <span>Fiche Véhicule</span>
+                <span>{lang === 'en' ? 'Vehicle File' : 'Fiche Véhicule'}</span>
               </button>
             )}
           </div>
         }
         kpis={[
           {
-            label: 'Coût Total Intervention',
+            label: lang === 'en' ? 'Total Repair Cost' : 'Coût Total Intervention',
             value: formatXAF(selectedRecord.totalCostXAF),
             icon: DollarSign,
-            sublabel: `Main d'œuvre : ${formatXAF(selectedRecord.laborCostXAF)}`,
+            sublabel: `${lang === 'en' ? 'Labor' : "Main d'œuvre"} : ${formatXAF(selectedRecord.laborCostXAF)}`,
           },
           {
-            label: 'Kilométrage Compteur',
+            label: lang === 'en' ? 'Odometer Reading' : 'Kilométrage Compteur',
             value: `${selectedRecord.mileageAtService.toLocaleString()} km`,
             icon: Gauge,
-            sublabel: `Date d'entrée : ${selectedRecord.startDate}`,
+            sublabel: `${lang === 'en' ? 'Start Date' : "Date d'entrée"} : ${selectedRecord.startDate}`,
           },
           {
-            label: 'Pièces de Stock Déduites',
-            value: `${(selectedRecord.partsUsed || []).length} références`,
+            label: lang === 'en' ? 'Stock Parts Used' : 'Pièces de Stock Déduites',
+            value: `${(selectedRecord.partsUsed || []).length} ${lang === 'en' ? 'items' : 'références'}`,
             icon: Boxes,
-            sublabel: `${formatXAF((selectedRecord.partsUsed || []).reduce((s, p) => s + p.totalXAF, 0))} de fournitures`,
+            sublabel: `${formatXAF((selectedRecord.partsUsed || []).reduce((s, p) => s + p.totalXAF, 0))} ${lang === 'en' ? 'of supplies' : 'de fournitures'}`,
           },
           {
-            label: 'Score Santé Véhicule',
+            label: lang === 'en' ? 'Vehicle Health Score' : 'Score Santé Véhicule',
             value: vHealth ? `${vHealth.healthScore}%` : 'N/A',
             icon: Activity,
-            sublabel: vHealth?.recommendation || 'Bilan de santé certifié',
+            sublabel: vHealth?.recommendation || (lang === 'en' ? 'Certified health check' : 'Bilan de santé certifié'),
           },
         ]}
         tabs={[
-          { id: 'OVERVIEW', label: 'Diagnostic & Travaux', icon: FileText },
+          { id: 'OVERVIEW', label: t.maintenancePage.tabOverview, icon: FileText },
           {
             id: 'PARTS',
-            label: 'Pièces & Fournitures Consommées',
+            label: t.maintenancePage.tabParts,
             icon: Boxes,
             badge: (selectedRecord.partsUsed || []).length,
           },
-          { id: 'VEHICLE', label: 'Véhicule & Bilan Santé', icon: Car },
+          { id: 'VEHICLE', label: lang === 'en' ? 'Vehicle & Health' : 'Véhicule & Bilan Santé', icon: Car },
           {
             id: 'DOCS',
-            label: 'Factures & Justificatifs Réparation',
+            label: t.maintenancePage.tabDocs,
             icon: FileText,
             badge: mntDocs.length + 1,
           },
-          { id: 'TIMELINE', label: 'Historique & Suivi d\'Atelier', icon: Clock },
+          { id: 'TIMELINE', label: t.maintenancePage.tabHistory, icon: Clock },
         ]}
         activeTab={detailTab}
         onTabChange={(t) => setDetailTab(t as any)}
@@ -1003,10 +1008,10 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
         <div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <Wrench className="w-6 h-6 text-emerald-600" />
-            <span>Garage &amp; Maintenance Atelier</span>
+            <span>{t.maintenancePage.title}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Suivi des révisions, interventions mécaniques, pièces détachées et bilans de santé 360° à Douala
+            {t.maintenancePage.subtitle}
           </p>
         </div>
 
@@ -1015,10 +1020,10 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
             <button
               onClick={() => handlePrintHealthSheet(currentSelectedVehicle)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
-              title="Imprimer le bilan de santé du véhicule sélectionné"
+              title={lang === 'en' ? 'Print health sheet for selected vehicle' : 'Imprimer le bilan de santé du véhicule sélectionné'}
             >
               <Printer className="w-4 h-4" />
-              <span>Imprimer Bilan Véhicule</span>
+              <span>{lang === 'en' ? 'Print Vehicle Sheet' : 'Imprimer Bilan Véhicule'}</span>
             </button>
           )}
 
@@ -1028,7 +1033,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Nouvel Ordre de Réparation</span>
+              <span>{t.maintenancePage.newOrderBtn}</span>
             </button>
           )}
         </div>
@@ -1142,16 +1147,16 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
       <EntitySearchFilters
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Rechercher par dossier (MNT-...), immatriculation, garage, travaux..."
+        searchPlaceholder={t.maintenancePage.searchPlaceholder}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         tabs={[
-          { id: 'ALL', label: 'Toutes les interventions', count: state.maintenance.length },
-          { id: 'IN_PROGRESS', label: 'En Atelier', count: inProgressCount },
-          { id: 'SCHEDULED', label: 'Programmés', count: scheduledCount },
+          { id: 'ALL', label: t.maintenancePage.allTab, count: state.maintenance.length },
+          { id: 'IN_PROGRESS', label: t.maintenancePage.inProgressTab, count: inProgressCount },
+          { id: 'SCHEDULED', label: t.maintenancePage.scheduledTab, count: scheduledCount },
           {
             id: 'COMPLETED',
-            label: 'Clôturés',
+            label: t.maintenancePage.completedTab,
             count: state.maintenance.filter((m) => m.status === 'COMPLETED').length,
           },
         ]}
@@ -1159,14 +1164,14 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
         onTabChange={setStatusFilter}
         filters={[
           {
-            label: 'Type',
+            label: lang === 'en' ? 'Type' : 'Type',
             value: typeFilter,
             onChange: setTypeFilter,
             options: [
-              { label: 'Tous types', value: 'ALL' },
-              { label: 'Préventif', value: 'PREVENTIVE' },
-              { label: 'Curatif', value: 'CURATIVE' },
-              { label: 'Urgent', value: 'EMERGENCY' },
+              { label: lang === 'en' ? 'All Types' : 'Tous types', value: 'ALL' },
+              { label: lang === 'en' ? 'Preventive' : 'Préventif', value: 'PREVENTIVE' },
+              { label: lang === 'en' ? 'Curative' : 'Curatif', value: 'CURATIVE' },
+              { label: lang === 'en' ? 'Urgent' : 'Urgent', value: 'EMERGENCY' },
             ],
           },
         ]}
@@ -1175,12 +1180,12 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
       {/* Content: Cards or Table */}
       {filteredRecords.length === 0 ? (
         <EmptyState
-          title="Aucun dossier d'intervention trouvé"
-          description="Aucune intervention ne correspond à vos critères de recherche ou de filtre."
+          title={t.maintenancePage.emptyMaintenanceTitle}
+          description={t.maintenancePage.emptyMaintenanceDesc}
           icon={Wrench}
           action={
             hasEffectivePermission(currentUser, 'maintenance', 'create')
-              ? { label: 'Créer un ordre de réparation', onClick: () => handleOpenNewOrder() }
+              ? { label: t.maintenancePage.newOrderBtn, onClick: () => handleOpenNewOrder() }
               : undefined
           }
         />
@@ -1376,7 +1381,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-emerald-600" />
-                <span>Créer un Ordre de Réparation Atelier</span>
+                <span>{t.maintenancePage.newOrderModalTitle}</span>
               </h3>
               <button
                 onClick={() => setIsNewOrderModalOpen(false)}
@@ -1396,7 +1401,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
             <form onSubmit={handleCreateOrder} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Véhicule à immobiliser *</label>
+                  <label className="block text-slate-600 font-bold mb-1">{t.maintenancePage.vehicleLabel}</label>
                   <select
                     value={mntForm.vehicleId}
                     onChange={(e) => {
@@ -1418,22 +1423,22 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Type d’intervention *</label>
+                  <label className="block text-slate-600 font-bold mb-1">{t.maintenancePage.natureLabel} *</label>
                   <select
                     value={mntForm.type}
                     onChange={(e) => setMntForm({ ...mntForm, type: e.target.value as any })}
                     className="w-full p-2 rounded-lg border border-slate-200 bg-white font-bold"
                   >
-                    <option value="PREVENTIVE">Préventive (Vidange, Révision)</option>
-                    <option value="CURATIVE">Curative (Panne, Réparation)</option>
-                    <option value="EMERGENCY">Urgence Atelier</option>
+                    <option value="PREVENTIVE">{lang === 'en' ? 'Preventive (Oil change, Servicing)' : 'Préventive (Vidange, Révision)'}</option>
+                    <option value="CURATIVE">{lang === 'en' ? 'Curative (Breakdown, Repair)' : 'Curative (Panne, Réparation)'}</option>
+                    <option value="EMERGENCY">{lang === 'en' ? 'Workshop Emergency' : 'Urgence Atelier'}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Garage / Prestataire *</label>
+                  <label className="block text-slate-600 font-bold mb-1">{t.maintenancePage.garageLabel}</label>
                   <input
                     type="text"
                     value={mntForm.garageName}
@@ -1444,7 +1449,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Kilométrage actuel *</label>
+                  <label className="block text-slate-600 font-bold mb-1">{t.maintenancePage.mileageAtServiceLabel}</label>
                   <input
                     type="number"
                     value={mntForm.mileageAtService}
@@ -1455,7 +1460,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Date d'entrée *</label>
+                  <label className="block text-slate-600 font-bold mb-1">{lang === 'en' ? 'Start Date *' : "Date d'entrée *"}</label>
                   <input
                     type="date"
                     value={mntForm.startDate}
@@ -1467,7 +1472,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Diagnostic &amp; Description des travaux *</label>
+                <label className="block text-slate-600 font-bold mb-1">{t.maintenancePage.diagnosticLabel}</label>
                 <textarea
                   value={mntForm.description}
                   onChange={(e) => setMntForm({ ...mntForm, description: e.target.value })}
@@ -1479,7 +1484,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
 
               {/* Stock Integration */}
               <div className="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-2">
-                <span className="font-bold text-slate-900 block">Pièces consommées issues du Stock FCT</span>
+                <span className="font-bold text-slate-900 block">{lang === 'en' ? 'FCT Stock Consumables Used' : 'Pièces consommées issues du Stock FCT'}</span>
                 <div className="flex flex-wrap items-center gap-2">
                   <select
                     value={selectedStockId}
@@ -1488,7 +1493,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                   >
                     {state.stock.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name} ({s.code}) - Stock: {s.quantityInStock} {s.unit} ({formatXAF(s.unitCostXAF)})
+                        {s.name} ({s.code}) - {lang === 'en' ? 'Stock:' : 'Stock:'} {s.quantityInStock} {s.unit} ({formatXAF(s.unitCostXAF)})
                       </option>
                     ))}
                   </select>
@@ -1506,7 +1511,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                     onClick={handleAddPartFromStock}
                     className="px-3 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold cursor-pointer"
                   >
-                    Ajouter Pièce
+                    {lang === 'en' ? 'Add Part' : 'Ajouter Pièce'}
                   </button>
                 </div>
 
@@ -1515,7 +1520,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                     {partsList.map((p, idx) => (
                       <div key={idx} className="flex items-center justify-between p-2 rounded bg-white border border-slate-200">
                         <span className="font-medium text-slate-800">
-                          {p.name} — Qte: {p.quantity} @ {formatXAF(p.unitPriceXAF)}
+                          {p.name} — {lang === 'en' ? 'Qty:' : 'Qte:'} {p.quantity} @ {formatXAF(p.unitPriceXAF)}
                         </span>
                         <div className="flex items-center gap-2">
                           <span className="font-black text-slate-900">{formatXAF(p.totalXAF)}</span>
@@ -1534,7 +1539,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Main d’œuvre / Forfait Atelier (XAF)</label>
+                <label className="block text-slate-600 font-bold mb-1">{lang === 'en' ? 'Labor / Workshop Fee (XAF)' : "Main d’œuvre / Forfait Atelier (XAF)"}</label>
                 <input
                   type="number"
                   value={mntForm.laborCostXAF}
@@ -1544,7 +1549,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
               </div>
 
               <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-between text-xs">
-                <span className="font-bold text-blue-900">Total Prévisionnel Dossier :</span>
+                <span className="font-bold text-blue-900">{lang === 'en' ? 'Estimated Total Order Cost:' : 'Total Prévisionnel Dossier :'}</span>
                 <span className="font-black text-sm text-blue-950">{formatXAF(calculatedGrandTotal)}</span>
               </div>
 
@@ -1554,13 +1559,13 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                   onClick={() => setIsNewOrderModalOpen(false)}
                   className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Valider &amp; Immobiliser le véhicule
+                  {lang === 'en' ? 'Submit & Immobilize Vehicle' : 'Valider & Immobiliser le véhicule'}
                 </button>
               </div>
             </form>
@@ -1574,16 +1579,17 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Clôturer l'Intervention {completeTarget.recordNumber}</span>
+              <span>{t.maintenancePage.completeModalTitle} - {completeTarget.recordNumber}</span>
             </h3>
 
             <p className="text-xs text-slate-600">
-              La clôture validera la déduction atomique des pièces de rechange du stock FCT et rétablira le véhicule{' '}
-              <strong className="text-slate-900">{completeTarget.licensePlate}</strong> en état disponible (AVAILABLE).
+              {lang === 'en'
+                ? `Completing this order will deduct parts from stock and restore vehicle ${completeTarget.licensePlate} to AVAILABLE status.`
+                : `La clôture validera la déduction atomique des pièces de rechange du stock FCT et rétablira le véhicule ${completeTarget.licensePlate} en état disponible (AVAILABLE).`}
             </p>
 
             <div>
-              <label className="block text-slate-700 font-bold mb-1 text-xs">Notes finales de fin de travaux</label>
+              <label className="block text-slate-700 font-bold mb-1 text-xs">{t.maintenancePage.resolutionNotesLabel}</label>
               <textarea
                 value={completeNotes}
                 onChange={(e) => setCompleteNotes(e.target.value)}
@@ -1597,13 +1603,13 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                 onClick={() => setIsCompleteModalOpen(false)}
                 className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs cursor-pointer"
               >
-                Annuler
+                {t.cancel}
               </button>
               <button
                 onClick={handleConfirmComplete}
                 className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-xs"
               >
-                Confirmer la Clôture
+                {lang === 'en' ? 'Confirm Closure' : 'Confirmer la Clôture'}
               </button>
             </div>
           </div>

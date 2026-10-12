@@ -228,10 +228,10 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <Car className="w-6 h-6 text-emerald-600" />
-            <span>Parc Automobile &amp; Véhicules ({state.vehicles.length})</span>
+            <span>{t.vehiclesPage.title} ({state.vehicles.length})</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Inventaire de la flotte FCT, disponibilité, fiches techniques et coûts d'acquisition
+            {t.vehiclesPage.subtitle}
           </p>
         </div>
 
@@ -241,7 +241,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>{lang === 'fr' ? 'Ajouter un Véhicule' : 'Add a Vehicle'}</span>
+            <span>{t.vehiclesPage.addVehicleBtn}</span>
           </button>
         )}
       </div>
@@ -273,7 +273,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder={lang === 'fr' ? 'Rechercher par marque, modèle, plaque LT-xxxx, VIN...' : 'Search by brand, model, plate LT-xxxx, VIN...'}
+            placeholder={t.vehiclesPage.searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-emerald-500"
@@ -288,7 +288,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 font-medium focus:outline-none cursor-pointer"
           >
-            <option value="ALL">{lang === 'fr' ? 'Toutes Catégories' : 'All Categories'}</option>
+            <option value="ALL">{t.vehiclesPage.allCategories}</option>
             <option value="SUV">SUV</option>
             <option value="4X4">4X4 Tout-Terrain</option>
             <option value="BERLINE">Berline</option>
@@ -304,7 +304,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 font-medium focus:outline-none cursor-pointer"
         >
-          <option value="ALL">{lang === 'fr' ? 'Tous les statuts' : 'All statuses'}</option>
+          <option value="ALL">{t.vehiclesPage.allStatuses}</option>
           <option value="AVAILABLE">{t.vehicleStatus.AVAILABLE}</option>
           <option value="RENTED">{t.vehicleStatus.RENTED}</option>
           <option value="MAINTENANCE">{t.vehicleStatus.MAINTENANCE}</option>
@@ -314,13 +314,20 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
       </div>
 
       {/* Vehicles Grid Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filteredVehicles.map((vehicle) => (
-          <div
-            key={vehicle.id}
-            onClick={() => onOpenShowroom(vehicle)}
-            className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg hover:border-emerald-500/50 transition cursor-pointer flex flex-col justify-between group"
-          >
+      {filteredVehicles.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
+          <Car className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+          <h3 className="font-bold text-slate-800 text-sm">{t.vehiclesPage.emptyVehiclesTitle}</h3>
+          <p className="text-xs text-slate-500 mt-1">{t.vehiclesPage.emptyVehiclesDesc}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredVehicles.map((vehicle) => (
+            <div
+              key={vehicle.id}
+              onClick={() => onOpenShowroom(vehicle)}
+              className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg hover:border-emerald-500/50 transition cursor-pointer flex flex-col justify-between group"
+            >
             {/* Vehicle Image & Badges */}
             <div className="relative h-44 bg-slate-900 overflow-hidden flex items-center justify-center">
               {vehicle.photoUrls && vehicle.photoUrls[0] ? (
@@ -376,7 +383,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                         e.stopPropagation();
                         handleOpenEdit(vehicle);
                       }}
-                      title="Modifier ce véhicule"
+                      title={t.vehiclesPage.editVehicle}
                       className="p-1 rounded bg-white/90 hover:bg-white text-slate-700 hover:text-blue-700 shadow-sm transition cursor-pointer"
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -389,7 +396,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                         e.stopPropagation();
                         setDeleteConfirmVehicle(vehicle);
                       }}
-                      title="Supprimer ce véhicule"
+                      title={t.vehiclesPage.deleteVehicle}
                       className="p-1 rounded bg-white/90 hover:bg-rose-50 text-slate-500 hover:text-rose-600 shadow-sm transition cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -460,13 +467,14 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   className="w-full py-2 px-3 rounded-lg bg-[#0f2a4a] hover:bg-[#163b65] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer"
                 >
                   <Share2 className="w-3.5 h-3.5 text-blue-300" />
-                  <span>{lang === 'fr' ? 'Fiche Showroom & Partage' : 'Showroom & Share'}</span>
+                  <span>{t.vehiclesPage.showroomShareBtn}</span>
                 </button>
               </div>
             </div>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Add Vehicle Modal with Zod Validation */}
       {isAddModalOpen && (
@@ -475,7 +483,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Car className="w-5 h-5 text-emerald-600" />
-                <span>Enregistrer un Nouveau Véhicule dans la Flotte</span>
+                <span>{t.vehiclesPage.newVehicleModalTitle}</span>
               </h3>
               <button
                 onClick={() => setIsAddModalOpen(false)}
@@ -495,7 +503,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
             <form onSubmit={handleCreateVehicle} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Marque *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.brandLabel}</label>
                   <input
                     type="text"
                     required
@@ -506,7 +514,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Modèle *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.modelLabel}</label>
                   <input
                     type="text"
                     required
@@ -520,7 +528,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Immatriculation *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.licensePlateLabel}</label>
                   <input
                     type="text"
                     required
@@ -531,7 +539,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Numéro VIN *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.vinLabel}</label>
                   <input
                     type="text"
                     required
@@ -542,7 +550,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Année *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.yearLabel}</label>
                   <input
                     type="number"
                     value={newVehicle.year}
@@ -554,7 +562,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Catégorie</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.categoryLabel}</label>
                   <select
                     value={newVehicle.category}
                     onChange={(e) => setNewVehicle({ ...newVehicle, category: e.target.value as any })}
@@ -569,7 +577,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Transmission</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.transmissionLabel}</label>
                   <select
                     value={newVehicle.transmission}
                     onChange={(e) => setNewVehicle({ ...newVehicle, transmission: e.target.value as any })}
@@ -580,7 +588,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Carburant</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.fuelLabel}</label>
                   <select
                     value={newVehicle.fuel}
                     onChange={(e) => setNewVehicle({ ...newVehicle, fuel: e.target.value as any })}
@@ -595,7 +603,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Tarif Loc. / Jour (XAF) *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.dailyRateLabel}</label>
                   <input
                     type="number"
                     required
@@ -605,7 +613,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Caution (XAF) *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.depositRateLabel}</label>
                   <input
                     type="number"
                     required
@@ -615,7 +623,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Prix Vente (XAF)</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.salePriceLabel}</label>
                   <input
                     type="number"
                     value={newVehicle.salePrice}
@@ -628,7 +636,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
               {/* Photo Upload & Gallery */}
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                  <span>Photos du Véhicule (Cloudinary)</span>
+                  <span>{t.vehiclesPage.photoDropzoneLabel}</span>
                   <span className="text-[10px] text-slate-500 font-normal">
                     {newVehicle.photoUrls.length} photo(s)
                   </span>
@@ -651,7 +659,8 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                 )}
                 <CloudinaryUploadDropzone
                   folder="fct_automobile/vehicles"
-                  label="Ajouter une photo (Cloudinary)"
+                  label={t.vehiclesPage.photoDropzoneLabel}
+                  helperText={t.vehiclesPage.photoDropzoneHelper}
                   accept="image/*"
                   onUploadSuccess={(url) => {
                     setNewVehicle((prev) => ({ ...prev, photoUrls: [...prev.photoUrls, url] }));
@@ -665,13 +674,13 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   onClick={() => setIsAddModalOpen(false)}
                   className="px-4 py-2 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold cursor-pointer"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow"
                 >
-                  Enregistrer le véhicule
+                  {t.vehiclesPage.saveVehicleBtn}
                 </button>
               </div>
             </form>
@@ -686,7 +695,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-blue-600" />
-                <span>Modifier les Données du Véhicule {editingVehicle.licensePlate}</span>
+                <span>{t.vehiclesPage.editVehicleModalTitle} {editingVehicle.licensePlate}</span>
               </h3>
               <button
                 onClick={() => setIsEditModalOpen(false)}
@@ -706,7 +715,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
             <form onSubmit={handleSaveEditVehicle} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Marque *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.brandLabel}</label>
                   <input
                     type="text"
                     required
@@ -716,7 +725,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Modèle *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.modelLabel}</label>
                   <input
                     type="text"
                     required
@@ -729,7 +738,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Immatriculation *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.licensePlateLabel}</label>
                   <input
                     type="text"
                     required
@@ -739,7 +748,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Année</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.yearLabel}</label>
                   <input
                     type="number"
                     value={editingVehicle.year}
@@ -748,24 +757,24 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Statut Flotte</label>
+                  <label className="font-bold text-slate-700 block mb-1">{lang === 'en' ? 'Fleet Status' : 'Statut Flotte'}</label>
                   <select
                     value={editingVehicle.status}
                     onChange={(e) => setEditingVehicle({ ...editingVehicle, status: e.target.value as any })}
                     className="w-full p-2 rounded border border-slate-300 font-semibold"
                   >
-                    <option value="AVAILABLE">Disponible</option>
-                    <option value="RENTED">En Location</option>
-                    <option value="MAINTENANCE">En Maintenance</option>
-                    <option value="RESERVED">Réservé</option>
-                    <option value="SOLD">Vendu</option>
+                    <option value="AVAILABLE">{t.vehicleStatus.AVAILABLE}</option>
+                    <option value="RENTED">{t.vehicleStatus.RENTED}</option>
+                    <option value="MAINTENANCE">{t.vehicleStatus.MAINTENANCE}</option>
+                    <option value="RESERVED">{t.vehicleStatus.RESERVED}</option>
+                    <option value="SOLD">{t.vehicleStatus.SOLD}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Catégorie</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.categoryLabel}</label>
                   <select
                     value={editingVehicle.category}
                     onChange={(e) => setEditingVehicle({ ...editingVehicle, category: e.target.value as any })}
@@ -780,7 +789,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Transmission</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.transmissionLabel}</label>
                   <select
                     value={editingVehicle.transmission}
                     onChange={(e) => setEditingVehicle({ ...editingVehicle, transmission: e.target.value as any })}
@@ -791,7 +800,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Carburant</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.fuelLabel}</label>
                   <select
                     value={editingVehicle.fuel}
                     onChange={(e) => setEditingVehicle({ ...editingVehicle, fuel: e.target.value as any })}
@@ -806,7 +815,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Kilométrage (km)</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.mileageLabel}</label>
                   <input
                     type="number"
                     value={editingVehicle.mileage}
@@ -815,7 +824,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Tarif Loc. / Jour (XAF)</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.dailyRateLabel}</label>
                   <input
                     type="number"
                     value={editingVehicle.rentalDailyRate}
@@ -824,7 +833,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Caution (XAF)</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.depositRateLabel}</label>
                   <input
                     type="number"
                     value={editingVehicle.securityDepositRate}
@@ -836,7 +845,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Localisation Actuelle</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.locationLabel}</label>
                   <input
                     type="text"
                     value={editingVehicle.currentLocation}
@@ -845,7 +854,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Couleur</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.vehiclesPage.colorLabel}</label>
                   <input
                     type="text"
                     value={editingVehicle.color}
@@ -858,7 +867,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
               {/* Photo Upload & Gallery for Edit */}
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                  <span>Galerie Photos du Véhicule (Cloudinary)</span>
+                  <span>{t.vehiclesPage.photoDropzoneLabel}</span>
                   <span className="text-[10px] text-slate-500 font-normal">
                     {(editingVehicle.photoUrls || []).length} photo(s)
                   </span>
@@ -884,7 +893,8 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                 )}
                 <CloudinaryUploadDropzone
                   folder="fct_automobile/vehicles"
-                  label="Ajouter une photo (Cloudinary)"
+                  label={t.vehiclesPage.photoDropzoneLabel}
+                  helperText={t.vehiclesPage.photoDropzoneHelper}
                   accept="image/*"
                   onUploadSuccess={(url) => {
                     setEditingVehicle((prev) => prev ? {
@@ -901,13 +911,13 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   onClick={() => setIsEditModalOpen(false)}
                   className="px-4 py-2 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold cursor-pointer"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded bg-blue-900 hover:bg-blue-800 text-white font-bold cursor-pointer shadow"
                 >
-                  Enregistrer les modifications
+                  {t.vehiclesPage.saveChangesBtn}
                 </button>
               </div>
             </form>

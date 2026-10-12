@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { dbStore, DatabaseState } from '../services/dbStore.ts';
-import { Language } from '../services/i18n.ts';
+import { Language, translations } from '../services/i18n.ts';
 import { formatXAF, hasEffectivePermission } from '../../packages/business-rules/index.ts';
 import { StockItem, StockMovement, AppModule } from '../../packages/shared-types/index.ts';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal.tsx';
@@ -68,6 +68,7 @@ export const StockView: React.FC<StockViewProps> = ({
   contextEntityId,
 }) => {
   const currentUser = dbStore.getCurrentUser();
+  const t = translations[lang];
   const [activeTab, setActiveTab] = useState<'ITEMS' | 'MOVEMENTS'>('ITEMS');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
@@ -137,7 +138,7 @@ export const StockView: React.FC<StockViewProps> = ({
   const kpis = [
     {
       id: 'kpi-val',
-      label: 'Valeur Totale Stock',
+      label: t.stockPage.stockValue,
       value: formatXAF(totalStockValue),
       sublabel: 'Inventaire valorisé XAF',
       icon: DollarSign,
@@ -145,15 +146,15 @@ export const StockView: React.FC<StockViewProps> = ({
     },
     {
       id: 'kpi-items',
-      label: 'Références Actives',
-      value: `${totalItemsCount} articles`,
+      label: t.stockPage.totalParts,
+      value: `${totalItemsCount} ${lang === 'en' ? 'items' : 'articles'}`,
       sublabel: 'Catalogue pièces FCT',
       icon: PackageCheck,
       colorVariant: 'blue' as const,
     },
     {
       id: 'kpi-alerts',
-      label: 'Alertes Réappro.',
+      label: t.stockPage.lowStockCount,
       value: lowStockCount,
       sublabel: 'Sous le seuil de sécurité',
       icon: AlertTriangle,
@@ -161,7 +162,7 @@ export const StockView: React.FC<StockViewProps> = ({
     },
     {
       id: 'kpi-moves',
-      label: 'Mouvements Traçés',
+      label: t.stockPage.recentMovements,
       value: totalMovementsCount,
       sublabel: 'Entrées / Sorties atelier',
       icon: History,
@@ -314,13 +315,13 @@ export const StockView: React.FC<StockViewProps> = ({
 
     return (
       <EntityShowroomLayout
-        backLabel="Retour au Stock de Pièces"
+        backLabel={t.stockPage.backToStock}
         onBack={() => setSelectedItemDetail(null)}
         title={selectedItemDetail.name}
-        subtitle={`Catégorie : ${selectedItemDetail.category} • Fournisseur Référencé : ${selectedItemDetail.supplier}`}
+        subtitle={`${lang === 'en' ? 'Category:' : 'Catégorie :'} ${selectedItemDetail.category} • ${lang === 'en' ? 'Supplier:' : 'Fournisseur Référencé :'} ${selectedItemDetail.supplier}`}
         referenceId={selectedItemDetail.code}
         status={isOutOfStock ? 'OUT_OF_STOCK' : isCritical ? 'LOW_STOCK' : 'AVAILABLE'}
-        statusLabel={isOutOfStock ? 'Rupture' : isCritical ? 'Alerte Stock' : 'En Stock'}
+        statusLabel={isOutOfStock ? (lang === 'en' ? 'Out of Stock' : 'Rupture') : isCritical ? (lang === 'en' ? 'Low Stock' : 'Alerte Stock') : (lang === 'en' ? 'In Stock' : 'En Stock')}
         avatarIcon={Boxes}
         actions={
           <div className="flex items-center gap-2">
@@ -332,7 +333,7 @@ export const StockView: React.FC<StockViewProps> = ({
                   className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Rattacher Document</span>
+                  <span>{lang === 'en' ? 'Attach Document' : 'Rattacher Document'}</span>
                 </button>
                 <button
                   type="button"
@@ -343,7 +344,7 @@ export const StockView: React.FC<StockViewProps> = ({
                   className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                 >
                   <ArrowUpDown className="w-3.5 h-3.5" />
-                  <span>Ajuster Stock</span>
+                  <span>{lang === 'en' ? 'Adjust Stock' : 'Ajuster Stock'}</span>
                 </button>
                 <button
                   type="button"
@@ -351,7 +352,7 @@ export const StockView: React.FC<StockViewProps> = ({
                   className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                 >
                   <Pencil className="w-3.5 h-3.5" />
-                  <span>Modifier Fiche</span>
+                  <span>{lang === 'en' ? 'Edit Item' : 'Modifier Fiche'}</span>
                 </button>
               </>
             )}
@@ -362,47 +363,47 @@ export const StockView: React.FC<StockViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs shadow-2xs transition cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Supprimer</span>
+                <span className="hidden sm:inline">{t.delete}</span>
               </button>
             )}
           </div>
         }
         kpis={[
           {
-            label: 'Quantité Disponible',
+            label: lang === 'en' ? 'Available Quantity' : 'Quantité Disponible',
             value: `${selectedItemDetail.quantityInStock} ${selectedItemDetail.unit}`,
             icon: PackageCheck,
             highlight: isCritical,
-            sublabel: isOutOfStock ? 'Rupture immédiate' : isCritical ? 'Sous le seuil d\'alerte' : 'Stock nominal',
+            sublabel: isOutOfStock ? (lang === 'en' ? 'Out of stock' : 'Rupture immédiate') : isCritical ? (lang === 'en' ? 'Below alert threshold' : 'Sous le seuil d\'alerte') : (lang === 'en' ? 'Nominal stock' : 'Stock nominal'),
           },
           {
-            label: 'Seuil Sécurité Alerte',
+            label: t.stockPage.minThreshold,
             value: `${selectedItemDetail.minThresholdAlert} ${selectedItemDetail.unit}`,
             icon: AlertTriangle,
-            sublabel: 'Déclencheur réapprovisionnement',
+            sublabel: lang === 'en' ? 'Reorder trigger threshold' : 'Déclencheur réapprovisionnement',
           },
           {
-            label: 'Prix Achat Unitaire HT',
+            label: t.stockPage.unitPrice,
             value: formatXAF(selectedItemDetail.unitCostXAF),
             icon: DollarSign,
-            sublabel: 'Tarif fournisseur négocié',
+            sublabel: lang === 'en' ? 'Negotiated purchase rate' : 'Tarif fournisseur négocié',
           },
           {
-            label: 'Valeur Immobilisée',
+            label: lang === 'en' ? 'Tied Inventory Value' : 'Valeur Immobilisée',
             value: formatXAF(selectedItemDetail.quantityInStock * selectedItemDetail.unitCostXAF),
             icon: TrendingUp,
-            sublabel: `Emplacement : ${selectedItemDetail.locationBin}`,
+            sublabel: `${t.stockPage.location} : ${selectedItemDetail.locationBin}`,
           },
         ]}
         tabs={[
-          { id: 'SPECS', label: 'Fiche Technique & Tarifs', icon: Layers },
-          { id: 'DOCS', label: 'Documents & Fiches Produits', icon: FileText, badge: stockDocs.length + 1 },
-          { id: 'MOVEMENTS', label: 'Historique des Mouvements', icon: History, badge: moves.length },
-          { id: 'MAINTENANCE', label: 'Interventions Atelier Liées', icon: Wrench, badge: mnts.length },
-          { id: 'SUPPLIER', label: 'Fournisseur & Emplacement Magasin', icon: Building },
+          { id: 'SPECS', label: t.stockPage.tabSpecs, icon: Layers },
+          { id: 'DOCS', label: t.stockPage.tabDocs, icon: FileText, badge: stockDocs.length + 1 },
+          { id: 'MOVEMENTS', label: t.stockPage.tabMovements, icon: History, badge: moves.length },
+          { id: 'MAINTENANCE', label: t.stockPage.tabMaintenance, icon: Wrench, badge: mnts.length },
+          { id: 'SUPPLIER', label: t.stockPage.tabSupplier, icon: Building },
         ]}
         activeTab={itemDetailTab}
-        onTabChange={(t) => setItemDetailTab(t as any)}
+        onTabChange={(tab) => setItemDetailTab(tab as any)}
       >
         {/* TAB 1: SPECS */}
         {itemDetailTab === 'SPECS' && (
@@ -795,10 +796,10 @@ export const StockView: React.FC<StockViewProps> = ({
         <div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <Boxes className="w-6 h-6 text-emerald-600" />
-            <span>Stock de Pièces, Consommables &amp; Inventaire</span>
+            <span>{t.stockPage.title}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Lubrifiants, pneumatiques, filtres et traçabilité des consommations sur le parc automobile FCT (Douala)
+            {t.stockPage.subtitle}
           </p>
         </div>
 
@@ -809,7 +810,7 @@ export const StockView: React.FC<StockViewProps> = ({
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Nouvelle Référence</span>
+              <span>{t.stockPage.newItemBtn}</span>
             </button>
           )}
 
@@ -822,7 +823,7 @@ export const StockView: React.FC<StockViewProps> = ({
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold shadow-xs transition cursor-pointer"
             >
               <ArrowUpDown className="w-4 h-4" />
-              <span>Entrée / Sortie Stock</span>
+              <span>{t.stockPage.recordMovementBtn}</span>
             </button>
           )}
         </div>
@@ -854,31 +855,31 @@ export const StockView: React.FC<StockViewProps> = ({
       <EntitySearchFilters
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Rechercher par référence, désignation, fournisseur, emplacement..."
+        searchPlaceholder={t.stockPage.searchPlaceholder}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         tabs={[
-          { id: 'ITEMS', label: 'Inventaire des Pièces', count: state.stock.length },
-          { id: 'MOVEMENTS', label: 'Journal des Mouvements', count: state.stockMovements.length },
+          { id: 'ITEMS', label: t.stockPage.allTab, count: state.stock.length },
+          { id: 'MOVEMENTS', label: t.stockPage.movementsTab, count: state.stockMovements.length },
         ]}
         activeTab={activeTab}
-        onTabChange={(t) => setActiveTab(t as any)}
+        onTabChange={(tab) => setActiveTab(tab as any)}
         filters={
           activeTab === 'ITEMS'
             ? [
                 {
-                  label: 'Catégorie',
+                  label: lang === 'en' ? 'Category' : 'Catégorie',
                   value: categoryFilter,
                   onChange: setCategoryFilter,
                   options: [
-                    { label: 'Toutes', value: 'ALL' },
+                    { label: t.all, value: 'ALL' },
                     { label: 'Lubrifiants', value: 'LUBRIFIANT' },
                     { label: 'Freinage', value: 'FREINAGE' },
                     { label: 'Filtration', value: 'FILTRATION' },
                     { label: 'Suspension', value: 'SUSPENSION' },
                     { label: 'Pneumatique', value: 'PNEUMATIQUE' },
                     { label: 'Batterie', value: 'BATTERIE' },
-                    { label: 'Autre', value: 'AUTRE' },
+                    { label: lang === 'en' ? 'Other' : 'Autre', value: 'AUTRE' },
                   ],
                 },
               ]
@@ -893,12 +894,12 @@ export const StockView: React.FC<StockViewProps> = ({
         <>
           {filteredStock.length === 0 ? (
             <EmptyState
-              title="Aucune pièce trouvée"
-              description="Aucune référence ne correspond à votre recherche ou catégorie sélectionnée."
+              title={t.stockPage.emptyStockTitle}
+              description={t.stockPage.emptyStockDesc}
               icon={Boxes}
               action={
                 hasEffectivePermission(currentUser, 'stock', 'create')
-                  ? { label: 'Ajouter une pièce au stock', onClick: () => setIsAddModalOpen(true) }
+                  ? { label: t.stockPage.newItemBtn, onClick: () => setIsAddModalOpen(true) }
                   : undefined
               }
             />
