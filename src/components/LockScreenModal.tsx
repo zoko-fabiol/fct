@@ -18,11 +18,14 @@ import {
 } from 'lucide-react';
 import { FCT_LOGO_BASE64 } from '../utils/logoBase64.ts';
 
+import { Language, translations } from '../services/i18n.ts';
+
 interface LockScreenModalProps {
   isLocked: boolean;
   currentUser: UserProfile;
   onUnlock: () => void;
   onLogout: () => void;
+  lang?: Language;
 }
 
 export const LockScreenModal: React.FC<LockScreenModalProps> = ({
@@ -30,7 +33,9 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
   currentUser,
   onUnlock,
   onLogout,
+  lang = 'fr',
 }) => {
+  const t = translations[lang];
   const [enteredPin, setEnteredPin] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isShaking, setIsShaking] = useState(false);
@@ -41,17 +46,18 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
   useEffect(() => {
     const updateClock = () => {
       const now = new Date();
+      const locale = lang === 'fr' ? 'fr-FR' : 'en-US';
       setCurrentTime(
-        now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
       );
       setCurrentDate(
-        now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+        now.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
       );
     };
     updateClock();
     const interval = setInterval(updateClock, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [lang]);
 
   const hasPinConfigured = Boolean(currentUser.securityPin && currentUser.securityPin.length === 4);
 
@@ -80,13 +86,13 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
       onUnlock();
     } else {
       setIsShaking(true);
-      setErrorMsg('Code PIN incorrect. Veuillez réessayer.');
+      setErrorMsg(t.lockScreen.incorrectPin);
       setTimeout(() => {
         setIsShaking(false);
         setEnteredPin('');
       }, 700);
     }
-  }, [enteredPin, currentUser.securityPin, onUnlock]);
+  }, [enteredPin, currentUser.securityPin, onUnlock, t.lockScreen.incorrectPin]);
 
   // Écoute des touches du clavier physique
   useEffect(() => {
@@ -131,7 +137,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
             <div className="text-xs font-black tracking-wider text-emerald-400 uppercase">
               FCT Automobile Douala
             </div>
-            <div className="text-[10px] text-slate-400">Station Sécurisée</div>
+            <div className="text-[10px] text-slate-400">{t.lockScreen.title}</div>
           </div>
         </div>
 
@@ -161,7 +167,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
         <h2 className="text-lg font-black text-white tracking-tight">{currentUser.fullName}</h2>
         <div className="inline-flex items-center gap-1 px-2.5 py-0.5 mt-1 rounded-full bg-blue-900/60 border border-blue-400/30 text-[10px] font-bold text-blue-200">
           <ShieldCheck className="w-3 h-3 text-emerald-400" />
-          <span>Session Verrouillée • {currentUser.role}</span>
+          <span>{t.lockScreen.subtitle} • {t.roles[currentUser.role as keyof typeof t.roles] || currentUser.role}</span>
         </div>
 
         {hasPinConfigured ? (
@@ -227,7 +233,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
                 type="button"
                 onClick={handleDelete}
                 className="h-14 rounded-2xl bg-white/5 hover:bg-rose-500/20 active:scale-95 border border-white/10 text-slate-300 hover:text-white transition flex items-center justify-center cursor-pointer"
-                title="Effacer"
+                title={t.lockScreen.clearKey}
               >
                 <Delete className="w-5 h-5" />
               </button>
@@ -237,11 +243,8 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
           <div className="my-8 text-center space-y-4 max-w-xs">
             <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-2">
               <div className="text-xs font-bold text-slate-200">
-                Aucun Code PIN Configuré (Optionnel)
+                {t.lockScreen.promptNoPin}
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Votre compte n'a aucun code PIN obligatoire. Vous pouvez déverrouiller immédiatement votre session en un clic.
-              </p>
             </div>
 
             <button
@@ -250,7 +253,7 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
               className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-98 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 cursor-pointer transition"
             >
               <Unlock className="w-4 h-4" />
-              <span>Déverrouiller la Station</span>
+              <span>{t.lockScreen.unlockDirect}</span>
             </button>
           </div>
         )}
@@ -258,14 +261,14 @@ export const LockScreenModal: React.FC<LockScreenModalProps> = ({
 
       {/* Footer : Déconnexion de secours */}
       <div className="w-full max-w-md flex items-center justify-between pb-2 text-xs">
-        <span className="text-slate-500 text-[11px]">FCT ERP • Bonamoussadi Santa Barbara</span>
+        <span className="text-slate-500 text-[11px]">{t.agencyLocation}</span>
         <button
           type="button"
           onClick={onLogout}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-rose-600/30 text-slate-300 hover:text-rose-200 border border-white/10 transition cursor-pointer text-xs"
         >
           <LogOut className="w-3.5 h-3.5" />
-          <span>Changer d'utilisateur</span>
+          <span>{t.lockScreen.logout}</span>
         </button>
       </div>
     </div>

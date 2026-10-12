@@ -41,6 +41,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
   lang,
   onLockNow,
 }) => {
+  const t = translations[lang];
   const [activeTab, setActiveTab] = useState<'PROFILE' | 'PASSWORD' | 'PIN'>('PROFILE');
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -95,24 +96,24 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
         phone,
       };
       dbStore.updateUser(currentUser.id, updatedUser);
-      setAlert({ type: 'success', message: 'Profil personnel mis à jour avec succès.' });
+      setAlert({ type: 'success', message: t.securityModal.profileSuccess });
       setTimeout(() => setAlert(null), 3000);
     } catch (err: any) {
-      setAlert({ type: 'error', message: err.message || 'Erreur lors de la mise à jour.' });
+      setAlert({ type: 'error', message: err.message || t.error });
     }
   };
 
   const handleSavePassword = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPassword || newPassword.length < 6) {
-      setAlert({ type: 'error', message: 'Le mot de passe doit comporter au moins 6 caractères.' });
+      setAlert({ type: 'error', message: t.securityModal.passwordLength });
       return;
     }
     if (newPassword !== confirmPassword) {
-      setAlert({ type: 'error', message: 'Les deux mots de passe ne correspondent pas.' });
+      setAlert({ type: 'error', message: t.securityModal.passwordMismatch });
       return;
     }
-    setAlert({ type: 'success', message: 'Votre mot de passe a été mis à jour avec succès.' });
+    setAlert({ type: 'success', message: t.securityModal.savePassword });
     setOldPassword('');
     setNewPassword('');
     setConfirmPassword('');
@@ -139,21 +140,21 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
         setAutoLockEnabled(false);
         setAlert({
           type: 'success',
-          message: 'Code PIN supprimé avec succès. Votre compte ne requiert aucun code PIN.',
+          message: t.securityModal.pinRemoved,
         });
         setTimeout(() => setAlert(null), 3500);
       } catch (err: any) {
-        setAlert({ type: 'error', message: err.message || 'Erreur lors de la suppression du PIN.' });
+        setAlert({ type: 'error', message: err.message || t.error });
       }
       return;
     }
 
     if (!/^\d{4}$/.test(pin)) {
-      setAlert({ type: 'error', message: 'Le code PIN doit comporter exactement 4 chiffres décimaux.' });
+      setAlert({ type: 'error', message: t.securityModal.pinInvalid });
       return;
     }
     if (pin !== confirmPin) {
-      setAlert({ type: 'error', message: 'La confirmation du code PIN ne correspond pas.' });
+      setAlert({ type: 'error', message: t.securityModal.pinMismatch });
       return;
     }
 
@@ -170,11 +171,11 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
 
       setAlert({
         type: 'success',
-        message: `Code PIN enregistré avec succès sur Firestore (Verrouillage auto: ${lockTimeoutMinutes} min).`,
+        message: t.securityModal.pinSuccess,
       });
       setTimeout(() => setAlert(null), 3500);
     } catch (err: any) {
-      setAlert({ type: 'error', message: err.message || 'Erreur lors de l’enregistrement du PIN.' });
+      setAlert({ type: 'error', message: err.message || t.error });
     }
   };
 
@@ -193,11 +194,11 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
       setAutoLockEnabled(false);
       setAlert({
         type: 'success',
-        message: 'Code PIN désactivé. La plateforme ne vous demandera aucun code PIN.',
+        message: t.securityModal.pinRemoved,
       });
       setTimeout(() => setAlert(null), 3500);
     } catch (err: any) {
-      setAlert({ type: 'error', message: err.message || 'Erreur lors de la désactivation du PIN.' });
+      setAlert({ type: 'error', message: err.message || t.error });
     }
   };
 
@@ -211,9 +212,9 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-black text-base">Mon Profil &amp; Sécurité</h3>
+              <h3 className="font-black text-base">{t.securityModal.title}</h3>
               <p className="text-slate-300 text-xs">
-                {currentUser.fullName} • <span className="font-mono text-emerald-400">{currentUser.role}</span>
+                {currentUser.fullName} • <span className="font-mono text-emerald-400">{t.roles[currentUser.role as keyof typeof t.roles] || currentUser.role}</span>
               </p>
             </div>
           </div>
@@ -236,7 +237,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
             }`}
           >
             <User className="w-4 h-4" />
-            <span>Profil</span>
+            <span>{t.securityModal.tabProfile}</span>
           </button>
           <button
             onClick={() => setActiveTab('PASSWORD')}
@@ -247,7 +248,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
             }`}
           >
             <KeyRound className="w-4 h-4" />
-            <span>Mot de Passe</span>
+            <span>{t.securityModal.tabPassword}</span>
           </button>
           <button
             onClick={() => setActiveTab('PIN')}
@@ -258,7 +259,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
             }`}
           >
             <Lock className="w-4 h-4 text-emerald-600" />
-            <span>Code PIN &amp; Veille</span>
+            <span>{t.securityModal.tabPin}</span>
           </button>
         </div>
 
@@ -286,7 +287,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
             <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Prénom</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.securityModal.firstName}</label>
                   <input
                     type="text"
                     value={firstName}
@@ -295,7 +296,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Nom</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.securityModal.lastName}</label>
                   <input
                     type="text"
                     value={lastName}
@@ -306,7 +307,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">E-mail Professionnel</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.securityModal.email}</label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                   <input
@@ -319,7 +320,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Téléphone Douala (Cameroun)</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.securityModal.phone}</label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                   <input
@@ -334,10 +335,10 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-slate-600">
                 <div className="flex items-center gap-1.5 font-bold text-slate-800">
                   <Building className="w-3.5 h-3.5 text-blue-900" />
-                  <span>Agence de rattachement : Bonamoussadi, Carrefour Santa Barbara</span>
+                  <span>{t.agencyLocation}</span>
                 </div>
                 <div className="text-[11px] text-slate-500">
-                  Rôle système assigné : <strong className="text-blue-900">{currentUser.role}</strong>
+                  {t.role} : <strong className="text-blue-900">{t.roles[currentUser.role as keyof typeof t.roles] || currentUser.role}</strong>
                 </div>
               </div>
 
@@ -347,14 +348,14 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
                   onClick={onClose}
                   className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
                 >
-                  Fermer
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>Enregistrer le Profil</span>
+                  <span>{t.securityModal.saveProfile}</span>
                 </button>
               </div>
             </form>
@@ -364,7 +365,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
           {activeTab === 'PASSWORD' && (
             <form onSubmit={handleSavePassword} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Ancien mot de passe</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.securityModal.oldPassword}</label>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={oldPassword}
@@ -375,13 +376,13 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Nouveau mot de passe</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.securityModal.newPassword}</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Au moins 6 caractères"
+                    placeholder="••••••••"
                     className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-blue-500"
                   />
                   <button
@@ -395,7 +396,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Confirmer le nouveau mot de passe</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.securityModal.confirmPassword}</label>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={confirmPassword}
@@ -411,14 +412,14 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
                   onClick={onClose}
                   className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
                 >
-                  Fermer
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <KeyRound className="w-3.5 h-3.5" />
-                  <span>Mettre à jour le Mot de Passe</span>
+                  <span>{t.securityModal.savePassword}</span>
                 </button>
               </div>
             </form>
@@ -431,26 +432,26 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="font-bold flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Sécurité PIN Cloud (Firestore)</span>
+                    <span>{t.securityModal.pinTitle}</span>
                   </div>
                   {currentUser.securityPin ? (
                     <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
-                      PIN Actif sur Firestore
+                      PIN (Firestore)
                     </span>
                   ) : (
                     <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">
-                      Aucun PIN (Optionnel)
+                      {lang === 'fr' ? 'Aucun PIN (Optionnel)' : 'No PIN (Optional)'}
                     </span>
                   )}
                 </div>
                 <p className="text-[11px] text-emerald-800 leading-relaxed">
-                  Le Code PIN est <strong>optionnel</strong> et stocké de manière sécurisée sur votre profil <strong>Firestore</strong>. Aucun PIN n'est imposé par défaut. Il vous permet de reverrouiller rapidement votre session sans retaper votre mot de passe complet.
+                  {t.securityModal.pinDesc}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Code PIN (4 chiffres, optionnel)</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.securityModal.newPin}</label>
                   <input
                     type="password"
                     maxLength={4}
@@ -462,7 +463,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Confirmer le Code PIN</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.securityModal.confirmPin}</label>
                   <input
                     type="password"
                     maxLength={4}
@@ -485,7 +486,7 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
                     className="rounded text-emerald-600 focus:ring-emerald-500"
                   />
                   <label htmlFor="autoLockCheck" className="text-slate-800 font-bold cursor-pointer">
-                    Activer le verrouillage automatique sur inactivité
+                    {t.securityModal.autoLockCheck}
                   </label>
                 </div>
 
@@ -493,19 +494,19 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
                   <div>
                     <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Délai d'inactivité avant verrouillage :</span>
+                      <span>{t.securityModal.timeoutLabel}</span>
                     </label>
                     <select
                       value={lockTimeoutMinutes}
                       onChange={(e) => setLockTimeoutMinutes(Number(e.target.value))}
                       className="w-full p-2.5 rounded-xl border border-slate-200 font-bold text-slate-800 focus:outline-emerald-500"
                     >
-                      <option value={1}>1 minute (Test rapide / Sécurité renforcée)</option>
-                      <option value={2}>2 minutes</option>
-                      <option value={5}>5 minutes (Recommandé)</option>
-                      <option value={10}>10 minutes</option>
-                      <option value={15}>15 minutes</option>
-                      <option value={30}>30 minutes</option>
+                      <option value={1}>1 {t.securityModal.minutes}</option>
+                      <option value={2}>2 {t.securityModal.minutes}</option>
+                      <option value={5}>5 {t.securityModal.minutes}</option>
+                      <option value={10}>10 {t.securityModal.minutes}</option>
+                      <option value={15}>15 {t.securityModal.minutes}</option>
+                      <option value={30}>30 {t.securityModal.minutes}</option>
                     </select>
                   </div>
                 )}
@@ -522,10 +523,10 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
                       onLockNow();
                     }}
                     className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-xs cursor-pointer text-xs"
-                    title="Verrouiller immédiatement la session"
+                    title={t.securityModal.lockNow}
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Verrouiller</span>
+                    <span>{t.securityModal.lockNow}</span>
                   </button>
 
                   {currentUser.securityPin && (
@@ -533,9 +534,9 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
                       type="button"
                       onClick={handleRemovePin}
                       className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs cursor-pointer border border-rose-200 transition"
-                      title="Supprimer le code PIN"
+                      title={t.securityModal.removePin}
                     >
-                      Supprimer le PIN
+                      {t.securityModal.removePin}
                     </button>
                   )}
                 </div>
@@ -546,14 +547,14 @@ export const ProfileSecurityModal: React.FC<ProfileSecurityModalProps> = ({
                     onClick={onClose}
                     className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
                   >
-                    Fermer
+                    {t.cancel}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    <span>{pin ? 'Enregistrer le PIN' : 'Valider'}</span>
+                    <span>{t.securityModal.savePin}</span>
                   </button>
                 </div>
               </div>

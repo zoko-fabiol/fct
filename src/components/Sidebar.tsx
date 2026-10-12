@@ -217,7 +217,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           />
         </div>
         <div className="font-semibold text-white mb-0.5">FCT Automobile Douala</div>
-        <div className="text-[10px] text-slate-400">Agence Santa Barbara</div>
+        <div className="text-[10px] text-slate-400">
+          {lang === 'fr' ? 'Agence Santa Barbara' : 'Santa Barbara Agency'}
+        </div>
         <div className="mt-1 flex items-center justify-between text-[10px]">
           <span className="text-emerald-400 font-mono">XAF Douala</span>
           <span className="text-slate-500">v1.2.0-cm</span>

@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
+import { Language, translations } from '../services/i18n.ts';
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface DeleteConfirmModalProps {
   onClose?: () => void;
   onCancel?: () => void;
   onConfirm: (reason: string) => void;
+  lang?: Language;
 }
 
 export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
@@ -28,12 +30,14 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   itemDetails,
   warningMessage,
   warningDetails,
-  confirmLabel = 'Confirmer la suppression',
+  confirmLabel,
   requireReason = false,
   onClose,
   onCancel,
   onConfirm,
+  lang = 'fr',
 }) => {
+  const t = translations[lang];
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -87,17 +91,17 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
         <p className="text-xs text-rose-700 bg-rose-50/80 p-2.5 rounded-lg border border-rose-200">
           {warningDetails ||
             warningMessage ||
-            'Êtes-vous sûr de vouloir supprimer cet enregistrement ? Cette action sera tracée dans le journal d’audit avec votre nom et horodatage.'}
+            t.deleteModal.warning}
         </p>
 
         {/* Reason Input */}
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">
-            Motif de suppression {requireReason ? '*' : '(optionnel)'}
+            {lang === 'fr' ? 'Motif de suppression' : 'Reason for deletion'} {requireReason ? '*' : (lang === 'fr' ? '(optionnel)' : '(optional)')}
           </label>
           <input
             type="text"
-            placeholder="Ex : Erreur de saisie, véhicule cédé, doublon..."
+            placeholder={lang === 'fr' ? 'Ex : Erreur de saisie, véhicule cédé, doublon...' : 'E.g.: Entry error, sold vehicle, duplicate...'}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             className="w-full text-xs p-2.5 rounded-lg bg-slate-50 border border-slate-300 focus:outline-none focus:border-rose-500"
@@ -112,7 +116,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             onClick={handleClose}
             className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
           >
-            Annuler
+            {t.cancel}
           </button>
           <button
             type="button"
@@ -120,7 +124,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow transition cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>{confirmLabel}</span>
+            <span>{confirmLabel || t.deleteModal.confirm}</span>
           </button>
         </div>
       </div>

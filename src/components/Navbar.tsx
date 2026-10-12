@@ -61,7 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onToggleMobileSidebar}
-            title="Ouvrir le menu de navigation"
+            title={lang === 'fr' ? 'Ouvrir le menu de navigation' : 'Open navigation menu'}
             className="lg:hidden p-2 rounded-lg bg-blue-900/80 hover:bg-blue-800 text-white transition cursor-pointer border border-blue-700/60 shadow-sm"
           >
             <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
@@ -85,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-slate-300">
               <Building2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400 shrink-0" />
-              <span className="hidden md:inline">Bonamoussadi, Carrefour Santa Barbara, Douala</span>
+              <span className="hidden md:inline">{t.agencyLocation}</span>
               <span className="md:hidden">Douala, Santa Barbara</span>
               <span className="text-slate-400 hidden sm:inline">|</span>
               <span className="hidden sm:inline-flex items-center gap-1">
@@ -115,14 +115,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               {activeSession ? `${t.activeSession} (${activeSession.sessionNumber})` : t.noActiveSession}
             </span>
             <span className="font-medium sm:hidden">
-              {activeSession ? 'Caisse Ouverte' : 'Caisse Fermée'}
+              {activeSession ? t.activeSession : t.noActiveSession}
             </span>
           </div>
 
           {/* Network / Offline Mode Switch */}
           <button
             onClick={toggleOnline}
-            title="Cliquer pour simuler le mode hors-ligne / en ligne"
+            title={lang === 'fr' ? 'Bascule Mode En Ligne / Hors-Ligne' : 'Toggle Online / Offline Mode'}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition font-medium border cursor-pointer ${
               state.isOnline
                 ? 'bg-blue-900/60 hover:bg-blue-900 border-blue-700/60 text-blue-200'
@@ -176,7 +176,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenProfileSecurity}
-            title="Gérer mon profil, mot de passe et code PIN de sécurité"
+            title={t.navbar.myProfile}
             className="flex items-center bg-slate-800/90 hover:bg-slate-700/90 rounded-lg border border-slate-700/80 px-2.5 py-1 gap-2 text-xs transition cursor-pointer text-left"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
@@ -195,7 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={onLockNow}
-              title="Verrouiller l'écran immédiatement (Code PIN)"
+              title={t.navbar.lockSession}
               className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-amber-600/20 text-slate-300 hover:text-amber-300 border border-slate-700 transition cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5" />
@@ -206,11 +206,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onLogout}
-            title="Se déconnecter de la plateforme"
+            title={t.navbar.logout}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-800/60 text-rose-200 hover:text-white font-bold text-xs transition cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Déconnexion</span>
+            <span className="hidden sm:inline">{t.lockScreen.logout}</span>
           </button>
         </div>
       </div>

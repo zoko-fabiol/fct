@@ -363,6 +363,7 @@ export default function App() {
           setCurrentUser(user);
         }}
         lang={lang}
+        onLanguageChange={handleLanguageChange}
       />
     );
   }
@@ -613,6 +614,7 @@ export default function App() {
           currentUser={currentUser}
           onUnlock={() => setIsSessionLocked(false)}
           onLogout={handleLogout}
+          lang={lang}
         />
       )}
     </div>

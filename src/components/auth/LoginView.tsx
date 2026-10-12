@@ -26,11 +26,13 @@ import {
 interface LoginViewProps {
   onLoginSuccess: (user: UserProfile) => void;
   lang?: Language;
+  onLanguageChange?: (lang: Language) => void;
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({
   onLoginSuccess,
   lang = 'fr',
+  onLanguageChange,
 }) => {
   const t = translations[lang];
 
@@ -170,16 +172,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
       if (!profile) {
         await authService.logout();
-        setErrorMessage(
-          "Accès refusé : cette adresse e-mail n'est rattachée à aucun collaborateur autorisé FCT. La création de compte est réservée à l'Administrateur."
-        );
+        setErrorMessage(t.auth.accessDenied);
         return;
       }
 
       dbStore.setCurrentUser(profile);
       setFailedAttempts(0);
       setLockoutSeconds(0);
-      setSuccessMessage(`Bienvenue, ${profile.fullName} !`);
+      setSuccessMessage(t.auth.welcome.replace('{name}', profile.fullName));
       setTimeout(() => {
         onLoginSuccess(profile);
       }, 400);
@@ -190,22 +190,22 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
       if (nextFailures >= 5) {
         setLockoutSeconds(120);
-        setErrorMessage("Sécurité FCT : 5 tentatives échouées. Verrouillage de sécurité temporaire pendant 2 minutes.");
+        setErrorMessage(t.auth.lockout120);
       } else if (nextFailures >= 3) {
         setLockoutSeconds(30);
-        setErrorMessage("Sécurité FCT : 3 tentatives échouées. Verrouillage de sécurité temporaire pendant 30 secondes.");
+        setErrorMessage(t.auth.lockout30);
       } else if (
         err.code === 'auth/invalid-credential' ||
         err.code === 'auth/wrong-password' ||
         err.code === 'auth/user-not-found'
       ) {
-        setErrorMessage(`Identifiants incorrects. (${nextFailures}/3 tentatives autorisées).`);
+        setErrorMessage(t.auth.invalidCredentials.replace('{attempts}', String(nextFailures)));
       } else if (err.code === 'auth/too-many-requests') {
-        setErrorMessage("Trop de requêtes. Veuillez patienter ou réinitialiser votre mot de passe.");
+        setErrorMessage(t.auth.tooManyRequests);
       } else if (err.code === 'auth/network-request-failed') {
-        setErrorMessage("Erreur réseau. Vérifiez votre connexion Internet.");
+        setErrorMessage(t.auth.networkError);
       } else {
-        setErrorMessage(err.message || "Impossible de se connecter à la plateforme.");
+        setErrorMessage(err.message || t.error);
       }
     } finally {
       setIsLoading(false);
@@ -225,13 +225,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
       if (!profile) {
         await authService.logout();
         setErrorMessage(
-          `Le compte Google (${fbUser.email}) n'est pas autorisé sur ce système FCT. Seul l'administrateur peut inscrire des collaborateurs.`
+          t.auth.googleUnauthorized.replace('{email}', fbUser.email || '')
         );
         return;
       }
 
       dbStore.setCurrentUser(profile);
-      setSuccessMessage(`Connexion Google validée : ${profile.fullName}`);
+      setSuccessMessage(t.auth.googleSuccess.replace('{name}', profile.fullName));
       setTimeout(() => {
         onLoginSuccess(profile);
       }, 400);
@@ -241,7 +241,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
         return;
       }
       console.warn("Échec connexion Google FCT:", err);
-      setErrorMessage(err.message || "Échec de l'authentification Google.");
+      setErrorMessage(err.message || t.error);
     } finally {
       setIsLoading(false);
     }
@@ -251,7 +251,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
-      setErrorMessage("Veuillez renseigner votre adresse e-mail professionnelle.");
+      setErrorMessage(t.auth.emailLabel);
       return;
     }
 
@@ -261,14 +261,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
     try {
       await authService.requestPasswordReset(email);
-      setSuccessMessage(
-        "Un e-mail de réinitialisation sécurisé a été transmis par Firebase. Vérifiez votre boîte de réception."
-      );
+      setSuccessMessage(t.auth.resetSuccess);
       setIsResetMode(false);
     } catch (err: any) {
-      setErrorMessage(
-        err.message || "Impossible d'envoyer l'e-mail de réinitialisation. Vérifiez l'adresse saisie."
-      );
+      setErrorMessage(t.auth.resetError);
     } finally {
       setIsLoading(false);
     }
@@ -279,6 +275,34 @@ export const LoginView: React.FC<LoginViewProps> = ({
       {/* Halos de lumière décoratifs */}
       <div className="absolute w-[500px] h-[500px] rounded-full bg-emerald-500/10 blur-[120px] pointer-events-none -top-24 -left-24" />
       <div className="absolute w-[450px] h-[450px] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none -bottom-24 -right-24" />
+
+      {/* Sélecteur de Langue FR / EN en haut à droite */}
+      {onLanguageChange && (
+        <div className="absolute top-4 right-4 z-20 flex items-center bg-white/10 backdrop-blur-md rounded-full p-1 border border-white/20 text-xs font-bold shadow-md">
+          <button
+            type="button"
+            onClick={() => onLanguageChange('fr')}
+            className={`px-3 py-1 rounded-full transition cursor-pointer ${
+              lang === 'fr'
+                ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                : 'text-white/80 hover:text-white'
+            }`}
+          >
+            FR
+          </button>
+          <button
+            type="button"
+            onClick={() => onLanguageChange('en')}
+            className={`px-3 py-1 rounded-full transition cursor-pointer ${
+              lang === 'en'
+                ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
+                : 'text-white/80 hover:text-white'
+            }`}
+          >
+            EN
+          </button>
+        </div>
+      )}
 
       {/* Carte d'Authentification Centrale */}
       <div className="relative z-10 w-full max-w-md my-auto bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6 sm:p-8 text-slate-800 space-y-6 animate-scaleUp">
@@ -297,13 +321,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-black uppercase tracking-wider mb-1.5">
               <ShieldCheck className="w-3 h-3 text-emerald-600" />
-              <span>Portail Collaborateurs • Douala</span>
+              <span>{t.auth.portalBadge}</span>
             </div>
             <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              FRANCHISE CONSEILS TRADING
+              {t.auth.title}
             </h2>
             <p className="text-xs text-slate-500 font-medium">
-              ERP &amp; CRM Parc Automobile
+              {t.auth.subtitle}
             </p>
           </div>
         </div>
@@ -351,14 +375,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                 />
               </svg>
-              <span>Continuer avec Google</span>
+              <span>{t.auth.googleLogin}</span>
             </button>
 
             {/* Séparateur élégant */}
             <div className="relative flex items-center justify-center">
               <div className="border-t border-slate-200 w-full" />
               <span className="bg-white px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">
-                ou identifiants internes
+                {t.auth.orInternal}
               </span>
               <div className="border-t border-slate-200 w-full" />
             </div>
@@ -371,14 +395,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
             {/* E-mail */}
             <div className="space-y-1.5">
               <label className="font-bold text-slate-700 block">
-                Adresse e-mail professionnelle *
+                {t.auth.emailLabel}
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                 <input
                   type="email"
                   required
-                  placeholder="collaborateur@fct-automobile.cm"
+                  placeholder={t.auth.emailPlaceholder}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white text-slate-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition"
@@ -390,7 +414,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="font-bold text-slate-700 block">
-                  Mot de passe *
+                  {t.auth.passwordLabel}
                 </label>
                 <button
                   type="button"
@@ -401,7 +425,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   }}
                   className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer"
                 >
-                  Mot de passe oublié ?
+                  {t.auth.forgotPassword}
                 </button>
               </div>
               <div className="relative">
@@ -418,7 +442,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
-                  title={showPassword ? 'Masquer' : 'Afficher'}
+                  title={showPassword ? t.auth.hide : t.auth.show}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -432,12 +456,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#0a264a] to-[#0f3460] hover:from-[#0d315f] hover:to-[#123e72] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
             >
               {isLoading ? (
-                <span>Connexion sécurisée en cours...</span>
+                <span>{t.auth.loggingIn}</span>
               ) : lockoutSeconds > 0 ? (
-                <span>Formulaire verrouillé ({lockoutSeconds}s)</span>
+                <span>{t.auth.lockedUntil.replace('{seconds}', String(lockoutSeconds))}</span>
               ) : (
                 <>
-                  <span>Accéder à la Plateforme FCT</span>
+                  <span>{t.auth.submitLogin}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -447,19 +471,19 @@ export const LoginView: React.FC<LoginViewProps> = ({
           /* Formulaire de Réinitialisation de Mot de Passe */
           <form onSubmit={handlePasswordReset} className="space-y-4 text-xs">
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs">
-              Saisissez l'adresse e-mail rattachée à votre compte collaborateur FCT. Vous recevrez un lien officiel Firebase pour réinitialiser votre mot de passe.
+              {t.auth.resetNotice}
             </div>
 
             <div className="space-y-1.5">
               <label className="font-bold text-slate-700 block">
-                Adresse e-mail professionnelle *
+                {t.auth.emailLabel}
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
                 <input
                   type="email"
                   required
-                  placeholder="collaborateur@fct-automobile.cm"
+                  placeholder={t.auth.emailPlaceholder}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white text-slate-900 font-medium text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition"
@@ -477,14 +501,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 }}
                 className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
               >
-                Retour
+                {t.auth.backToLogin}
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
                 className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md cursor-pointer disabled:opacity-50"
               >
-                {isLoading ? 'Envoi...' : 'Envoyer le lien'}
+                {isLoading ? t.auth.sending : t.auth.sendResetLink}
               </button>
             </div>
           </form>
@@ -494,7 +518,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
         <div className="pt-2 border-t border-slate-100 text-center">
           <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 font-semibold">
             <ShieldAlert className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span>Accès d'entreprise restreint • Création réservée à l'Administrateur FCT</span>
+            <span>{t.auth.securityFooter}</span>
           </div>
         </div>
       </div>
