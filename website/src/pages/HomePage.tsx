@@ -80,16 +80,52 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate }) => {
               <div
                 style={{
                   width: '100%',
-                  height: 220,
-                  borderRadius: 14,
-                  background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--fct-blue-primary)',
+                  height: 240,
+                  borderRadius: 16,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  boxShadow: '0 8px 24px -6px rgba(15, 23, 42, 0.2)',
+                  border: '1px solid var(--border-subtle)',
                 }}
               >
-                <Car size={80} strokeWidth={1.5} />
+                <img
+                  src="https://res.cloudinary.com/c58pcgcp/image/upload/v1791746448/fct_automobile/vehicles/toyota_prado_txl.jpg"
+                  alt="Toyota Land Cruiser Prado TX-L"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 12,
+                    left: 12,
+                    padding: '4px 10px',
+                    borderRadius: 99,
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    backdropFilter: 'blur(8px)',
+                    color: '#ffffff',
+                    fontSize: 11,
+                    fontWeight: 800,
+                  }}
+                >
+                  Inspection A+ Validée
+                </span>
+                <span
+                  style={{
+                    position: 'absolute',
+                    bottom: 12,
+                    right: 12,
+                    padding: '4px 10px',
+                    borderRadius: 8,
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: '#0f172a',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  LT-8841-CE
+                </span>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 16, fontSize: 12, textAlign: 'center' }}>

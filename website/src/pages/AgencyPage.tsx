@@ -16,7 +16,7 @@ export const AgencyPage: React.FC = () => {
       </div>
 
       <div className="fct-container">
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 36, alignItems: 'start' }}>
+        <div className="fct-agency-layout">
           {/* Informations Complètes Agence */}
           <div style={{ background: 'white', padding: 36, borderRadius: 20, border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
             <h3 style={{ fontSize: 24, fontWeight: 900, color: 'var(--fct-blue-dark)', marginBottom: 20 }}>
