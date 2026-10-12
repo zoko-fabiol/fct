@@ -131,6 +131,12 @@ export const authService = {
     await sendPasswordResetEmail(auth, email.trim().toLowerCase());
   },
 
+  async authReady(): Promise<void> {
+    if (typeof (auth as any).authStateReady === 'function') {
+      await (auth as any).authStateReady();
+    }
+  },
+
   onAuthChanged(callback: (user: FirebaseUser | null) => void) {
     return onAuthStateChanged(auth, callback);
   },

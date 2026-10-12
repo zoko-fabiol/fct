@@ -42,7 +42,8 @@ import { WifiOff, ShieldAlert, ArrowLeft, LayoutDashboard, ShieldCheck, Lock } f
 
 export default function App() {
   const [state, setState] = useState<DatabaseState>(dbStore.getState());
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(dbStore.getCurrentUser());
+  // Seul un utilisateur explicitement authentifié est accepté : aucun faux profil Super Admin au démarrage
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => dbStore.getAuthenticatedUser());
   const [authLoading, setAuthLoading] = useState(true);
 
   // Persistent Language FR / EN
@@ -113,13 +114,29 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
-  // Surveillance de la session Firebase & synchronisation temps réel
+  // Surveillance de la session Firebase & synchronisation temps réel étanche
   useEffect(() => {
+    let isMounted = true;
+
+    // 1. Abonnement aux changements d'état du dbStore (STRICTEMENT getAuthenticatedUser pour interdire tout bypass)
+    const unsubscribeStore = dbStore.subscribe(() => {
+      setState({ ...dbStore.getState() });
+      if (isMounted) {
+        setCurrentUser(dbStore.getAuthenticatedUser());
+      }
+    });
+
+    // 2. Initialisation asynchrone robuste avec Firebase Auth
     const unsubAuth = authService.onAuthChanged(async (firebaseUser) => {
       try {
+        // Attendre que la persistance locale Firebase (IndexedDB) soit pleinement résolue
+        await authService.authReady();
+
         if (!firebaseUser) {
-          dbStore.setCurrentUser(null);
-          setCurrentUser(null);
+          if (isMounted) {
+            dbStore.setCurrentUser(null);
+            setCurrentUser(null);
+          }
         } else {
           const userEmail = (firebaseUser.email || '').trim().toLowerCase();
           const currentState = dbStore.getState();
@@ -160,31 +177,35 @@ export default function App() {
           }
 
           if (matched && matched.isActive && matched.status !== 'SUSPENDED' && matched.status !== 'DISABLED') {
-            dbStore.setCurrentUser(matched);
-            setCurrentUser(matched);
+            if (isMounted) {
+              dbStore.setCurrentUser(matched);
+              setCurrentUser(matched);
+            }
           } else {
             await authService.logout();
-            dbStore.setCurrentUser(null);
-            setCurrentUser(null);
+            if (isMounted) {
+              dbStore.setCurrentUser(null);
+              setCurrentUser(null);
+            }
           }
         }
       } catch (err) {
         console.warn('Erreur vérification session Firebase:', err);
-        dbStore.setCurrentUser(null);
-        setCurrentUser(null);
+        if (isMounted) {
+          dbStore.setCurrentUser(null);
+          setCurrentUser(null);
+        }
       } finally {
-        setAuthLoading(false);
+        if (isMounted) {
+          setAuthLoading(false);
+        }
       }
     });
 
-    const unsubscribe = dbStore.subscribe(() => {
-      setState({ ...dbStore.getState() });
-      setCurrentUser(dbStore.getCurrentUser());
-    });
-
     return () => {
+      isMounted = false;
       unsubAuth();
-      unsubscribe();
+      unsubscribeStore();
     };
   }, []);
 
