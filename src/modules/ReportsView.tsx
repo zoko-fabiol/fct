@@ -6,7 +6,7 @@
 
 import React, { useState } from 'react';
 import { DatabaseState } from '../services/dbStore.ts';
-import { Language } from '../services/i18n.ts';
+import { Language, translations } from '../services/i18n.ts';
 import { formatXAF } from '../../packages/business-rules/index.ts';
 import { exportCollectionToExcel } from '../utils/excelExport.ts';
 import {
@@ -30,6 +30,7 @@ interface ReportsViewProps {
 }
 
 export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
+  const t = translations[lang];
   const [activeTab, setActiveTab] = useState<'FINANCE' | 'FLEET' | 'MAINTENANCE' | 'STOCK'>('FINANCE');
 
   // 1. Finance & Cashflow
@@ -92,15 +93,15 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
       subtitle: `Export officiel certifié FCT • ${state.vehicles.length} véhicule(s) enregistrés`,
       columns: [
         { header: 'ID', key: 'id', width: 14 },
-        { header: 'Immatriculation', key: 'licensePlate', width: 18 },
-        { header: 'Marque', key: 'brand', width: 18 },
-        { header: 'Modèle', key: 'model', width: 22 },
-        { header: 'Catégorie', key: 'category', width: 16 },
-        { header: 'Année', key: 'year', width: 10 },
-        { header: 'Statut', key: 'status', width: 14 },
-        { header: 'Tarif Jour (XAF)', key: 'rentalDailyRate', width: 18 },
-        { header: 'Prix Vente (XAF)', key: 'salePrice', width: 18 },
-        { header: 'Kilométrage (km)', key: 'mileage', width: 16 },
+        { header: lang === 'en' ? 'License Plate' : 'Immatriculation', key: 'licensePlate', width: 18 },
+        { header: lang === 'en' ? 'Make' : 'Marque', key: 'brand', width: 18 },
+        { header: lang === 'en' ? 'Model' : 'Modèle', key: 'model', width: 22 },
+        { header: t.reportsPage.colCategory, key: 'category', width: 16 },
+        { header: lang === 'en' ? 'Year' : 'Année', key: 'year', width: 10 },
+        { header: t.reportsPage.colStatus, key: 'status', width: 14 },
+        { header: `${t.reportsPage.colDailyRate} (XAF)`, key: 'rentalDailyRate', width: 18 },
+        { header: lang === 'en' ? 'Sale Price (XAF)' : 'Prix Vente (XAF)', key: 'salePrice', width: 18 },
+        { header: `${t.reportsPage.colMileage} (km)`, key: 'mileage', width: 16 },
       ],
       data: state.vehicles,
     });
@@ -113,14 +114,14 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
       title: 'FCT AUTOMOBILE DOUALA — JOURNAL ANALYTIQUE DE CAISSE XAF',
       subtitle: `Export officiel certifié FCT • ${state.cashMovements.length} mouvement(s)`,
       columns: [
-        { header: 'N° Reçu', key: 'receiptNumber', width: 16 },
-        { header: 'Date & Heure', key: 'createdAt', width: 22 },
-        { header: 'Flux', key: 'type', width: 12 },
-        { header: 'Catégorie', key: 'category', width: 20 },
-        { header: 'Tiers Payeur / Bénéficiaire', key: 'receivedFromOrPaidTo', width: 28 },
-        { header: 'Montant (XAF)', key: 'amountXAF', width: 18 },
-        { header: 'Caissier', key: 'performedByName', width: 20 },
-        { header: 'Motif de l\'opération', key: 'reason', width: 32 },
+        { header: lang === 'en' ? 'Receipt #' : 'N° Reçu', key: 'receiptNumber', width: 16 },
+        { header: lang === 'en' ? 'Date & Time' : 'Date & Heure', key: 'createdAt', width: 22 },
+        { header: lang === 'en' ? 'Flow' : 'Flux', key: 'type', width: 12 },
+        { header: t.reportsPage.colCategory, key: 'category', width: 20 },
+        { header: lang === 'en' ? 'Payer / Payee' : 'Tiers Payeur / Bénéficiaire', key: 'receivedFromOrPaidTo', width: 28 },
+        { header: lang === 'en' ? 'Amount (XAF)' : 'Montant (XAF)', key: 'amountXAF', width: 18 },
+        { header: lang === 'en' ? 'Cashier' : 'Caissier', key: 'performedByName', width: 20 },
+        { header: lang === 'en' ? 'Operation Reason' : 'Motif de l\'opération', key: 'reason', width: 32 },
       ],
       data: state.cashMovements,
     });
@@ -133,15 +134,15 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
       title: 'FCT AUTOMOBILE DOUALA — REGISTRE DES FACTURES & CRÉANCES',
       subtitle: `Export officiel certifié FCT • ${state.invoices.length} facture(s)`,
       columns: [
-        { header: 'N° Facture', key: 'invoiceNumber', width: 16 },
-        { header: 'Type', key: 'type', width: 14 },
-        { header: 'Client', key: 'customerName', width: 26 },
-        { header: 'Date Émission', key: 'issueDate', width: 14 },
-        { header: 'Date Échéance', key: 'dueDate', width: 14 },
-        { header: 'Total (XAF)', key: 'totalAmountXAF', width: 18 },
-        { header: 'Réglé (XAF)', key: 'paidAmountXAF', width: 18 },
-        { header: 'Solde Dû (XAF)', key: 'balanceXAF', width: 18 },
-        { header: 'Statut', key: 'status', width: 14 },
+        { header: lang === 'en' ? 'Invoice #' : 'N° Facture', key: 'invoiceNumber', width: 16 },
+        { header: lang === 'en' ? 'Type' : 'Type', key: 'type', width: 14 },
+        { header: lang === 'en' ? 'Customer' : 'Client', key: 'customerName', width: 26 },
+        { header: lang === 'en' ? 'Issue Date' : 'Date Émission', key: 'issueDate', width: 14 },
+        { header: lang === 'en' ? 'Due Date' : 'Date Échéance', key: 'dueDate', width: 14 },
+        { header: lang === 'en' ? 'Total (XAF)' : 'Total (XAF)', key: 'totalAmountXAF', width: 18 },
+        { header: lang === 'en' ? 'Paid (XAF)' : 'Réglé (XAF)', key: 'paidAmountXAF', width: 18 },
+        { header: lang === 'en' ? 'Balance Due (XAF)' : 'Solde Dû (XAF)', key: 'balanceXAF', width: 18 },
+        { header: t.reportsPage.colStatus, key: 'status', width: 14 },
       ],
       data: state.invoices,
     });
@@ -159,16 +160,16 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
       title: 'FCT AUTOMOBILE DOUALA — BILAN ATELIER & ENTRETIEN DU PARC',
       subtitle: `Export officiel certifié FCT • ${state.maintenance.length} intervention(s)`,
       columns: [
-        { header: 'N° Fiche', key: 'recordNumber', width: 16 },
-        { header: 'Véhicule', key: 'vehicleName', width: 26 },
-        { header: 'Immatriculation', key: 'licensePlate', width: 18 },
-        { header: 'Date', key: 'startDate', width: 14 },
-        { header: 'Type Entretien', key: 'type', width: 16 },
-        { header: 'Garage Prestataire', key: 'garageName', width: 24 },
-        { header: 'Pièces (XAF)', key: 'partsCostXAF', width: 16 },
-        { header: 'Main d\'œuvre (XAF)', key: 'laborCostXAF', width: 18 },
-        { header: 'Total Intervention (XAF)', key: 'totalCostXAF', width: 22 },
-        { header: 'Statut', key: 'status', width: 14 },
+        { header: lang === 'en' ? 'Record #' : 'N° Fiche', key: 'recordNumber', width: 16 },
+        { header: t.reportsPage.colVehicle, key: 'vehicleName', width: 26 },
+        { header: lang === 'en' ? 'License Plate' : 'Immatriculation', key: 'licensePlate', width: 18 },
+        { header: lang === 'en' ? 'Date' : 'Date', key: 'startDate', width: 14 },
+        { header: lang === 'en' ? 'Type' : 'Type Entretien', key: 'type', width: 16 },
+        { header: lang === 'en' ? 'Workshop Garage' : 'Garage Prestataire', key: 'garageName', width: 24 },
+        { header: lang === 'en' ? 'Parts (XAF)' : 'Pièces (XAF)', key: 'partsCostXAF', width: 16 },
+        { header: lang === 'en' ? 'Labor (XAF)' : 'Main d\'œuvre (XAF)', key: 'laborCostXAF', width: 18 },
+        { header: lang === 'en' ? 'Total (XAF)' : 'Total Intervention (XAF)', key: 'totalCostXAF', width: 22 },
+        { header: t.reportsPage.colStatus, key: 'status', width: 14 },
       ],
       data,
     });
@@ -181,10 +182,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-emerald-600" />
-            <span>Rapports Financiers &amp; Exports Analytiques</span>
+            <span>{t.reportsPage.title}</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Bilan d'exploitation XAF, rentabilité de la flotte, analyse des coûts d'entretien et exports certifiés
+            {t.reportsPage.subtitle}
           </p>
         </div>
 
@@ -194,28 +195,28 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold shadow transition cursor-pointer"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Parc (Excel)</span>
+            <span>{t.reportsPage.exportFleetBtn}</span>
           </button>
           <button
             onClick={exportCashMovementsExcel}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold shadow transition cursor-pointer"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>Caisse (Excel)</span>
+            <span>{t.reportsPage.exportCashBtn}</span>
           </button>
           <button
             onClick={exportInvoicesExcel}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-700 hover:bg-purple-600 text-white text-xs font-semibold shadow transition cursor-pointer"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
-            <span>Factures (Excel)</span>
+            <span>{t.reportsPage.exportInvoicesBtn}</span>
           </button>
           <button
             onClick={exportMaintenanceExcel}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold shadow transition cursor-pointer"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-teal-300" />
-            <span>Maintenance (Excel)</span>
+            <span>{t.reportsPage.exportMaintenanceBtn}</span>
           </button>
         </div>
       </div>
@@ -223,10 +224,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200 text-xs font-semibold">
         {[
-          { key: 'FINANCE', label: 'Bilan Financier & Trésorerie' },
-          { key: 'FLEET', label: 'Exploitation du Parc' },
-          { key: 'MAINTENANCE', label: 'Coûts & Bilan Santé Atelier' },
-          { key: 'STOCK', label: 'Valorisation Stock de Pièces' },
+          { key: 'FINANCE', label: t.reportsPage.tabFinance },
+          { key: 'FLEET', label: t.reportsPage.tabFleet },
+          { key: 'MAINTENANCE', label: t.reportsPage.tabMaintenance },
+          { key: 'STOCK', label: t.reportsPage.tabStock },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -247,24 +248,24 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
         <div className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] text-slate-400 uppercase font-black">Actifs Flotte (Acquisition)</div>
+              <div className="text-[10px] text-slate-400 uppercase font-black">{t.reportsPage.fleetAssets}</div>
               <div className="text-xl font-black text-slate-900 mt-1">{formatXAF(totalFleetValue)}</div>
-              <div className="text-[10px] text-slate-500 mt-1">{totalVehicles} véhicules acquis</div>
+              <div className="text-[10px] text-slate-500 mt-1">{totalVehicles} {t.reportsPage.vehiclesAcquired}</div>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] text-emerald-700 uppercase font-black">Recettes Caisse Encaissées</div>
+              <div className="text-[10px] text-emerald-700 uppercase font-black">{t.reportsPage.collectedReceipts}</div>
               <div className="text-xl font-black text-emerald-700 mt-1">{formatXAF(totalInflows)}</div>
-              <div className="text-[10px] text-emerald-600 mt-1">Total flux entrants effectifs</div>
+              <div className="text-[10px] text-emerald-600 mt-1">{t.reportsPage.totalInflowsDesc}</div>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] text-rose-700 uppercase font-black">Dépenses &amp; Décaissements</div>
+              <div className="text-[10px] text-rose-700 uppercase font-black">{t.reportsPage.expensesOutflows}</div>
               <div className="text-xl font-black text-rose-700 mt-1">{formatXAF(totalOutflows)}</div>
-              <div className="text-[10px] text-rose-600 mt-1">Carburant, entretien, fournitures</div>
+              <div className="text-[10px] text-rose-600 mt-1">{t.reportsPage.expensesDesc}</div>
             </div>
             <div className="bg-emerald-50/60 p-4 rounded-xl border border-emerald-300 shadow-xs">
-              <div className="text-[10px] text-emerald-800 uppercase font-black">Flux Net d'Exploitation</div>
+              <div className="text-[10px] text-emerald-800 uppercase font-black">{t.reportsPage.netOperatingCashflow}</div>
               <div className="text-xl font-black text-emerald-900 mt-1">{formatXAF(netCashFlow)}</div>
-              <div className="text-[10px] text-emerald-700 mt-1">Trésorerie nette générée</div>
+              <div className="text-[10px] text-emerald-700 mt-1">{t.reportsPage.netCashflowDesc}</div>
             </div>
           </div>
 
@@ -272,23 +273,23 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-3">
               <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-blue-700" />
-                <span>Rapprochement Facturation vs Encaissements</span>
+                <span>{t.reportsPage.reconciliationTitle}</span>
               </h3>
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-600">Total Facturé (TTC) :</span>
+                  <span className="text-slate-600">{t.reportsPage.totalInvoicedTtc}</span>
                   <span className="font-black text-slate-900">{formatXAF(totalInvoiced)}</span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-600">Total Encaissé sur Factures :</span>
+                  <span className="text-slate-600">{t.reportsPage.totalInvoicedCollected}</span>
                   <span className="font-bold text-emerald-700">{formatXAF(totalInvoiced - totalUnpaidReceivables)}</span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-600">Créances Clients en Attente :</span>
+                  <span className="text-slate-600">{t.reportsPage.pendingReceivables}</span>
                   <span className="font-black text-rose-700">{formatXAF(totalUnpaidReceivables)}</span>
                 </div>
                 <div className="flex justify-between py-1.5">
-                  <span className="text-slate-600">Ventes Véhicules Conclues :</span>
+                  <span className="text-slate-600">{t.reportsPage.concludedSales}</span>
                   <span className="font-black text-blue-900">{formatXAF(totalSalesConcluded)}</span>
                 </div>
               </div>
@@ -297,25 +298,25 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-3">
               <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-emerald-700" />
-                <span>Performance Commerciale CRM</span>
+                <span>{t.reportsPage.crmPerformance}</span>
               </h3>
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-600">Prospects Enregistrés :</span>
+                  <span className="text-slate-600">{t.reportsPage.registeredLeads}</span>
                   <span className="font-bold text-slate-900">{totalLeadsCount}</span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-600">Prospects Convertis en Clients :</span>
+                  <span className="text-slate-600">{t.reportsPage.convertedLeads}</span>
                   <span className="font-bold text-emerald-700">{convertedLeadsCount}</span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-600">Taux de Conversion Commerciale :</span>
+                  <span className="text-slate-600">{t.reportsPage.conversionRate}</span>
                   <span className="font-black text-emerald-800">
                     {totalLeadsCount > 0 ? Math.round((convertedLeadsCount / totalLeadsCount) * 100) : 0} %
                   </span>
                 </div>
                 <div className="flex justify-between py-1.5">
-                  <span className="text-slate-600">Clients Actifs FCT :</span>
+                  <span className="text-slate-600">{t.reportsPage.activeClients}</span>
                   <span className="font-bold text-blue-900">{state.customers.length}</span>
                 </div>
               </div>
@@ -329,19 +330,19 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
         <div className="space-y-5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
-              <div className="text-[10px] text-emerald-700 uppercase font-black">Disponibles</div>
+              <div className="text-[10px] text-emerald-700 uppercase font-black">{t.vehicleStatus.AVAILABLE}</div>
               <div className="text-2xl font-black text-emerald-800 mt-1">{availableCount}</div>
             </div>
             <div className="p-4 bg-blue-50 rounded-xl border border-blue-200 text-center">
-              <div className="text-[10px] text-blue-700 uppercase font-black">En Location</div>
+              <div className="text-[10px] text-blue-700 uppercase font-black">{t.vehicleStatus.RENTED}</div>
               <div className="text-2xl font-black text-blue-800 mt-1">{rentedCount}</div>
             </div>
             <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-center">
-              <div className="text-[10px] text-amber-700 uppercase font-black">En Maintenance</div>
+              <div className="text-[10px] text-amber-700 uppercase font-black">{t.vehicleStatus.MAINTENANCE}</div>
               <div className="text-2xl font-black text-amber-800 mt-1">{maintenanceCount}</div>
             </div>
             <div className="p-4 bg-purple-50 rounded-xl border border-purple-200 text-center">
-              <div className="text-[10px] text-purple-700 uppercase font-black">Vendus</div>
+              <div className="text-[10px] text-purple-700 uppercase font-black">{t.vehicleStatus.SOLD}</div>
               <div className="text-2xl font-black text-purple-800 mt-1">{soldCount}</div>
             </div>
           </div>
@@ -349,18 +350,18 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="p-4 border-b border-slate-100 font-bold text-sm text-slate-900 flex items-center gap-2">
               <Car className="w-4 h-4 text-blue-600" />
-              <span>Inventaire &amp; Rentrabilité Flotte Automobile FCT</span>
+              <span>{t.reportsPage.fleetInventoryTitle}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
                 <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                   <tr>
-                    <th className="py-2.5 px-4">Véhicule</th>
-                    <th className="py-2.5 px-4">Catégorie</th>
-                    <th className="py-2.5 px-4">Kilométrage</th>
-                    <th className="py-2.5 px-4 text-right">Acquisition (XAF)</th>
-                    <th className="py-2.5 px-4 text-right">Tarif / Jour</th>
-                    <th className="py-2.5 px-4 text-center">Statut</th>
+                    <th className="py-2.5 px-4">{t.reportsPage.colVehicle}</th>
+                    <th className="py-2.5 px-4">{t.reportsPage.colCategory}</th>
+                    <th className="py-2.5 px-4">{t.reportsPage.colMileage}</th>
+                    <th className="py-2.5 px-4 text-right">{t.reportsPage.colAcquisition}</th>
+                    <th className="py-2.5 px-4 text-right">{t.reportsPage.colDailyRate}</th>
+                    <th className="py-2.5 px-4 text-center">{t.reportsPage.colStatus}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -389,7 +390,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
                               : 'bg-slate-100 text-slate-700'
                           }`}
                         >
-                          {v.status}
+                          {t.vehicleStatus[v.status as keyof typeof t.vehicleStatus] || v.status}
                         </span>
                       </td>
                     </tr>
@@ -406,36 +407,36 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
         <div className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] text-slate-400 uppercase font-black">Dépenses Cumulées Atelier</div>
+              <div className="text-[10px] text-slate-400 uppercase font-black">{t.reportsPage.cumulatedWorkshopSpent}</div>
               <div className="text-xl font-black text-rose-700 mt-1">{formatXAF(totalMaintenanceSpent)}</div>
-              <div className="text-[10px] text-slate-500 mt-1">{state.maintenance.length} interventions enregistrées</div>
+              <div className="text-[10px] text-slate-500 mt-1">{state.maintenance.length} {t.reportsPage.recordsRegistered}</div>
             </div>
             <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] text-emerald-700 uppercase font-black">Interventions Terminées</div>
+              <div className="text-[10px] text-emerald-700 uppercase font-black">{t.reportsPage.completedRepairs}</div>
               <div className="text-xl font-black text-emerald-700 mt-1">{completedInterventions}</div>
-              <div className="text-[10px] text-emerald-600 mt-1">Avec pièces déduites du stock</div>
+              <div className="text-[10px] text-emerald-600 mt-1">{t.reportsPage.partsDeducted}</div>
             </div>
             <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] text-amber-700 uppercase font-black">Interventions en Cours</div>
+              <div className="text-[10px] text-amber-700 uppercase font-black">{t.reportsPage.inProgressRepairs}</div>
               <div className="text-xl font-black text-amber-700 mt-1">{inProgressInterventions}</div>
-              <div className="text-[10px] text-amber-600 mt-1">Véhicules actuellement immobilisés</div>
+              <div className="text-[10px] text-amber-600 mt-1">{t.reportsPage.currentlyImmobilized}</div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="p-4 border-b border-slate-100 font-bold text-sm text-slate-900 flex items-center gap-2">
               <Wrench className="w-4 h-4 text-amber-600" />
-              <span>Coûts de Maintenance Cumulés par Véhicule (Bilan d'usure)</span>
+              <span>{t.reportsPage.maintenanceWearTitle}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
                 <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                   <tr>
-                    <th className="py-2.5 px-4">Véhicule</th>
-                    <th className="py-2.5 px-4">Immatriculation</th>
-                    <th className="py-2.5 px-4 text-center">Nombre d'Interventions</th>
-                    <th className="py-2.5 px-4 text-right">Coût Total Entretien (XAF)</th>
-                    <th className="py-2.5 px-4 text-right">% du Coût d'Acquisition</th>
+                    <th className="py-2.5 px-4">{t.reportsPage.colVehicle}</th>
+                    <th className="py-2.5 px-4">{lang === 'en' ? 'License Plate' : 'Immatriculation'}</th>
+                    <th className="py-2.5 px-4 text-center">{t.reportsPage.colInterventionCount}</th>
+                    <th className="py-2.5 px-4 text-right">{t.reportsPage.colTotalMaintenance}</th>
+                    <th className="py-2.5 px-4 text-right">{t.reportsPage.colAcquisitionRatio}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -465,33 +466,33 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
         <div className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] text-slate-400 uppercase font-black">Valorisation du Stock de Pièces</div>
+              <div className="text-[10px] text-slate-400 uppercase font-black">{t.reportsPage.stockValorization}</div>
               <div className="text-xl font-black text-emerald-800 mt-1">{formatXAF(totalStockValorization)}</div>
-              <div className="text-[10px] text-slate-500 mt-1">{state.stock.length} références d'articles</div>
+              <div className="text-[10px] text-slate-500 mt-1">{state.stock.length} {t.reportsPage.itemReferences}</div>
             </div>
             <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs">
-              <div className="text-[10px] text-rose-700 uppercase font-black">Articles Sous Seuil d'Alerte</div>
+              <div className="text-[10px] text-rose-700 uppercase font-black">{t.reportsPage.itemsUnderAlert}</div>
               <div className="text-xl font-black text-rose-700 mt-1">{lowStockCount}</div>
-              <div className="text-[10px] text-rose-600 mt-1">À réapprovisionner d'urgence</div>
+              <div className="text-[10px] text-rose-600 mt-1">{t.reportsPage.urgentRestock}</div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="p-4 border-b border-slate-100 font-bold text-sm text-slate-900 flex items-center gap-2">
               <Package className="w-4 h-4 text-emerald-600" />
-              <span>Inventaire Valorisé des Pièces &amp; Consommables</span>
+              <span>{t.reportsPage.stockValuedInventory}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
                 <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                   <tr>
-                    <th className="py-2.5 px-4">Code</th>
-                    <th className="py-2.5 px-4">Désignation</th>
-                    <th className="py-2.5 px-4">Catégorie</th>
-                    <th className="py-2.5 px-4 text-right">En Stock</th>
-                    <th className="py-2.5 px-4 text-right">Seuil Min</th>
-                    <th className="py-2.5 px-4 text-right">Coût Unitaire (XAF)</th>
-                    <th className="py-2.5 px-4 text-right">Valeur Totale (XAF)</th>
+                    <th className="py-2.5 px-4">{t.reportsPage.colCode}</th>
+                    <th className="py-2.5 px-4">{t.reportsPage.colDesignation}</th>
+                    <th className="py-2.5 px-4">{t.reportsPage.colCategory}</th>
+                    <th className="py-2.5 px-4 text-right">{t.reportsPage.colInStock}</th>
+                    <th className="py-2.5 px-4 text-right">{t.reportsPage.colMinThreshold}</th>
+                    <th className="py-2.5 px-4 text-right">{t.reportsPage.colUnitCost}</th>
+                    <th className="py-2.5 px-4 text-right">{t.reportsPage.colTotalValue}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">

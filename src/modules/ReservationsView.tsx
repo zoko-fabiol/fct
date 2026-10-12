@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { dbStore, DatabaseState } from '../services/dbStore.ts';
-import { Language } from '../services/i18n.ts';
+import { Language, translations } from '../services/i18n.ts';
 import { Reservation, AppModule } from '../../packages/shared-types/index.ts';
 import { formatXAF, calculateRentalDays, checkVehicleAvailability } from '../../packages/business-rules/index.ts';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal.tsx';
@@ -47,6 +47,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
   contextReservationId,
   contextEntityId,
 }) => {
+  const t = translations[lang];
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
@@ -211,10 +212,10 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <CalendarCheck2 className="w-6 h-6 text-emerald-600" />
-            <span>Réservations Centralisées &amp; Planning</span>
+            <span>{t.reservationsPage.title}</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Prises de commande (Agence, WhatsApp, Téléphone, Web), contrôle anti-chevauchement et conversion en contrats
+            {t.reservationsPage.subtitle}
           </p>
         </div>
 
@@ -224,20 +225,20 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
             onClick={() => {
               exportCollectionToExcel({
                 filename: `FCT_Reservations_${new Date().toISOString().split('T')[0]}`,
-                sheetName: 'Réservations',
-                title: 'FCT AUTOMOBILE DOUALA — PLANNING DES RÉSERVATIONS',
-                subtitle: `Exporté le ${new Date().toLocaleDateString('fr-FR')} • ${filteredReservations.length} réservation(s)`,
+                sheetName: lang === 'en' ? 'Bookings' : 'Réservations',
+                title: lang === 'en' ? 'FCT AUTOMOBILE DOUALA — FLEET RESERVATIONS' : 'FCT AUTOMOBILE DOUALA — PLANNING DES RÉSERVATIONS',
+                subtitle: `${lang === 'en' ? 'Exported on' : 'Exporté le'} ${new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')} • ${filteredReservations.length} ${lang === 'en' ? 'reservation(s)' : 'réservation(s)'}`,
                 columns: [
-                  { header: 'N° Réservation', key: 'reservationNumber', width: 16 },
-                  { header: 'Client', key: 'customerName', width: 26 },
-                  { header: 'Téléphone', key: 'customerPhone', width: 18 },
-                  { header: 'Véhicule', key: 'vehicleName', width: 28 },
-                  { header: 'Début', key: 'startDate', width: 14 },
-                  { header: 'Fin', key: 'endDate', width: 14 },
-                  { header: 'Acompte (XAF)', key: 'advanceDepositXAF', width: 16 },
-                  { header: 'Canal', key: 'source', width: 14 },
-                  { header: 'Statut', key: 'status', width: 14 },
-                  { header: 'Notes', key: 'notes', width: 30 },
+                  { header: lang === 'en' ? 'Booking #' : 'N° Réservation', key: 'reservationNumber', width: 16 },
+                  { header: lang === 'en' ? 'Client' : 'Client', key: 'customerName', width: 26 },
+                  { header: lang === 'en' ? 'Phone' : 'Téléphone', key: 'customerPhone', width: 18 },
+                  { header: lang === 'en' ? 'Vehicle' : 'Véhicule', key: 'vehicleName', width: 28 },
+                  { header: lang === 'en' ? 'Start' : 'Début', key: 'startDate', width: 14 },
+                  { header: lang === 'en' ? 'End' : 'Fin', key: 'endDate', width: 14 },
+                  { header: lang === 'en' ? 'Deposit (XAF)' : 'Acompte (XAF)', key: 'advanceDepositXAF', width: 16 },
+                  { header: lang === 'en' ? 'Channel' : 'Canal', key: 'source', width: 14 },
+                  { header: t.status, key: 'status', width: 14 },
+                  { header: lang === 'en' ? 'Notes' : 'Notes', key: 'notes', width: 30 },
                 ],
                 data: filteredReservations,
               });
@@ -245,7 +246,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#0f2a4a] hover:bg-[#163a66] text-white text-xs font-bold shadow-xs transition cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-            <span>Exporter Excel (.xlsx)</span>
+            <span>{lang === 'en' ? 'Export Excel (.xlsx)' : 'Exporter Excel (.xlsx)'}</span>
           </button>
 
           <button
@@ -256,7 +257,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Nouvelle Réservation</span>
+            <span>{t.reservationsPage.newReservationBtn}</span>
           </button>
         </div>
       </div>
@@ -283,7 +284,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
           <Search className="w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Rechercher par numéro de réservation (RES), client, téléphone, véhicule..."
+            placeholder={t.reservationsPage.searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full text-xs outline-hidden"
@@ -300,14 +301,14 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
               }`}
             >
               {st === 'ALL'
-                ? 'Toutes'
+                ? t.reservationsPage.allTab
                 : st === 'CONFIRMED'
-                ? 'Confirmées'
+                ? t.reservationsPage.confirmedTab
                 : st === 'PENDING'
-                ? 'En attente'
+                ? t.reservationsPage.pendingTab
                 : st === 'CONVERTED'
-                ? 'Converties en Contrat'
-                : 'Annulées'}
+                ? t.reservationsPage.convertedTab
+                : t.reservationsPage.cancelledTab}
             </button>
           ))}
         </div>
@@ -319,22 +320,22 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
           <table className="w-full min-w-[750px] text-xs text-left">
             <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
               <tr>
-                <th className="py-3 px-4">N° Réservation</th>
-                <th className="py-3 px-4">Client &amp; Contact</th>
-                <th className="py-3 px-4">Véhicule Réservé</th>
-                <th className="py-3 px-4">Période Prévue</th>
-                <th className="py-3 px-4 text-center">Canal</th>
-                <th className="py-3 px-4 text-right">Acompte Consigné</th>
-                <th className="py-3 px-4 text-right">Total Estimé</th>
-                <th className="py-3 px-4 text-center">Statut</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-3 px-4">{lang === 'en' ? 'Booking #' : 'N° Réservation'}</th>
+                <th className="py-3 px-4">{lang === 'en' ? 'Client & Contact' : 'Client & Contact'}</th>
+                <th className="py-3 px-4">{lang === 'en' ? 'Reserved Vehicle' : 'Véhicule Réservé'}</th>
+                <th className="py-3 px-4">{lang === 'en' ? 'Rental Period' : 'Période Prévue'}</th>
+                <th className="py-3 px-4 text-center">{lang === 'en' ? 'Channel' : 'Canal'}</th>
+                <th className="py-3 px-4 text-right">{lang === 'en' ? 'Deposit (XAF)' : 'Acompte Consigné'}</th>
+                <th className="py-3 px-4 text-right">{lang === 'en' ? 'Estimated Total' : 'Total Estimé'}</th>
+                <th className="py-3 px-4 text-center">{t.status}</th>
+                <th className="py-3 px-4 text-right">{t.actions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredReservations.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-8 text-center text-slate-400 font-semibold">
-                    Aucune réservation ne correspond à vos filtres.
+                    {t.reservationsPage.emptyReservationsDesc}
                   </td>
                 </tr>
               ) : (

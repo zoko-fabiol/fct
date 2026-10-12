@@ -250,36 +250,36 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
   const incYear = formData.includeYearInDocNumber !== false;
 
   const docPreviews = [
-    { label: 'Contrat de location', prefix: formData.rentalPrefix || 'CTR', sample: generateDocumentNumber(formData.rentalPrefix || 'CTR', 1, sampleYear, padDigits, incYear) },
-    { label: 'Facture client', prefix: formData.invoicePrefix || 'FAC', sample: generateDocumentNumber(formData.invoicePrefix || 'FAC', 42, sampleYear, padDigits, incYear) },
-    { label: 'Reçu d’encaissement', prefix: formData.receiptPrefix || 'REC', sample: generateDocumentNumber(formData.receiptPrefix || 'REC', 158, sampleYear, padDigits, incYear) },
-    { label: 'Bon de commande vente', prefix: formData.salePrefix || 'COM', sample: generateDocumentNumber(formData.salePrefix || 'COM', 7, sampleYear, padDigits, incYear) },
-    { label: 'Réservation', prefix: formData.reservationPrefix || 'RES', sample: generateDocumentNumber(formData.reservationPrefix || 'RES', 89, sampleYear, padDigits, incYear) },
-    { label: 'Ordre de maintenance', prefix: formData.maintenancePrefix || 'MNT', sample: generateDocumentNumber(formData.maintenancePrefix || 'MNT', 12, sampleYear, padDigits, incYear) },
-    { label: 'Devis proforma', prefix: formData.quotePrefix || 'DEV', sample: generateDocumentNumber(formData.quotePrefix || 'DEV', 3, sampleYear, padDigits, incYear) },
-    { label: 'Pièce de dépense caisse', prefix: formData.expensePrefix || 'DEP', sample: generateDocumentNumber(formData.expensePrefix || 'DEP', 205, sampleYear, padDigits, incYear) },
+    { label: lang === 'en' ? 'Rental Contract' : 'Contrat de location', prefix: formData.rentalPrefix || 'CTR', sample: generateDocumentNumber(formData.rentalPrefix || 'CTR', 1, sampleYear, padDigits, incYear) },
+    { label: lang === 'en' ? 'Customer Invoice' : 'Facture client', prefix: formData.invoicePrefix || 'FAC', sample: generateDocumentNumber(formData.invoicePrefix || 'FAC', 42, sampleYear, padDigits, incYear) },
+    { label: lang === 'en' ? 'Payment Receipt' : 'Reçu d’encaissement', prefix: formData.receiptPrefix || 'REC', sample: generateDocumentNumber(formData.receiptPrefix || 'REC', 158, sampleYear, padDigits, incYear) },
+    { label: lang === 'en' ? 'Sales Order' : 'Bon de commande vente', prefix: formData.salePrefix || 'COM', sample: generateDocumentNumber(formData.salePrefix || 'COM', 7, sampleYear, padDigits, incYear) },
+    { label: lang === 'en' ? 'Reservation' : 'Réservation', prefix: formData.reservationPrefix || 'RES', sample: generateDocumentNumber(formData.reservationPrefix || 'RES', 89, sampleYear, padDigits, incYear) },
+    { label: lang === 'en' ? 'Maintenance Order' : 'Ordre de maintenance', prefix: formData.maintenancePrefix || 'MNT', sample: generateDocumentNumber(formData.maintenancePrefix || 'MNT', 12, sampleYear, padDigits, incYear) },
+    { label: lang === 'en' ? 'Proforma Quote' : 'Devis proforma', prefix: formData.quotePrefix || 'DEV', sample: generateDocumentNumber(formData.quotePrefix || 'DEV', 3, sampleYear, padDigits, incYear) },
+    { label: lang === 'en' ? 'Cash Expense Voucher' : 'Pièce de dépense caisse', prefix: formData.expensePrefix || 'DEP', sample: generateDocumentNumber(formData.expensePrefix || 'DEP', 205, sampleYear, padDigits, incYear) },
   ];
 
   // List of all 18 modules aligned strictly with AppModule type
   const allModules: { key: AppModule; label: string; desc: string; icon: React.ReactNode }[] = [
-    { key: 'dashboard', label: 'Tableau de bord', desc: 'KPIs d’exploitation et vue d’ensemble', icon: <Layers className="w-4 h-4 text-emerald-600" /> },
-    { key: 'vehicles', label: 'Parc Automobile', desc: 'Inventaire des véhicules, statuts et immatriculations', icon: <Car className="w-4 h-4 text-blue-600" /> },
-    { key: 'rentals', label: 'Locations & Contrats', desc: 'Contrats, départs, retours et cautions', icon: <FileCheck className="w-4 h-4 text-emerald-600" /> },
-    { key: 'sales', label: 'Vente Véhicules & Mandats', desc: 'Pipeline commercial, acomptes et cessions', icon: <Coins className="w-4 h-4 text-indigo-600" /> },
-    { key: 'crm', label: 'Clients & CRM', desc: 'Fiches clients, prospects et historique locatif', icon: <Building2 className="w-4 h-4 text-sky-600" /> },
-    { key: 'reservations', label: 'Réservations de Véhicules', desc: 'Plannings, arrhes et blocage préventif', icon: <Clock className="w-4 h-4 text-teal-600" /> },
-    { key: 'billing', label: 'Facturation & Devis', desc: 'Émission de factures proforma et reçus conformes', icon: <FileText className="w-4 h-4 text-violet-600" /> },
-    { key: 'cash', label: 'Caisse & Trésorerie', desc: 'Encaissements espèces, dépenses et clôtures', icon: <Coins className="w-4 h-4 text-emerald-600" /> },
-    { key: 'maintenance', label: 'Maintenance & Garage', desc: 'Ordres d’intervention, vidanges et réparations', icon: <Wrench className="w-4 h-4 text-amber-600" /> },
-    { key: 'stock', label: 'Pièces & Stock', desc: 'Gestion de pièces détachées et alertes réassort', icon: <Hash className="w-4 h-4 text-purple-600" /> },
-    { key: 'drivers', label: 'Chauffeurs & Assignations', desc: 'Permis, plannings et missions de mise à disposition', icon: <Phone className="w-4 h-4 text-cyan-600" /> },
-    { key: 'documents', label: 'Coffre-Fort Documents', desc: 'Contrats PDF, cartes grises et Cloudinary', icon: <Camera className="w-4 h-4 text-slate-600" /> },
-    { key: 'notifications', label: 'Alertes & Notifications', desc: 'Échéances assurances, visites et retards', icon: <AlertTriangle className="w-4 h-4 text-rose-600" /> },
-    { key: 'reports', label: 'Rapports & Statistiques', desc: 'Analyses de rentabilité, flotte et trésorerie', icon: <Eye className="w-4 h-4 text-teal-600" /> },
-    { key: 'users', label: 'Équipe & Permissions RBAC', desc: 'Gestion des rôles, accès et profils utilisateurs', icon: <Shield className="w-4 h-4 text-rose-600" /> },
-    { key: 'settings', label: 'Paramètres FCT', desc: 'Configuration centrale de l’agence', icon: <Settings className="w-4 h-4 text-slate-700" /> },
-    { key: 'audit', label: 'Audit & Journal Système', desc: 'Traçabilité des opérations et synchronisation', icon: <History className="w-4 h-4 text-slate-600" /> },
-    { key: 'help', label: 'Centre d’Aide FCT', desc: 'Guide d’utilisation et procédures opérationnelles', icon: <Info className="w-4 h-4 text-indigo-500" /> },
+    { key: 'dashboard', label: t.modules.dashboard, desc: lang === 'en' ? 'Operations KPIs and overview' : 'KPIs d’exploitation et vue d’ensemble', icon: <Layers className="w-4 h-4 text-emerald-600" /> },
+    { key: 'vehicles', label: t.modules.vehicles, desc: lang === 'en' ? 'Vehicle inventory, statuses and registration' : 'Inventaire des véhicules, statuts et immatriculations', icon: <Car className="w-4 h-4 text-blue-600" /> },
+    { key: 'rentals', label: t.modules.rentals, desc: lang === 'en' ? 'Contracts, check-ins, check-outs and deposits' : 'Contrats, départs, retours et cautions', icon: <FileCheck className="w-4 h-4 text-emerald-600" /> },
+    { key: 'sales', label: t.modules.sales, desc: lang === 'en' ? 'Sales pipeline, deposits and vehicle transfers' : 'Pipeline commercial, acomptes et cessions', icon: <Coins className="w-4 h-4 text-indigo-600" /> },
+    { key: 'crm', label: t.modules.crm, desc: lang === 'en' ? 'Client profiles, leads and rental history' : 'Fiches clients, prospects et historique locatif', icon: <Building2 className="w-4 h-4 text-sky-600" /> },
+    { key: 'reservations', label: t.modules.reservations, desc: lang === 'en' ? 'Schedules, deposits and preventive fleet hold' : 'Plannings, arrhes et blocage préventif', icon: <Clock className="w-4 h-4 text-teal-600" /> },
+    { key: 'billing', label: t.modules.billing, desc: lang === 'en' ? 'Proforma invoices and compliant receipts' : 'Émission de factures proforma et reçus conformes', icon: <FileText className="w-4 h-4 text-violet-600" /> },
+    { key: 'cash', label: t.modules.cash, desc: lang === 'en' ? 'Cash collections, expenses and daily closing' : 'Encaissements espèces, dépenses et clôtures', icon: <Coins className="w-4 h-4 text-emerald-600" /> },
+    { key: 'maintenance', label: t.modules.maintenance, desc: lang === 'en' ? 'Work orders, oil changes and repairs' : 'Ordres d’intervention, vidanges et réparations', icon: <Wrench className="w-4 h-4 text-amber-600" /> },
+    { key: 'stock', label: t.modules.stock, desc: lang === 'en' ? 'Spare parts management and restock alerts' : 'Gestion de pièces détachées et alertes réassort', icon: <Hash className="w-4 h-4 text-purple-600" /> },
+    { key: 'drivers', label: t.modules.drivers, desc: lang === 'en' ? 'Licenses, schedules and chauffeur assignments' : 'Permis, plannings et missions de mise à disposition', icon: <Phone className="w-4 h-4 text-cyan-600" /> },
+    { key: 'documents', label: t.modules.documents, desc: lang === 'en' ? 'PDF contracts, registration titles and Cloudinary' : 'Contrats PDF, cartes grises et Cloudinary', icon: <Camera className="w-4 h-4 text-slate-600" /> },
+    { key: 'notifications', label: t.modules.notifications, desc: lang === 'en' ? 'Insurance expiry, inspections and rental delays' : 'Échéances assurances, visites et retards', icon: <AlertTriangle className="w-4 h-4 text-rose-600" /> },
+    { key: 'reports', label: t.modules.reports, desc: lang === 'en' ? 'Profitability, fleet and cashflow analytics' : 'Analyses de rentabilité, flotte et trésorerie', icon: <Eye className="w-4 h-4 text-teal-600" /> },
+    { key: 'users', label: t.modules.users, desc: lang === 'en' ? 'Role management, access and user accounts' : 'Gestion des rôles, accès et profils utilisateurs', icon: <Shield className="w-4 h-4 text-rose-600" /> },
+    { key: 'settings', label: t.modules.settings, desc: lang === 'en' ? 'Central FCT agency configuration' : 'Configuration centrale de l’agence', icon: <Settings className="w-4 h-4 text-slate-700" /> },
+    { key: 'audit', label: t.modules.audit, desc: lang === 'en' ? 'Operation traceability and synchronization' : 'Traçabilité des opérations et synchronisation', icon: <History className="w-4 h-4 text-slate-600" /> },
+    { key: 'help', label: t.modules.help, desc: lang === 'en' ? 'User guide and standard operating procedures' : 'Guide d’utilisation et procédures opérationnelles', icon: <Info className="w-4 h-4 text-indigo-500" /> },
   ];
 
   // Settings audit logs filtered
@@ -291,17 +291,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
   // Tab navigation definitions
   const tabs: { id: SettingsTab; label: string; icon: React.ReactNode; badge?: string }[] = [
-    { id: 'general', label: 'Général & Identité', icon: <Building2 className="w-4 h-4" /> },
-    { id: 'appearance', label: 'Apparence & Préférences', icon: <Palette className="w-4 h-4" /> },
-    { id: 'numbering', label: 'Numérotation & Documents', icon: <Hash className="w-4 h-4" /> },
-    { id: 'finance', label: 'Finances & Caisse', icon: <Coins className="w-4 h-4" /> },
-    { id: 'fleet', label: 'Parc & Alertes', icon: <Car className="w-4 h-4" /> },
-    { id: 'maintenance', label: 'Maintenance & Stock', icon: <Wrench className="w-4 h-4" /> },
-    { id: 'rentals', label: 'Locations & Réservations', icon: <FileCheck className="w-4 h-4" /> },
-    { id: 'modules', label: 'Gestion des Modules', icon: <Layers className="w-4 h-4" />, badge: '18' },
-    { id: 'users', label: 'Collaborateurs & Droits RBAC', icon: <ShieldCheck className="w-4 h-4 text-emerald-600" />, badge: `${state.users?.length || 0}` },
-    { id: 'sync', label: 'Synchronisation & Médias', icon: <Cloud className="w-4 h-4" /> },
-    { id: 'backup', label: 'Sauvegardes & Audit', icon: <Database className="w-4 h-4" /> },
+    { id: 'general', label: lang === 'en' ? 'General & Identity' : 'Général & Identité', icon: <Building2 className="w-4 h-4" /> },
+    { id: 'appearance', label: lang === 'en' ? 'Appearance & Theme' : 'Apparence & Préférences', icon: <Palette className="w-4 h-4" /> },
+    { id: 'numbering', label: lang === 'en' ? 'Numbering & Docs' : 'Numérotation & Documents', icon: <Hash className="w-4 h-4" /> },
+    { id: 'finance', label: lang === 'en' ? 'Finance & Cash' : 'Finances & Caisse', icon: <Coins className="w-4 h-4" /> },
+    { id: 'fleet', label: lang === 'en' ? 'Fleet & Alerts' : 'Parc & Alertes', icon: <Car className="w-4 h-4" /> },
+    { id: 'maintenance', label: lang === 'en' ? 'Maintenance & Stock' : 'Maintenance & Stock', icon: <Wrench className="w-4 h-4" /> },
+    { id: 'rentals', label: lang === 'en' ? 'Rentals & Bookings' : 'Locations & Réservations', icon: <FileCheck className="w-4 h-4" /> },
+    { id: 'modules', label: lang === 'en' ? 'Module Controls' : 'Gestion des Modules', icon: <Layers className="w-4 h-4" />, badge: '18' },
+    { id: 'users', label: lang === 'en' ? 'Staff & RBAC Rights' : 'Collaborateurs & Droits RBAC', icon: <ShieldCheck className="w-4 h-4 text-emerald-600" />, badge: `${state.users?.length || 0}` },
+    { id: 'sync', label: lang === 'en' ? 'Sync & Media' : 'Synchronisation & Médias', icon: <Cloud className="w-4 h-4" /> },
+    { id: 'backup', label: lang === 'en' ? 'Backups & Audit' : 'Sauvegardes & Audit', icon: <Database className="w-4 h-4" /> },
   ];
 
   return (

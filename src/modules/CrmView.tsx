@@ -7,7 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { dbStore, DatabaseState } from '../services/dbStore.ts';
 import { CloudinaryUploadDropzone } from '../components/ui/CloudinaryUploadDropzone.tsx';
-import { Language } from '../services/i18n.ts';
+import { Language, translations } from '../services/i18n.ts';
 import { Customer, CustomerType, CrmLead, LeadStage, VehicleCategory, AppModule } from '../../packages/shared-types/index.ts';
 import { formatXAF } from '../../packages/business-rules/index.ts';
 import { CustomerSchema } from '../../packages/validation/index.ts';
@@ -61,6 +61,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
   contextCustomerId,
   contextEntityId,
 }) => {
+  const t = translations[lang];
   const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'LEADS'>('CUSTOMERS');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
@@ -358,13 +359,13 @@ export const CrmView: React.FC<CrmViewProps> = ({
     return (
       <>
         <EntityShowroomLayout
-          backLabel="Retour au répertoire des clients"
+          backLabel={t.crmPage.backToClients}
           onBack={() => setSelectedCustomer(null)}
           title={selectedCustomer.companyName || selectedCustomer.fullName}
-          subtitle={`${selectedCustomer.type === 'COMPANY' ? 'Client Entreprise' : 'Client Particulier'} • Contact Référent : ${selectedCustomer.fullName} • ${selectedCustomer.phone}`}
+          subtitle={`${selectedCustomer.type === 'COMPANY' ? (lang === 'en' ? 'Corporate Account' : 'Client Entreprise') : (lang === 'en' ? 'Individual Client' : 'Client Particulier')} • ${lang === 'en' ? 'Contact' : 'Contact Référent'} : ${selectedCustomer.fullName} • ${selectedCustomer.phone}`}
           referenceId={selectedCustomer.id}
           status={selectedCustomer.type}
-          statusLabel={selectedCustomer.type === 'COMPANY' ? 'Entreprise' : 'Particulier'}
+          statusLabel={selectedCustomer.type === 'COMPANY' ? (lang === 'en' ? 'Corporate' : 'Entreprise') : (lang === 'en' ? 'Individual' : 'Particulier')}
           avatarText={(selectedCustomer.companyName || selectedCustomer.fullName).charAt(0)}
           avatarIcon={User}
           actions={
@@ -375,7 +376,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>Rattacher Document</span>
+                <span>{lang === 'en' ? 'Attach Document' : 'Rattacher Document'}</span>
               </button>
               <button
                 type="button"
@@ -383,7 +384,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <Pencil className="w-3.5 h-3.5" />
-                <span>Modifier Client</span>
+                <span>{lang === 'en' ? 'Edit Profile' : 'Modifier Client'}</span>
               </button>
               {onNavigate && (
                 <>
@@ -397,7 +398,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs cursor-pointer shadow-xs transition"
                   >
                     <KeyRound className="w-3.5 h-3.5" />
-                    <span>Nouveau Contrat</span>
+                    <span>{lang === 'en' ? 'New Contract' : 'Nouveau Contrat'}</span>
                   </button>
                   <button
                     type="button"
@@ -409,7 +410,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-xs transition"
                   >
                     <TrendingUp className="w-3.5 h-3.5" />
-                    <span>Nouvelle Vente</span>
+                    <span>{lang === 'en' ? 'New Sale' : 'Nouvelle Vente'}</span>
                   </button>
                   <button
                     type="button"
@@ -421,7 +422,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs cursor-pointer shadow-xs transition"
                   >
                     <Receipt className="w-3.5 h-3.5" />
-                    <span>Émettre Facture</span>
+                    <span>{lang === 'en' ? 'Issue Invoice' : 'Émettre Facture'}</span>
                   </button>
                 </>
               )}
@@ -429,34 +430,34 @@ export const CrmView: React.FC<CrmViewProps> = ({
           }
           kpis={[
             {
-              label: 'Chiffre d\'Affaires Cumulé',
+              label: lang === 'en' ? 'Total Cumulative Spending' : 'Chiffre d\'Affaires Cumulé',
               value: formatXAF(selectedCustomer.totalSpentXAF),
-              sublabel: 'Total dépenses enregistrées XAF',
+              sublabel: lang === 'en' ? 'Total recorded spending in XAF' : 'Total dépenses enregistrées XAF',
               highlight: true,
             },
             {
-              label: 'Contrats de Location',
+              label: lang === 'en' ? 'Rental Contracts' : 'Contrats de Location',
               value: custContracts.length,
-              sublabel: `${custContracts.filter((c) => c.status === 'ACTIVE').length} contrat(s) en cours`,
+              sublabel: `${custContracts.filter((c) => c.status === 'ACTIVE').length} ${lang === 'en' ? 'active contract(s)' : 'contrat(s) en cours'}`,
             },
             {
-              label: 'Factures Émises',
+              label: lang === 'en' ? 'Invoices Issued' : 'Factures Émises',
               value: custInvoices.length,
-              sublabel: `${custInvoices.filter((i) => i.balanceXAF > 0).length} impayée(s)`,
+              sublabel: `${custInvoices.filter((i) => i.balanceXAF > 0).length} ${lang === 'en' ? 'unpaid' : 'impayée(s)'}`,
             },
             {
-              label: 'Immatriculation Fiscale',
-              value: selectedCustomer.taxNumber || 'Non renseigné',
-              sublabel: 'NIU Entreprise / Particulier',
+              label: lang === 'en' ? 'Tax ID / Registration' : 'Immatriculation Fiscale',
+              value: selectedCustomer.taxNumber || (lang === 'en' ? 'Not specified' : 'Non renseigné'),
+              sublabel: lang === 'en' ? 'Corporate / Individual Tax ID' : 'NIU Entreprise / Particulier',
             },
           ]}
           tabs={[
-            { id: 'PROFILE', label: 'Profil & Coordonnées', icon: User },
-            { id: 'DOCS', label: 'Documents & Justificatifs', icon: FileText, badge: custDocs.length },
-            { id: 'RENTALS', label: 'Contrats de Location', icon: KeyRound, badge: custContracts.length },
-            { id: 'SALES', label: 'Dossiers de Vente', icon: TrendingUp, badge: custSales.length },
-            { id: 'INVOICES', label: 'Factures & Règlements', icon: Receipt, badge: custInvoices.length },
-            { id: 'TIMELINE', label: 'Historique & Relation Client', icon: Clock },
+            { id: 'PROFILE', label: t.crmPage.tabIdentity, icon: User },
+            { id: 'DOCS', label: t.crmPage.tabDocs, icon: FileText, badge: custDocs.length },
+            { id: 'RENTALS', label: t.crmPage.tabRentals, icon: KeyRound, badge: custContracts.length },
+            { id: 'SALES', label: t.crmPage.tabSales, icon: TrendingUp, badge: custSales.length },
+            { id: 'INVOICES', label: t.crmPage.tabBilling, icon: Receipt, badge: custInvoices.length },
+            { id: 'TIMELINE', label: lang === 'en' ? 'Activity & CRM Timeline' : 'Historique & Relation Client', icon: Clock },
           ]}
           activeTab={customerDetailTab}
           onTabChange={(t) => setCustomerDetailTab(t as any)}
@@ -1060,10 +1061,10 @@ export const CrmView: React.FC<CrmViewProps> = ({
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <Users2 className="w-6 h-6 text-emerald-600" />
-            <span>CRM, Répertoire Clients &amp; Pipeline Prospects</span>
+            <span>{t.crmPage.title}</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Gestion du cycle client complet : du premier contact commercial au contrat de location ou vente
+            {t.crmPage.subtitle}
           </p>
         </div>
 
@@ -1074,7 +1075,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Nouveau Client</span>
+              <span>{t.crmPage.newClientBtn}</span>
             </button>
           ) : (
             <button
@@ -1082,7 +1083,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold shadow transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Nouveau Prospect</span>
+              <span>{lang === 'en' ? 'New Lead' : 'Nouveau Prospect'}</span>
             </button>
           )}
         </div>
@@ -1114,33 +1115,33 @@ export const CrmView: React.FC<CrmViewProps> = ({
         const crmKpis = [
           {
             id: 'kpi-customers',
-            label: 'Clients Portefeuille',
+            label: t.crmPage.totalClients,
             value: state.customers.length,
-            sublabel: `${companyCount} Entreprises • ${individualCount} Particuliers`,
+            sublabel: `${companyCount} ${lang === 'en' ? 'Corporate' : 'Entreprises'} • ${individualCount} ${lang === 'en' ? 'Individuals' : 'Particuliers'}`,
             icon: Users2,
             colorVariant: 'blue' as const,
           },
           {
             id: 'kpi-spent',
-            label: 'Chiffre d’Affaires Total',
+            label: lang === 'en' ? 'Total Revenue (XAF)' : 'Chiffre d’Affaires Total',
             value: formatXAF(totalSpentAll),
-            sublabel: 'Dépenses cumulées clients XAF',
+            sublabel: lang === 'en' ? 'Cumulative client spendings' : 'Dépenses cumulées clients XAF',
             icon: DollarSign,
             colorVariant: 'emerald' as const,
           },
           {
             id: 'kpi-leads',
-            label: 'Pipeline Prospects',
+            label: lang === 'en' ? 'Leads Pipeline' : 'Pipeline Prospects',
             value: state.leads.length,
-            sublabel: `${activeLeadsCount} en cours de conversion`,
+            sublabel: `${activeLeadsCount} ${lang === 'en' ? 'under qualification' : 'en cours de conversion'}`,
             icon: TrendingUp,
             colorVariant: 'purple' as const,
           },
           {
             id: 'kpi-rentals',
-            label: 'Locations Conclues',
+            label: lang === 'en' ? 'Concluded Rentals' : 'Locations Conclues',
             value: state.contracts.length,
-            sublabel: `${state.contracts.filter((c) => c.status === 'ACTIVE').length} actives en circulation`,
+            sublabel: `${state.contracts.filter((c) => c.status === 'ACTIVE').length} ${lang === 'en' ? 'active on road' : 'actives en circulation'}`,
             icon: KeyRound,
             colorVariant: 'amber' as const,
           },
@@ -1160,7 +1161,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
           }`}
         >
           <UserCheck className="w-4 h-4" />
-          <span>Portefeuille Clients Officiels ({state.customers.length})</span>
+          <span>{lang === 'en' ? 'Client Directory' : 'Portefeuille Clients Officiels'} ({state.customers.length})</span>
         </button>
 
         <button
@@ -1172,7 +1173,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
           }`}
         >
           <TrendingUp className="w-4 h-4" />
-          <span>Pipeline Prospects &amp; Leads ({state.leads.length})</span>
+          <span>{lang === 'en' ? 'Sales Pipeline & Leads' : 'Pipeline Prospects & Leads'} ({state.leads.length})</span>
         </button>
       </div>
 
@@ -1185,7 +1186,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
               <Search className="w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Rechercher par nom, entreprise, téléphone, e-mail, NIU..."
+                placeholder={t.crmPage.searchPlaceholder}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full text-xs outline-hidden"
@@ -1201,7 +1202,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     typeFilter === tp ? 'bg-blue-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  {tp === 'ALL' ? 'Tous' : tp === 'COMPANY' ? 'Entreprises' : 'Particuliers'}
+                  {tp === 'ALL' ? t.all : tp === 'COMPANY' ? t.crmPage.companyTab : t.crmPage.individualTab}
                 </button>
               ))}
             </div>
@@ -1213,21 +1214,21 @@ export const CrmView: React.FC<CrmViewProps> = ({
               <table className="w-full text-xs text-left">
                 <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                   <tr>
-                    <th className="py-3 px-4">Type</th>
-                    <th className="py-3 px-4">Nom / Raison Sociale</th>
-                    <th className="py-3 px-4">Téléphone</th>
-                    <th className="py-3 px-4">Email</th>
-                    <th className="py-3 px-4">Adresse</th>
-                    <th className="py-3 px-4 text-center">Locations</th>
-                    <th className="py-3 px-4 text-right">Dépenses Totales (XAF)</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-3 px-4">{lang === 'en' ? 'Type' : 'Type'}</th>
+                    <th className="py-3 px-4">{lang === 'en' ? 'Client / Company Name' : 'Nom / Raison Sociale'}</th>
+                    <th className="py-3 px-4">{lang === 'en' ? 'Phone' : 'Téléphone'}</th>
+                    <th className="py-3 px-4">{lang === 'en' ? 'Email' : 'Email'}</th>
+                    <th className="py-3 px-4">{lang === 'en' ? 'Address' : 'Adresse'}</th>
+                    <th className="py-3 px-4 text-center">{lang === 'en' ? 'Rentals' : 'Locations'}</th>
+                    <th className="py-3 px-4 text-right">{lang === 'en' ? 'Total Spent (XAF)' : 'Dépenses Totales (XAF)'}</th>
+                    <th className="py-3 px-4 text-right">{t.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredCustomers.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-8 text-center text-slate-400 font-semibold">
-                        Aucun client ne correspond aux critères.
+                        {t.crmPage.emptyClientsDesc}
                       </td>
                     </tr>
                   ) : (
@@ -1245,7 +1246,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                                 isCompany ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
                               }`}
                             >
-                              {isCompany ? 'Entreprise' : 'Particulier'}
+                              {isCompany ? (lang === 'en' ? 'Corporate' : 'Entreprise') : (lang === 'en' ? 'Individual' : 'Particulier')}
                             </span>
                           </td>
                           <td className="py-3 px-4 font-bold text-slate-900">
@@ -1378,7 +1379,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-xs transition"
                       >
                         <UserCheck className="w-3.5 h-3.5" />
-                        <span>Convertir en Client</span>
+                        <span>{lang === 'en' ? 'Convert to Client' : 'Convertir en Client'}</span>
                       </button>
                     )}
                   </div>
@@ -1396,7 +1397,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <UserCheck className="w-5 h-5 text-emerald-600" />
-                <span>Conversion Prospect → Client Officiel</span>
+                <span>{lang === 'en' ? 'Convert Lead → Official Client' : 'Conversion Prospect → Client Officiel'}</span>
               </h3>
               <button onClick={() => setIsConvertLeadModalOpen(false)}>
                 <X className="w-5 h-5 text-slate-400" />
@@ -1404,9 +1405,9 @@ export const CrmView: React.FC<CrmViewProps> = ({
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed">
-              Vous êtes sur le point de convertir le prospect <strong>{convertingLead.fullName}</strong> ({convertingLead.phone})
-              en client officiel FCT. S'il existe déjà un compte client avec ce numéro de téléphone, il sera automatiquement
-              fusionné pour éviter tout doublon dans le répertoire de Douala.
+              {lang === 'en'
+                ? `You are about to convert lead ${convertingLead.fullName} (${convertingLead.phone}) into an official FCT client profile.`
+                : `Vous êtes sur le point de convertir le prospect ${convertingLead.fullName} (${convertingLead.phone}) en client officiel FCT. S'il existe déjà un compte client avec ce numéro de téléphone, il sera automatiquement fusionné pour éviter tout doublon dans le répertoire de Douala.`}
             </p>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 text-xs">
@@ -1415,14 +1416,14 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 onClick={() => setIsConvertLeadModalOpen(false)}
                 className="px-4 py-2 rounded bg-slate-200 cursor-pointer"
               >
-                Annuler
+                {t.cancel}
               </button>
               <button
                 type="button"
                 onClick={handleConfirmConvertLead}
-                className="px-5 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow transition"
+                className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer"
               >
-                Confirmer la Conversion
+                {lang === 'en' ? 'Confirm Conversion' : 'Confirmer la Conversion'}
               </button>
             </div>
           </div>
@@ -1436,7 +1437,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Plus className="w-5 h-5 text-emerald-600" />
-                <span>Ajouter un Nouveau Client</span>
+                <span>{t.crmPage.newClientModalTitle}</span>
               </h3>
               <button onClick={() => setIsAddModalOpen(false)}>
                 <X className="w-5 h-5 text-slate-400" />
@@ -1452,7 +1453,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
 
             <form onSubmit={handleCreateCustomer} className="space-y-3 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Type de client *</label>
+                <label className="font-bold text-slate-700 block mb-1">{t.crmPage.clientTypeLabel}</label>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -1463,7 +1464,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                         : 'bg-slate-50 text-slate-700 border-slate-200'
                     }`}
                   >
-                    Entreprise
+                    {t.crmPage.typeCompany}
                   </button>
                   <button
                     type="button"
@@ -1474,18 +1475,18 @@ export const CrmView: React.FC<CrmViewProps> = ({
                         : 'bg-slate-50 text-slate-700 border-slate-200'
                     }`}
                   >
-                    Particulier
+                    {t.crmPage.typeIndividual}
                   </button>
                 </div>
               </div>
 
               {customerForm.type === 'COMPANY' && (
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Raison Sociale / Entreprise *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.crmPage.fullNameLabel}</label>
                   <input
                     type="text"
                     required
-                    placeholder="ex: TotalEnergies Cameroun, CFAO Motors"
+                    placeholder={lang === 'en' ? 'e.g. TotalEnergies Cameroon, CFAO Motors' : 'ex: TotalEnergies Cameroun, CFAO Motors'}
                     value={customerForm.companyName}
                     onChange={(e) => setCustomerForm({ ...customerForm, companyName: e.target.value })}
                     className="w-full p-2 rounded border border-slate-300"
@@ -1494,11 +1495,11 @@ export const CrmView: React.FC<CrmViewProps> = ({
               )}
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Nom complet du contact / gérant *</label>
+                <label className="font-bold text-slate-700 block mb-1">{t.crmPage.contactPersonLabel}</label>
                 <input
                   type="text"
                   required
-                  placeholder="ex: Jean-Paul Mvogo"
+                  placeholder={lang === 'en' ? 'e.g. Jean-Paul Mvogo' : 'ex: Jean-Paul Mvogo'}
                   value={customerForm.fullName}
                   onChange={(e) => setCustomerForm({ ...customerForm, fullName: e.target.value })}
                   className="w-full p-2 rounded border border-slate-300"
@@ -1507,7 +1508,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Téléphone *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.crmPage.phoneLabel}</label>
                   <input
                     type="text"
                     required
@@ -1518,7 +1519,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Email *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{t.crmPage.emailLabel}</label>
                   <input
                     type="email"
                     required
@@ -1532,7 +1533,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">NIU Fiscal (Cameroun)</label>
+                  <label className="font-bold text-slate-700 block mb-1">{lang === 'en' ? 'Cameroon Tax ID (NIU)' : 'NIU Fiscal (Cameroun)'}</label>
                   <input
                     type="text"
                     placeholder="ex: M052014587963P"
@@ -1542,7 +1543,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">RCCM</label>
+                  <label className="font-bold text-slate-700 block mb-1">{lang === 'en' ? 'Trade Register (RCCM)' : 'RCCM'}</label>
                   <input
                     type="text"
                     placeholder="ex: RC/DLA/2021/B/145"
@@ -1554,11 +1555,11 @@ export const CrmView: React.FC<CrmViewProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Adresse à Douala *</label>
+                <label className="font-bold text-slate-700 block mb-1">{t.crmPage.addressLabel}</label>
                 <input
                   type="text"
                   required
-                  placeholder="ex: Bonamoussadi, Carrefour Santa Barbara, Douala"
+                  placeholder={lang === 'en' ? 'e.g. Bonamoussadi, Santa Barbara Junction, Douala' : 'ex: Bonamoussadi, Carrefour Santa Barbara, Douala'}
                   value={customerForm.address}
                   onChange={(e) => setCustomerForm({ ...customerForm, address: e.target.value })}
                   className="w-full p-2 rounded border border-slate-300"
@@ -1571,13 +1572,13 @@ export const CrmView: React.FC<CrmViewProps> = ({
                   onClick={() => setIsAddModalOpen(false)}
                   className="px-4 py-2 bg-slate-200 rounded font-semibold cursor-pointer"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded shadow transition cursor-pointer"
                 >
-                  Créer le Client
+                  {lang === 'en' ? 'Create Client Profile' : 'Créer le Client'}
                 </button>
               </div>
             </form>

@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { dbStore, DatabaseState } from '../services/dbStore.ts';
-import { Language } from '../services/i18n.ts';
+import { Language, translations } from '../services/i18n.ts';
 import { History, Wifi, WifiOff, RefreshCw, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 
 interface AuditSyncViewProps {
@@ -15,6 +15,7 @@ interface AuditSyncViewProps {
 }
 
 export const AuditSyncView: React.FC<AuditSyncViewProps> = ({ state, lang }) => {
+  const t = translations[lang];
   const pendingItems = state.syncQueue.filter((q) => q.status === 'PENDING');
 
   const handleForceSync = () => {
@@ -27,10 +28,10 @@ export const AuditSyncView: React.FC<AuditSyncViewProps> = ({ state, lang }) => 
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <History className="w-6 h-6 text-emerald-600" />
-            <span>Journal d'Audit &amp; File de Synchronisation Hors-ligne (Outbox)</span>
+            <span>{t.auditPage.title} &amp; {t.auditPage.outboxQueue}</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Immutabilité des écritures, clés d'idempotence, détection des conflits et synchronisation IndexedDB vers Firestore
+            {t.auditPage.subtitle}
           </p>
         </div>
 
@@ -39,7 +40,7 @@ export const AuditSyncView: React.FC<AuditSyncViewProps> = ({ state, lang }) => 
           className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow transition cursor-pointer"
         >
           <RefreshCw className="w-4 h-4" />
-          <span>Forcer Synchronisation Serveur</span>
+          <span>{t.auditPage.forceSyncBtn}</span>
         </button>
       </div>
 
@@ -55,18 +56,18 @@ export const AuditSyncView: React.FC<AuditSyncViewProps> = ({ state, lang }) => 
           </div>
           <div>
             <div className="font-bold text-sm text-slate-900">
-              {state.isOnline ? 'Connectivité Réseau Établie' : 'Fonctionnement Hors-Ligne (Offline)'}
+              {state.isOnline ? t.auditPage.onlineConnected : t.auditPage.offlineMode}
             </div>
             <div className="text-xs text-slate-500">
               {pendingItems.length === 0
-                ? 'Toutes les écritures locales sont confirmées et synchronisées avec le serveur Cloud Firestore.'
-                : `${pendingItems.length} opération(s) en attente dans la file Outbox locale.`}
+                ? t.auditPage.allWritesSynced
+                : `${pendingItems.length} ${t.auditPage.pendingOutboxOps}`}
             </div>
           </div>
         </div>
 
         <div className="text-right">
-          <span className="text-[10px] text-slate-400 uppercase font-semibold block">Statut Outbox</span>
+          <span className="text-[10px] text-slate-400 uppercase font-semibold block">{t.auditPage.outboxStatus}</span>
           <span
             className={`text-xs font-bold px-2.5 py-1 rounded-full ${
               pendingItems.length > 0
@@ -74,7 +75,7 @@ export const AuditSyncView: React.FC<AuditSyncViewProps> = ({ state, lang }) => 
                 : 'bg-emerald-100 text-emerald-900'
             }`}
           >
-            {pendingItems.length > 0 ? `${pendingItems.length} En attente` : 'Synchronisé'}
+            {pendingItems.length > 0 ? `${pendingItems.length} ${t.auditPage.pendingBadge}` : t.auditPage.syncedBadge}
           </span>
         </div>
       </div>
@@ -83,10 +84,10 @@ export const AuditSyncView: React.FC<AuditSyncViewProps> = ({ state, lang }) => 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <span className="font-bold text-sm text-slate-900">
-            Journal d'Audit Intégral ({state.auditLogs.length} actions tracées)
+            {t.auditPage.auditLogTitle} ({state.auditLogs.length} {t.auditPage.actionsTracked})
           </span>
           <span className="text-xs text-slate-500">
-            Horodatage normalisé Africa/Douala
+            {t.auditPage.timezoneNotice}
           </span>
         </div>
 
@@ -94,20 +95,20 @@ export const AuditSyncView: React.FC<AuditSyncViewProps> = ({ state, lang }) => 
           <table className="w-full text-xs text-left">
             <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
               <tr>
-                <th className="py-3 px-4">Date &amp; Heure</th>
-                <th className="py-3 px-4">Collaborateur</th>
-                <th className="py-3 px-4">Rôle</th>
-                <th className="py-3 px-4">Action</th>
-                <th className="py-3 px-4">Module</th>
-                <th className="py-3 px-4">Détails de l'Opération</th>
-                <th className="py-3 px-4">Clé d'Idempotence</th>
+                <th className="py-3 px-4">{t.auditPage.colDateTime}</th>
+                <th className="py-3 px-4">{t.auditPage.colStaff}</th>
+                <th className="py-3 px-4">{t.auditPage.colRole}</th>
+                <th className="py-3 px-4">{t.auditPage.colAction}</th>
+                <th className="py-3 px-4">{t.auditPage.colModule}</th>
+                <th className="py-3 px-4">{t.auditPage.colDetails}</th>
+                <th className="py-3 px-4">{t.auditPage.colIdempotency}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {state.auditLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-slate-50 transition">
                   <td className="py-3 px-4 font-mono text-slate-500">
-                    {new Date(log.timestamp).toLocaleString('fr-FR', {
+                    {new Date(log.timestamp).toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR', {
                       day: '2-digit',
                       month: '2-digit',
                       hour: '2-digit',

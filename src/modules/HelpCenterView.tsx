@@ -61,19 +61,19 @@ export const HelpCenterView: React.FC<HelpCenterViewProps> = ({ lang = 'fr' }) =
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-slate-600">
             <div>
-              <div className="font-bold text-slate-900">Agence FCT Santa Barbara</div>
+              <div className="font-bold text-slate-900">{lang === 'en' ? 'FCT Santa Barbara Agency' : 'Agence FCT Santa Barbara'}</div>
               <div>+237 699 45 88 12 / +237 677 32 10 99</div>
-              <div className="text-[11px] text-slate-400">Permanence 7j/7 07h00 - 21h00</div>
+              <div className="text-[11px] text-slate-400">{lang === 'en' ? 'On-call 7/7 07:00 AM - 09:00 PM' : 'Permanence 7j/7 07h00 - 21h00'}</div>
             </div>
             <div>
-              <div className="font-bold text-slate-900">Assistance Dépannage Douala</div>
-              <div>Garage Agréé CFAO Bassa : +237 233 42 11 00</div>
-              <div className="text-[11px] text-slate-400">Remorquage &amp; Intervention rapide</div>
+              <div className="font-bold text-slate-900">{lang === 'en' ? 'Douala Roadside Assistance' : 'Assistance Dépannage Douala'}</div>
+              <div>{lang === 'en' ? 'CFAO Bassa Certified Garage: +237 233 42 11 00' : 'Garage Agréé CFAO Bassa : +237 233 42 11 00'}</div>
+              <div className="text-[11px] text-slate-400">{lang === 'en' ? 'Towing & emergency support' : 'Remorquage & Intervention rapide'}</div>
             </div>
             <div>
-              <div className="font-bold text-slate-900">Commissariat Bonamoussadi</div>
+              <div className="font-bold text-slate-900">{lang === 'en' ? 'Bonamoussadi Police Station' : 'Commissariat Bonamoussadi'}</div>
               <div>117 / +237 233 47 00 00</div>
-              <div className="text-[11px] text-slate-400">En cas d'accident ou de litige tiers</div>
+              <div className="text-[11px] text-slate-400">{lang === 'en' ? 'In case of road accident or third-party dispute' : "En cas d'accident ou de litige tiers"}</div>
             </div>
           </div>
         </div>

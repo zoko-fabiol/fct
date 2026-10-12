@@ -7,7 +7,7 @@
 import React, { useState, useMemo } from 'react';
 import { DatabaseState, dbStore } from '../services/dbStore.ts';
 import { DocumentViewerModal } from '../components/ui/DocumentViewerModal.tsx';
-import { Language } from '../services/i18n.ts';
+import { Language, translations } from '../services/i18n.ts';
 import { AppModule } from '../../packages/shared-types/index.ts';
 import { hasEffectivePermission } from '../../packages/business-rules/index.ts';
 import { exportCollectionToExcel } from '../utils/excelExport.ts';
@@ -54,6 +54,7 @@ interface DocumentsViewProps {
 }
 
 export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNavigate }) => {
+  const t = translations[lang];
   const currentUser = dbStore.getCurrentUser();
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [search, setSearch] = useState('');
@@ -66,7 +67,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
   const [newDocForm, setNewDocForm] = useState({
     title: '',
     category: 'VEHICLE_GREY_CARD',
-    categoryLabel: 'Carte Grise',
+    categoryLabel: t.documentsPage.categoryGreyCard,
     isPrivate: true,
     fileUrl: '',
     relatedModule: 'vehicles' as AppModule,
@@ -92,20 +93,20 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
         relatedEntityName: newDocForm.relatedEntityName || 'Document FCT Douala',
         type: newDocForm.fileUrl.toLowerCase().includes('.pdf') ? 'PDF' : 'IMG',
         author: newDocForm.author,
-        expiryDate: newDocForm.expiryDate || 'Permanent',
+        expiryDate: newDocForm.expiryDate || (lang === 'en' ? 'Permanent' : 'Permanent'),
         fileUrl: newDocForm.fileUrl,
       };
       dbStore.addDocument(created as any);
       setIsUploadModalOpen(false);
       setActionAlert({
         type: 'success',
-        message: `Document "${created.title}" indexé avec succès dans le coffre-fort.`,
+        message: `${created.title} : ${t.documentsPage.docSuccessIndexed}`,
       });
       setTimeout(() => setActionAlert(null), 4000);
       setNewDocForm({
         title: '',
         category: 'VEHICLE_GREY_CARD',
-        categoryLabel: 'Carte Grise',
+        categoryLabel: t.documentsPage.categoryGreyCard,
         isPrivate: true,
         fileUrl: '',
         relatedModule: 'vehicles',
@@ -117,7 +118,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
     } catch (err: any) {
       setActionAlert({
         type: 'error',
-        message: err.message || 'Erreur lors du dépôt du document',
+        message: err.message || t.documentsPage.docErrorIndexed,
       });
       setTimeout(() => setActionAlert(null), 6000);
     }
@@ -141,25 +142,25 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
   const kpis = [
     {
       id: 'kpi-total',
-      label: 'Documents Coffre-fort',
+      label: t.documentsPage.totalDocuments,
       value: allDocs.length,
-      sublabel: 'Fichiers certifiés FCT',
+      sublabel: t.documentsPage.totalDocsSub,
       icon: FolderLock,
       colorVariant: 'blue' as const,
     },
     {
       id: 'kpi-vault',
-      label: 'Documents Restreints',
+      label: t.documentsPage.storageUsed,
       value: allDocs.filter((d) => d.isPrivate).length,
-      sublabel: 'Coffre-fort privé chiffré',
+      sublabel: t.documentsPage.storageUsedSub,
       icon: Lock,
       colorVariant: 'purple' as const,
     },
     {
       id: 'kpi-public',
-      label: 'Documents Publics',
+      label: t.documentsPage.verifiedDocs,
       value: allDocs.filter((d) => !d.isPrivate).length,
-      sublabel: 'Visites & attestations',
+      sublabel: t.documentsPage.verifiedDocsSub,
       icon: Globe,
       colorVariant: 'emerald' as const,
     },
@@ -172,13 +173,13 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
   if (selectedDoc) {
     return (
       <EntityShowroomLayout
-        backLabel="Retour au coffre-fort documentaire"
+        backLabel={t.documentsPage.backToVault}
         onBack={() => setSelectedDoc(null)}
         title={selectedDoc.title}
-        subtitle={`Catégorie : ${selectedDoc.categoryLabel} • Format ${selectedDoc.type} • Auteur : ${selectedDoc.author}`}
+        subtitle={`${t.documentsPage.docColCategory} : ${selectedDoc.categoryLabel} • Format ${selectedDoc.type} • ${t.salesPage.fctAdvisor} ${selectedDoc.author}`}
         referenceId={selectedDoc.id}
         status={selectedDoc.isPrivate ? 'MAINTENANCE' : 'AVAILABLE'}
-        statusLabel={selectedDoc.isPrivate ? 'Coffre Privé Chiffré' : 'Document Public'}
+        statusLabel={selectedDoc.isPrivate ? t.documentsPage.privateVault : t.documentsPage.publicDoc}
         avatarIcon={FolderLock}
         actions={
           <div className="flex items-center gap-2">
@@ -188,7 +189,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
               className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
             >
               <Eye className="w-3.5 h-3.5" />
-              <span>Aperçu Document</span>
+              <span>{t.documentsPage.previewDoc}</span>
             </button>
             <button
               type="button"
@@ -209,37 +210,37 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
               className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-xs transition"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Télécharger le Fichier</span>
+              <span>{t.documentsPage.downloadDoc}</span>
             </button>
           </div>
         }
         kpis={[
           {
-            label: 'Format & Taille',
+            label: t.documentsPage.formatAndSize,
             value: `${selectedDoc.type} (${selectedDoc.size})`,
-            sublabel: 'Fichier numérisé haute résolution',
+            sublabel: t.documentsPage.formatAndSizeSub,
           },
           {
-            label: 'Échéance de Validité',
-            value: selectedDoc.expiryDate || 'Validité Illimitée',
-            sublabel: 'Surveillance conformité FCT',
+            label: t.documentsPage.validityExpiry,
+            value: selectedDoc.expiryDate || t.documentsPage.unlimitedValidity,
+            sublabel: t.documentsPage.validityExpirySub,
             highlight: true,
           },
           {
-            label: 'Entité Associée',
-            value: selectedDoc.relatedEntityName || 'Document Général',
-            sublabel: `Module : ${selectedDoc.relatedModule || 'Global'}`,
+            label: t.documentsPage.associatedEntity,
+            value: selectedDoc.relatedEntityName || t.documentsPage.generalDoc,
+            sublabel: `Module : ${selectedDoc.relatedModule || t.documentsPage.globalModule}`,
           },
           {
-            label: 'Niveau de Sécurité',
-            value: selectedDoc.isPrivate ? 'Restreint (Direction)' : 'Consultable Agence',
-            sublabel: selectedDoc.isPrivate ? 'Chiffrement AES-256' : 'Accès collaborateurs',
+            label: t.documentsPage.securityLevel,
+            value: selectedDoc.isPrivate ? t.documentsPage.restrictedDirection : t.documentsPage.consultableAgency,
+            sublabel: selectedDoc.isPrivate ? t.documentsPage.aes256 : t.documentsPage.collaboratorAccess,
           },
         ]}
         tabs={[
-          { id: 'DETAILS', label: 'Métadonnées & Sécurité', icon: FolderLock },
-          { id: 'ENTITY', label: 'Entité Rattachée & Showroom', icon: Car },
-          { id: 'AUDIT', label: 'Journal des Accès', icon: ShieldCheck },
+          { id: 'DETAILS', label: t.documentsPage.tabMetadata, icon: FolderLock },
+          { id: 'ENTITY', label: t.documentsPage.tabEntity, icon: Car },
+          { id: 'AUDIT', label: t.documentsPage.tabAudit, icon: ShieldCheck },
         ]}
         activeTab={docTab}
         onTabChange={(t) => setDocTab(t as any)}
@@ -251,27 +252,27 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
               <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
                 <div className="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
                   <FileText className="w-4 h-4 text-blue-600" />
-                  <span>Spécifications Techniques</span>
+                  <span>{t.documentsPage.techSpecs}</span>
                 </div>
                 <div className="space-y-2 text-xs text-slate-700">
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Format numérique :</span>
+                    <span className="text-slate-500">{t.documentsPage.digitalFormat}</span>
                     <span className="font-bold text-slate-900">{selectedDoc.type}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Taille du fichier :</span>
+                    <span className="text-slate-500">{t.documentsPage.fileSize}</span>
                     <span className="font-mono font-semibold text-slate-900">{selectedDoc.size}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Date d'archivage :</span>
+                    <span className="text-slate-500">{t.documentsPage.archivedDate}</span>
                     <span className="font-semibold text-slate-900">{selectedDoc.updatedAt}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Échéance légale :</span>
+                    <span className="text-slate-500">{t.documentsPage.legalExpiry}</span>
                     <span className="font-bold text-emerald-800">{selectedDoc.expiryDate}</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-slate-500">Opérateur d'archivage :</span>
+                    <span className="text-slate-500">{t.documentsPage.archiveOperator}</span>
                     <span className="font-semibold text-slate-900">{selectedDoc.author}</span>
                   </div>
                 </div>
@@ -280,20 +281,20 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
               <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
                 <div className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>Sécurité &amp; Intégrité Numérique</span>
+                  <span>{t.documentsPage.secIntegrity}</span>
                 </div>
                 <div className="space-y-2 text-xs text-slate-700">
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Classification :</span>
+                    <span className="text-slate-500">{t.documentsPage.classification}</span>
                     <span className="font-bold text-slate-900">{selectedDoc.categoryLabel}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Algorithme d'intégrité :</span>
-                    <span className="font-mono text-xs text-slate-800">SHA-256 Validé</span>
+                    <span className="text-slate-500">{t.documentsPage.hashAlgorithm}</span>
+                    <span className="font-mono text-xs text-slate-800">SHA-256 Validated</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-slate-500">Statut du coffre :</span>
-                    <span className="font-bold text-emerald-800">Archivage Immuable Conforme</span>
+                    <span className="text-slate-500">{t.documentsPage.vaultStatus}</span>
+                    <span className="font-bold text-emerald-800">{t.documentsPage.vaultCompliant}</span>
                   </div>
                 </div>
               </div>
@@ -310,7 +311,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                   Module : {selectedDoc.relatedModule}
                 </div>
                 <h4 className="font-black text-slate-900 text-base">{selectedDoc.relatedEntityName}</h4>
-                <div className="text-slate-500 text-xs">Identifiant système : <span className="font-mono font-bold text-slate-800">{selectedDoc.relatedEntityId}</span></div>
+                <div className="text-slate-500 text-xs">{t.documentsPage.systemId} <span className="font-mono font-bold text-slate-800">{selectedDoc.relatedEntityId}</span></div>
               </div>
 
               {onNavigate && selectedDoc.relatedEntityId && (
@@ -324,7 +325,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                   }}
                   className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer self-start md:self-center"
                 >
-                  <span>Ouvrir la Fiche Showroom Dédiée</span>
+                  <span>{t.documentsPage.openShowroom}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -339,8 +340,8 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
               {
                 id: 'evt-arch',
                 date: selectedDoc.updatedAt,
-                title: `Dépôt du document dans le coffre-fort FCT`,
-                description: `Fichier archivé par ${selectedDoc.author} avec vérification automatique de conformité.`,
+                title: t.documentsPage.docDepositArchive,
+                description: `${t.documentsPage.fileArchivedBy} (${selectedDoc.author})`,
                 type: 'INFO',
               },
             ]}
@@ -357,10 +358,10 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
         <div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <FolderLock className="w-6 h-6 text-emerald-600" />
-            <span>Coffre-fort Numérique &amp; Documents Sécurisés</span>
+            <span>{t.documentsPage.title}</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Cartes grises CEMAC, attestations d'assurance, visites techniques, pièces clients et contrats signés à Douala
+            {t.documentsPage.subtitle}
           </p>
         </div>
 
@@ -372,17 +373,17 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                 filename: `FCT_Documents_Coffre_${new Date().toISOString().split('T')[0]}`,
                 sheetName: 'Documents FCT',
                 title: 'FCT AUTOMOBILE DOUALA — REGISTRE DU COFFRE-FORT NUMÉRIQUE',
-                subtitle: `Exporté le ${new Date().toLocaleDateString('fr-FR')} • ${filteredDocs.length} document(s)`,
+                subtitle: `Exporté le ${new Date().toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR')} • ${filteredDocs.length} document(s)`,
                 columns: [
-                  { header: 'ID Document', key: 'id', width: 16 },
-                  { header: 'Titre', key: 'title', width: 34 },
-                  { header: 'Catégorie', key: 'categoryLabel', width: 20 },
-                  { header: 'Entité Liée', key: 'relatedEntityName', width: 28 },
+                  { header: t.documentsPage.systemId.replace(' :', ''), key: 'id', width: 16 },
+                  { header: t.documentsPage.docColTitle, key: 'title', width: 34 },
+                  { header: t.documentsPage.docColCategory, key: 'categoryLabel', width: 20 },
+                  { header: t.documentsPage.docColEntity, key: 'relatedEntityName', width: 28 },
                   { header: 'Module', key: 'relatedModule', width: 14 },
-                  { header: 'Type Fichier', key: 'type', width: 12 },
-                  { header: 'Auteur', key: 'author', width: 22 },
-                  { header: 'Date Mise à Jour', key: 'updatedAt', width: 16 },
-                  { header: 'Échéance', key: 'expiryDate', width: 16 },
+                  { header: t.documentsPage.digitalFormat.replace(' :', ''), key: 'type', width: 12 },
+                  { header: t.documentsPage.archiveOperator.replace(' :', ''), key: 'author', width: 22 },
+                  { header: t.documentsPage.archivedDate.replace(' :', ''), key: 'updatedAt', width: 16 },
+                  { header: t.documentsPage.docColExpiry, key: 'expiryDate', width: 16 },
                 ],
                 data: filteredDocs,
               });
@@ -390,7 +391,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#0f2a4a] hover:bg-[#163a66] text-white text-xs font-bold shadow-xs transition cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-            <span>Exporter Excel (.xlsx)</span>
+            <span>{t.documentsPage.exportExcel}</span>
           </button>
           {hasEffectivePermission(currentUser, 'documents', 'create') && (
             <button
@@ -398,7 +399,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
             >
               <Upload className="w-4 h-4" />
-              <span>Déposer un Document</span>
+              <span>{t.documentsPage.uploadBtn}</span>
             </button>
           )}
         </div>
@@ -440,16 +441,16 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
       <EntitySearchFilters
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Rechercher document, immatriculation, entité rattachée..."
+        searchPlaceholder={t.documentsPage.searchPlaceholder}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         tabs={[
-          { id: 'ALL', label: `Tous les documents (${allDocs.length})` },
-          { id: 'VEHICLE_GREY_CARD', label: 'Cartes Grises' },
-          { id: 'INSURANCE', label: 'Assurances' },
-          { id: 'TECHNICAL_INSPECTION', label: 'Visites Techniques' },
-          { id: 'CONTRACT', label: 'Contrats Signés' },
-          { id: 'CLIENT_ID', label: 'Pièces d’Identité' },
+          { id: 'ALL', label: `${t.documentsPage.allTab} (${allDocs.length})` },
+          { id: 'VEHICLE_GREY_CARD', label: t.documentsPage.categoryGreyCard },
+          { id: 'INSURANCE', label: t.documentsPage.categoryInsurance },
+          { id: 'TECHNICAL_INSPECTION', label: t.documentsPage.categoryInspection },
+          { id: 'CONTRACT', label: t.documentsPage.contractsTab },
+          { id: 'CLIENT_ID', label: t.documentsPage.identityTab },
         ]}
         activeTab={activeCategory}
         onTabChange={setActiveCategory}
@@ -458,8 +459,8 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
       {/* Content: Cards or Table */}
       {filteredDocs.length === 0 ? (
         <EmptyState
-          title="Aucun document trouvé"
-          description="Aucun fichier ne correspond à vos critères de recherche."
+          title={t.documentsPage.emptyDocsTitle}
+          description={t.documentsPage.emptyDocsDesc}
           icon={FolderLock}
         />
       ) : viewMode === 'cards' ? (
@@ -468,30 +469,30 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
             <EntityCard
               key={doc.id}
               title={doc.title}
-              subtitle={`Entité liée : ${doc.relatedEntityName}`}
+              subtitle={`${t.documentsPage.associatedEntity} : ${doc.relatedEntityName}`}
               referenceId={doc.id}
               fallbackIcon={FileText}
               status={doc.isPrivate ? 'MAINTENANCE' : 'AVAILABLE'}
-              statusLabel={doc.isPrivate ? 'Coffre Privé' : 'Public'}
+              statusLabel={doc.isPrivate ? t.documentsPage.storageUsed : t.documentsPage.verifiedDocs}
               onClick={() => setSelectedDoc(doc)}
               metrics={[
                 {
-                  label: 'Catégorie',
+                  label: t.documentsPage.docColCategory,
                   value: doc.categoryLabel,
                   icon: FileText,
                 },
                 {
-                  label: 'Taille & Format',
+                  label: t.documentsPage.formatAndSize,
                   value: `${doc.type} • ${doc.size}`,
                   icon: HardDrive,
                 },
                 {
-                  label: 'Validité / Expiration',
+                  label: t.documentsPage.validityExpiry,
                   value: doc.expiryDate,
                   icon: Calendar,
                 },
                 {
-                  label: 'Auteur Dépôt',
+                  label: t.documentsPage.archiveOperator.replace(' :', ''),
                   value: doc.author,
                   icon: User,
                 },
@@ -505,7 +506,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                       setViewerDoc(doc);
                     }}
                     className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
-                    title="Aperçu"
+                    title={t.documentsPage.previewDoc}
                   >
                     <Eye className="w-3.5 h-3.5" />
                   </button>
@@ -528,7 +529,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                       }
                     }}
                     className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition"
-                    title="Télécharger"
+                    title={t.documentsPage.downloadDoc}
                   >
                     <Download className="w-3.5 h-3.5" />
                   </button>
@@ -543,13 +544,13 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
             <table className="w-full min-w-[700px] text-xs text-left">
               <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                 <tr>
-                  <th className="py-3 px-4">Titre du Document</th>
-                  <th className="py-3 px-4">Catégorie</th>
-                  <th className="py-3 px-4">Entité Rattachée</th>
-                  <th className="py-3 px-4 text-center">Niveau d'Accès</th>
-                  <th className="py-3 px-4">Taille</th>
-                  <th className="py-3 px-4">Expiration</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-3 px-4">{t.documentsPage.docColTitle}</th>
+                  <th className="py-3 px-4">{t.documentsPage.docColCategory}</th>
+                  <th className="py-3 px-4">{t.documentsPage.docColEntity}</th>
+                  <th className="py-3 px-4 text-center">{t.documentsPage.docColAccess}</th>
+                  <th className="py-3 px-4">{t.documentsPage.docColSize}</th>
+                  <th className="py-3 px-4">{t.documentsPage.docColExpiry}</th>
+                  <th className="py-3 px-4 text-right">{t.documentsPage.docColActions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -572,11 +573,11 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                     <td className="py-3 px-4 text-center">
                       {doc.isPrivate ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-800 font-bold text-[10px]">
-                          <Lock className="w-3 h-3" /> Privé
+                          <Lock className="w-3 h-3" /> {t.documentsPage.privateVault}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-[10px]">
-                          <Globe className="w-3 h-3" /> Public
+                          <Globe className="w-3 h-3" /> {t.documentsPage.publicDoc}
                         </span>
                       )}
                     </td>
@@ -589,7 +590,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                       <button
                         onClick={() => setViewerDoc(doc)}
                         className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer inline-flex items-center"
-                        title="Aperçu"
+                        title={t.documentsPage.previewDoc}
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
@@ -610,7 +611,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                           }
                         }}
                         className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer inline-flex items-center"
-                        title="Télécharger / Visualiser"
+                        title={t.documentsPage.downloadDoc}
                       >
                         <Download className="w-3.5 h-3.5" />
                       </button>
@@ -623,8 +624,6 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
         </div>
       )}
 
-      
-
       {/* Modal Déposer Document Cloudinary */}
       {isUploadModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
@@ -632,7 +631,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Upload className="w-5 h-5 text-emerald-600" />
-                <span>Déposer un Document dans le Coffre-fort FCT</span>
+                <span>{t.documentsPage.uploadModalTitle}</span>
               </h3>
               <button
                 type="button"
@@ -645,38 +644,38 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
 
             <form onSubmit={handleCreateDocument} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Titre du document *</label>
+                <label className="block text-slate-700 font-bold mb-1">{t.documentsPage.docTitleLabel}</label>
                 <input
                   type="text"
                   required
                   value={newDocForm.title}
                   onChange={(e) => setNewDocForm({ ...newDocForm, title: e.target.value })}
-                  placeholder="Ex: Carte Grise Toyota Prado LT-8841-CE, Police d'Assurance..."
+                  placeholder={lang === 'en' ? 'e.g. Registration Toyota Prado LT-8841-CE, Insurance Policy...' : "Ex: Carte Grise Toyota Prado LT-8841-CE, Police d'Assurance..."}
                   className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-blue-500"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Catégorie</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.documentsPage.categoryLabel}</label>
                   <select
                     value={newDocForm.category}
                     onChange={(e) => {
                       const cat = e.target.value;
-                      const label = cat === 'VEHICLE_GREY_CARD' ? 'Carte Grise' : cat === 'INSURANCE' ? 'Assurance' : cat === 'TECHNICAL_INSPECTION' ? 'Visite Technique' : cat === 'IDENTITY_PIECE' ? 'Pièce d\'Identité' : 'Autre';
+                      const label = cat === 'VEHICLE_GREY_CARD' ? t.documentsPage.categoryGreyCard : cat === 'INSURANCE' ? t.documentsPage.categoryInsurance : cat === 'TECHNICAL_INSPECTION' ? t.documentsPage.categoryInspection : cat === 'IDENTITY_PIECE' ? t.documentsPage.categoryIdentity : t.documentsPage.categoryOther;
                       setNewDocForm({ ...newDocForm, category: cat, categoryLabel: label });
                     }}
                     className="w-full p-2.5 rounded-xl border border-slate-200"
                   >
-                    <option value="VEHICLE_GREY_CARD">Carte Grise</option>
-                    <option value="INSURANCE">Police d'Assurance</option>
-                    <option value="TECHNICAL_INSPECTION">Visite Technique</option>
-                    <option value="IDENTITY_PIECE">Pièce d'Identité / CNI</option>
-                    <option value="OTHER">Autre Pièce Officielle</option>
+                    <option value="VEHICLE_GREY_CARD">{t.documentsPage.categoryGreyCard}</option>
+                    <option value="INSURANCE">{t.documentsPage.categoryInsurance}</option>
+                    <option value="TECHNICAL_INSPECTION">{t.documentsPage.categoryInspection}</option>
+                    <option value="IDENTITY_PIECE">{t.documentsPage.categoryIdentity}</option>
+                    <option value="OTHER">{t.documentsPage.categoryOther}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Échéance de validité</label>
+                  <label className="block text-slate-700 font-bold mb-1">{t.documentsPage.expiryDateLabel}</label>
                   <input
                     type="date"
                     value={newDocForm.expiryDate}
@@ -687,7 +686,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-slate-700 font-bold">Fichier numérisé (PDF ou Image) *</label>
+                <label className="block text-slate-700 font-bold">{t.documentsPage.dropzoneLabel}</label>
                 <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-emerald-500 transition bg-slate-50">
                   <input
                     type="file"
@@ -714,21 +713,21 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                     <div className="flex items-center justify-between p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs">
                       <span className="font-bold flex items-center gap-1.5 truncate max-w-[240px]">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        Fichier chargé dans la plateforme FCT
+                        {t.documentsPage.docUploaded}
                       </span>
                       <button
                         type="button"
                         onClick={() => setNewDocForm({ ...newDocForm, fileUrl: '' })}
                         className="text-rose-600 hover:text-rose-800 font-bold text-xs cursor-pointer"
                       >
-                        Retirer
+                        {t.documentsPage.removeFile}
                       </button>
                     </div>
                   ) : (
                     <label htmlFor="docFileInput" className="cursor-pointer flex flex-col items-center gap-1.5">
                       <Upload className="w-6 h-6 text-emerald-600" />
-                      <span className="text-xs font-bold text-slate-700">Cliquez pour sélectionner un document (PDF / Image)</span>
-                      <span className="text-[11px] text-slate-400">Le fichier reste sécurisé dans la plateforme FCT sans dépendance externe</span>
+                      <span className="text-xs font-bold text-slate-700">{t.documentsPage.clickToSelect}</span>
+                      <span className="text-[11px] text-slate-400">{t.documentsPage.fileSecureDesc}</span>
                     </label>
                   )}
                 </div>
@@ -743,7 +742,7 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                   className="rounded text-blue-900"
                 />
                 <label htmlFor="isPrivateCheck" className="text-slate-700 font-medium">
-                  Document confidentiel (accès restreint Direction FCT)
+                  {t.documentsPage.confidentialDoc}
                 </label>
               </div>
 
@@ -753,14 +752,14 @@ export const DocumentsView: React.FC<DocumentsViewProps> = ({ state, lang, onNav
                   onClick={() => setIsUploadModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={!newDocForm.fileUrl}
                   className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Enregistrer et Archiver
+                  {t.documentsPage.saveAndArchive}
                 </button>
               </div>
             </form>
