@@ -65,27 +65,37 @@ jobs:
           org.gradle.console=plain
           EOF
 
-      - name: Install Frontend Dependencies
-        run: npm install
+      - name: Install Frontend Dependencies & Global Tauri CLI
+        run: |
+          npm install
+          npm install -g @tauri-apps/cli@2.12.2
+          # Symlinks de securite pour garantir que Gradle trouve toujours node_modules a tous les niveaux d'arborescence
+          ln -sf "$(pwd)/node_modules" src-tauri/node_modules
+          mkdir -p src-tauri/gen/android/app
+          ln -sf "$(pwd)/node_modules" src-tauri/gen/node_modules
+          ln -sf "$(pwd)/node_modules" src-tauri/gen/android/node_modules
+          ln -sf "$(pwd)/node_modules" src-tauri/gen/android/app/node_modules
 
       - name: Build Frontend Web Assets
         run: npm run build
 
       - name: Initialize Tauri Android Target
         run: |
-          node ./node_modules/@tauri-apps/cli/tauri.js android init --ci --skip-targets-install
+          npx tauri android init --ci --skip-targets-install
+          echo "=== FICHIERS BUILDTASK DETECTES DANS GEN/ANDROID ==="
+          find src-tauri/gen/android -name "*BuildTask*.kt" -exec echo "--- {} ---" \; -exec cat {} \; || true
 
       - name: Build Android Debug APK (Directly Installable on Phone)
         run: |
-          node ./node_modules/@tauri-apps/cli/tauri.js android build -v --apk --debug --target aarch64 --ignore-version-mismatches
+          npx tauri android build -v --apk --debug --target aarch64 --ignore-version-mismatches
 
       - name: Dump Detailed Gradle Failure Logs
         if: failure()
         run: |
           echo "=== RECHERCHE DES FICHIERS DE LOGS & RAPPORTS GRADLE ==="
-          find src-tauri/gen/android -name "*.log" -o -name "*.txt" 2>/dev/null | head -n 30 | while read f; do
+          find src-tauri/gen/android -name "*.log" -o -name "*.txt" -o -name "*.html" 2>/dev/null | head -n 30 | while read f; do
             echo "--- $f ---"
-            head -n 50 "$f" || true
+            grep -i -C 3 -m 20 "error\|exception\|failed" "$f" || head -n 30 "$f" || true
           done
 
       - name: Upload APK Artifact
