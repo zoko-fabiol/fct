@@ -77,13 +77,31 @@ jobs:
         run: |
           rm -rf src-tauri/gen
           npx tauri android init --ci --skip-targets-install
-          # Symlinks de securite poses apres l'initialisation propre
+          # Assurer les droits d'execution sur le wrapper Gradle
+          chmod +x src-tauri/gen/android/gradlew || true
+          # Symlinks de securite
           ln -sf "$(pwd)/node_modules" src-tauri/node_modules
           ln -sf "$(pwd)/node_modules" src-tauri/gen/node_modules
           ln -sf "$(pwd)/node_modules" src-tauri/gen/android/node_modules
           ln -sf "$(pwd)/node_modules" src-tauri/gen/android/app/node_modules
-          echo "=== FICHIERS BUILDTASK DETECTES DANS GEN/ANDROID ==="
-          find src-tauri/gen/android -name "*BuildTask*.kt" -exec echo "--- {} ---" \; -exec cat {} \; || true
+          # Patch du chemin absolu de tauri.js dans BuildTask.kt
+          python3 -c "
+          import glob, os, re
+          root_dir = os.path.abspath('.')
+          cli_path = os.path.join(root_dir, 'node_modules', '@tauri-apps', 'cli', 'tauri.js')
+          print('Chemin absolu du CLI Tauri:', cli_path)
+          assert os.path.exists(cli_path), 'tauri.js introuvable'
+          for f in glob.glob('src-tauri/gen/android/**/BuildTask.kt', recursive=True):
+              with open(f, 'r') as fp:
+                  c = fp.read()
+              print('--- Original ' + f + ' ---')
+              print(c)
+              c_patched = re.sub(r'\"[^\"]*node_modules/@tauri-apps/cli/tauri\.js\"', f'\"{cli_path}\"', c)
+              with open(f, 'w') as fp:
+                  fp.write(c_patched)
+              print('--- Patched ' + f + ' ---')
+              print(c_patched)
+          "
 
       - name: Build Android Debug APK (Directly Installable on Phone)
         run: |
