@@ -1,0 +1,13 @@
+{
+  "appId": "cm.fct.automobile",
+  "appName": "FCT Automobile",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}

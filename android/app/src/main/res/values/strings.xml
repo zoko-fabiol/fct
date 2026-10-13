@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FCT Automobile</string>
+    <string name="title_activity_main">FCT Automobile</string>
+    <string name="package_name">cm.fct.automobile</string>
+    <string name="custom_url_scheme">cm.fct.automobile</string>
+</resources>
