@@ -9,3 +9,5 @@ coverage/
 *.xlsx
 *.pptx
 *.pdf
+scripts/presentation_pdf/screenshots/
+scripts/presentation_pdf/manuel_fct_110p.html

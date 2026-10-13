@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FCT Automobile - Présentation Executive : Synergie Portail Web & ERP</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy-dark: #0a192f;
+    --navy-primary: #1e3a8a;
+    --blue-accent: #0284c7;
+    --emerald: #10b981;
+    --emerald-dark: #059669;
+    --slate-dark: #1e293b;
+    --slate-medium: #64748b;
+    --slate-light: #e2e8f0;
+    --bg-light: #f8fafc;
+    --white: #ffffff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #060d1a;
+    color: #0f172a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+  }
+
+  .slide-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    width: 1333px;
+    max-width: 95vw;
+  }
+
+  .slide {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    page-break-after: always;
+  }
+
+  .slide-header {
+    background: var(--navy-dark);
+    color: white;
+    padding: 18px 36px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid var(--emerald);
+  }
+
+  .slide-header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .logo-img {
+    height: 42px;
+    object-contain: contain;
+    background: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+
+  .section-tag {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--emerald);
+    text-transform: uppercase;
+  }
+
+  .slide-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-top: 2px;
+  }
+
+  .slide-badge {
+    background: #112240;
+    color: var(--emerald);
+    border: 1px solid var(--emerald);
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+
+  .slide-body {
+    flex: 1;
+    padding: 30px 40px;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-light);
+  }
+
+  .slide-footer {
+    background: #ffffff;
+    border-top: 1px solid var(--slate-light);
+    padding: 12px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--slate-medium);
+  }
+
+  /* Grid Layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; height: 100%; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; height: 100%; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; height: 100%; }
+
+  .card {
+    background: white;
+    border: 1px solid var(--slate-light);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--navy-primary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-p {
+    font-size: 13px;
+    color: var(--slate-dark);
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: var(--emerald);
+    font-weight: 900;
+  }
+
+  .pill-step {
+    background: var(--emerald);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    width: fit-content;
+    margin-bottom: 10px;
+  }
+
+  .metric-huge {
+    font-size: 42px;
+    font-weight: 900;
+    color: var(--emerald);
+    line-height: 1;
+    margin: 12px 0 6px;
+  }
+
+  /* Slide Couverture */
+  .slide-cover {
+    background: linear-gradient(135deg, #0a192f 0%, #0d2757 60%, #0369a1 100%);
+    color: white;
+    justify-content: space-between;
+    padding: 50px 60px;
+  }
+
+  .cover-title {
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1.15;
+    margin: 20px 0 10px;
+    color: white;
+  }
+
+  .cover-sub {
+    font-size: 20px;
+    color: #94a3b8;
+    max-width: 900px;
+    line-height: 1.5;
+  }
+
+  .img-frame {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid var(--slate-light);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  }
+
+  /* Navigation Bar en haut */
+  .nav-bar {
+    position: sticky;
+    top: 10px;
+    z-index: 1000;
+    background: rgba(10, 25, 47, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 10px 24px;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+
+  .nav-btn {
+    background: var(--emerald);
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .nav-btn:hover { background: var(--emerald-dark); }
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <span>Franchise Conseils Trading · Support Diaporama de Direction 2026</span>
+  <button class="nav-btn" onclick="window.print()">🖨️ Imprimer / Exporter en PDF</button>
+</div>
+
+<div class="slide-container">
+
+  <!-- SLIDE 1 : COUVERTURE -->
+  <div class="slide slide-cover">
+    <div>
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <img src="/fct-logo.png" style="height: 55px; background: white; padding: 6px 12px; border-radius: 8px;" alt="Logo FCT">
+        <span style="font-size: 13px; font-weight: 800; letter-spacing: 3px; color: var(--emerald);">RÉPUBLIQUE DU CAMEROUN · ZONE ÉCONOMIQUE CEMAC</span>
+      </div>
+      <h1 class="cover-title">ÉCOSYSTÈME NUMÉRIQUE INTÉGRÉ<br>PORTAIL WEB PUBLIC & ERP AUTOMOBILE</h1>
+      <p class="cover-sub">L'Effet Passerelle : Synergie et Synchronisation Temps Réel entre la Vitrine Grand Public et la Plateforme d'Exploitation FCT Douala</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 30px;">
+      <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 18px 24px; border-radius: 10px;">
+        <div style="font-size: 11px; color: #94a3b8; font-weight: 700;">PÉRIMÈTRE MÉTIER</div>
+        <div style="font-size: 18px; font-weight: 900; color: white; margin-top: 4px;">19 Modules ERP + 7 Pages Web</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 18px 24px; border-radius: 10px;">
+        <div style="font-size: 11px; color: #94a3b8; font-weight: 700;">CONFORMITÉ MONÉTAIRE</div>
+        <div style="font-size: 18px; font-weight: 900; color: white; margin-top: 4px;">100% XAF BEAC & TVA 19.25%</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 18px 24px; border-radius: 10px;">
+        <div style="font-size: 11px; color: #94a3b8; font-weight: 700;">SYNCHRONISATION CLOUD</div>
+        <div style="font-size: 18px; font-weight: 900; color: white; margin-top: 4px;">Temps Réel (< 200 ms)</div>
+      </div>
+    </div>
+
+    <div style="font-size: 12px; color: #64748b; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 16px; display: flex; justify-content: space-between;">
+      <span>Franchise Conseils Trading (FCT SARL) · Capital 10 000 000 FCFA · Carrefour Santa Barbara, Bonamoussadi, Douala</span>
+      <span style="color: var(--emerald); font-weight: 700;">Version 2.4.0 — Édition Direction 2026</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 2 : L'EFFET PASSERELLE ARCHITECTURE -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="slide-header-left">
+        <img src="/fct-logo.png" class="logo-img" alt="Logo">
+        <div>
+          <div class="section-tag">Architecture d'Intégration</div>
+          <div class="slide-title">L'Effet Passerelle : Le Pont Bidirectionnel Web ⇄ ERP</div>
+        </div>
+      </div>
+      <div class="slide-badge">TEMPS RÉEL CLOUD</div>
+    </div>
+    <div class="slide-body">
+      <div class="grid-3">
+        <div class="card" style="border-top: 4px solid var(--blue-accent);">
+          <div class="card-title" style="color: var(--blue-accent);">🌐 Vitrine Publique Client</div>
+          <p class="card-p"><strong>Canal Digital Externe :</strong> Accessible 24/7 par les clients à Douala, la diaspora et les entreprises internationales.</p>
+          <ul style="font-size: 12px; color: var(--slate-dark); padding-left: 18px; line-height: 1.8;">
+            <li>Catalogue des véhicules disponibles en temps réel</li>
+            <li>Simulateur de devis instantané avec option chauffeur</li>
+            <li>Formulaire de réservation sans rechargement</li>
+            <li>Recherche publique du Carnet de Santé par plaque</li>
+            <li>Espace adhérent connecté Firebase</li>
+          </ul>
+        </div>
+
+        <div class="card" style="background: #0f1f3d; color: white; border: 2px solid var(--emerald);">
+          <div class="card-title" style="color: var(--emerald);">⚡ Cœur Passerelle Firestore</div>
+          <p class="card-p" style="color: #94a3b8;"><strong>Moteur de Réplication Synchrone :</strong> Base de données NoSQL distribuée Google Cloud Platform.</p>
+          <ul style="font-size: 12px; color: #e2e8f0; padding-left: 18px; line-height: 1.8;">
+            <li>Propagation sub-seconde (< 200 ms)</li>
+            <li>Verrouillage anti-chevauchement / anti-surbooking</li>
+            <li>Résilience hors-ligne via IndexedDB local</li>
+            <li>Validation Zod et immutabilité stricte</li>
+            <li>Journalisation d'audit 10 ans OHADA</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--navy-primary);">
+          <div class="card-title">🏢 Plateforme ERP d'Agence</div>
+          <p class="card-p"><strong>Cockpit d'Exploitation :</strong> Outil de travail quotidien des caissiers, commerciaux et chefs de parc à Bonamoussadi.</p>
+          <ul style="font-size: 12px; color: var(--slate-dark); padding-left: 18px; line-height: 1.8;">
+            <li>Alerte push immédiate sur réservation web</li>
+            <li>Émission du contrat officiel bilingue avec QR Code</li>
+            <li>Encaissement en caisse certifiée avec billetage BEAC</li>
+            <li>Planning Gantt et suivi des chauffeurs VIP</li>
+            <li>Facturation normée avec TVA 19.25%</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span>Franchise Conseils Trading · Architecture Technique Synchrone</span>
+      <span>Slide 2 / 15</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 3 : FLUX OPÉRATIONNEL RÉSERVATION WEB VERS CAISSE -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="slide-header-left">
+        <img src="/fct-logo.png" class="logo-img" alt="Logo">
+        <div>
+          <div class="section-tag">Flux Transverse N°1</div>
+          <div class="slide-title">De la Réservation en Ligne au Reçu de Caisse BEAC</div>
+        </div>
+      </div>
+      <div class="slide-badge">ZÉRO SURBOOKING</div>
+    </div>
+    <div class="slide-body">
+      <div class="grid-4">
+        <div class="card">
+          <div class="pill-step">ÉTAPE 1 · WEB</div>
+          <div class="card-title" style="font-size: 14px;">Sélection Client</div>
+          <p class="card-p">Le client sélectionne un Toyota Land Cruiser Prado sur <code>#/showroom/veh_001</code> pour 7 jours avec chauffeur VIP (+15 000 FCFA/j).</p>
+          <div style="background: var(--bg-light); padding: 10px; border-radius: 6px; font-size: 11px; margin-top: auto;">
+            <strong>Devis calculé :</strong><br>
+            7 x 85 000 = 595 000 FCFA<br>
+            Caution = 300 000 FCFA
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="pill-step" style="background: var(--blue-accent);">ÉTAPE 2 · CLOUD</div>
+          <div class="card-title" style="font-size: 14px;">Blocage Flotte</div>
+          <p class="card-p">Firestore bascule le véhicule en statut "RÉSERVÉ". Il disparaît immédiatement des disponibilités du catalogue public pour éviter tout doublon.</p>
+          <div style="background: var(--bg-light); padding: 10px; border-radius: 6px; font-size: 11px; margin-top: auto;">
+            <strong>Statut :</strong> LOCKED<br>
+            <strong>Délai :</strong> 140 millisecondes
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="pill-step" style="background: var(--navy-primary);">ÉTAPE 3 · ERP</div>
+          <div class="card-title" style="font-size: 14px;">Dossier Contrat</div>
+          <p class="card-p">Le commercial reçoit une notification push. Le contrat officiel CTR-2026-0034 est pré-rempli avec les mentions légales et le QR Code de contrôle.</p>
+          <div style="background: var(--bg-light); padding: 10px; border-radius: 6px; font-size: 11px; margin-top: auto;">
+            <strong>Chauffeur assigné :</strong> Eric Ngassa<br>
+            <strong>Contrat :</strong> Prêt pour visa
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="pill-step" style="background: var(--emerald-dark);">ÉTAPE 4 · CAISSE</div>
+          <div class="card-title" style="font-size: 14px;">Billetage BEAC</div>
+          <p class="card-p">Le caissier encaisse le règlement et la caution en espèces, dénombre les coupures de 10 000 à 500 FCFA et émet le reçu REC certifié.</p>
+          <div style="background: var(--bg-light); padding: 10px; border-radius: 6px; font-size: 11px; margin-top: auto;">
+            <strong>Reçu :</strong> REC-2026-0245<br>
+            <strong>Écart :</strong> 0 FCFA certifié
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span>Franchise Conseils Trading · Cas d'Usage Transverse Réservation</span>
+      <span>Slide 3 / 15</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 4 : FLUX OPÉRATIONNEL ATELIER VERS CARNET DE SANTÉ -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="slide-header-left">
+        <img src="/fct-logo.png" class="logo-img" alt="Logo">
+        <div>
+          <div class="section-tag">Flux Transverse N°2</div>
+          <div class="slide-title">Atelier & Garages ERP ➔ Carnet de Santé Public en Ligne</div>
+        </div>
+      </div>
+      <div class="slide-badge">TRANSPARENCE ABSOLUE</div>
+    </div>
+    <div class="slide-body">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Ordre de Réparation & Sortie de Stock ERP</div>
+          <p class="card-p">À chaque révision ou retour d'inspection 110 points à l'Atelier Central FCT de Bassa :</p>
+          <ul style="font-size: 13px; color: var(--slate-dark); padding-left: 20px; line-height: 1.8;">
+            <li><strong>Émission de l'OR :</strong> Diagnostic et réquisition des pièces en stock PMP (Huile Total Quartz 5W-30, plaquettes de frein d'origine).</li>
+            <li><strong>Clôture & Contrôle :</strong> Le mécanicien valide l'intervention avec horodatage, relevé kilométrique certifié et visa.</li>
+            <li><strong>Imputation Comptable :</strong> La dépense d'entretien est imputée automatiquement au centre de coût du véhicule dans l'ERP.</li>
+            <li><strong>Impact Direct :</strong> Le véhicule redevient "DISPONIBLE" pour la location dès que la fiche atelier est clôturée.</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border: 2px solid var(--emerald);">
+          <div class="card-title" style="color: var(--emerald-dark);">Exposition Directe dans le Carnet de Santé Numérique</div>
+          <p class="card-p">Le client ou acheteur potentiel consulte en temps réel le dossier médical du véhicule sur <code>fct-automobile.cm/#/carnet-sante</code> :</p>
+          <div style="background: var(--bg-light); border: 1px solid var(--slate-light); border-radius: 8px; padding: 16px; margin-top: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span style="font-family: 'JetBrains Mono'; font-weight: 700; color: var(--navy-primary); font-size: 15px;">LT-8841-CE (Toyota Prado TX-L)</span>
+              <span style="background: #dcfce7; color: #166534; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 4px;">GRADE 10/10 CERTIFIÉ</span>
+            </div>
+            <div style="font-size: 12px; color: var(--slate-dark); line-height: 1.6;">
+              ✓ <strong>06/10/2026 :</strong> Vidange moteur 5W-30 + Remplacement filtre à huile (Atelier FCT Bassa)<br>
+              ✓ <strong>28/09/2026 :</strong> Remplacement plaquettes de frein avant d'origine (Kilométrage : 48 500 km)<br>
+              ✓ <strong>15/09/2026 :</strong> Inspection 110 points complète : Climatisation, trains roulants, circuit turbo conformes.
+            </div>
+          </div>
+          <p style="font-size: 11px; color: var(--slate-medium); margin-top: 12px; font-style: italic;">
+            * Zéro donnée fictive : chaque opération est certifiée par le numéro d'ordre de réparation ERP et le matricule du chef d'atelier.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span>Franchise Conseils Trading · Traçabilité Médicale Automobile</span>
+      <span>Slide 4 / 15</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 5 : COCKPIT ERP DIRECTEUR -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="slide-header-left">
+        <img src="/fct-logo.png" class="logo-img" alt="Logo">
+        <div>
+          <div class="section-tag">Plateforme ERP & CRM</div>
+          <div class="slide-title">Cockpit Décisionnel de Direction & Pilotage Temps Réel</div>
+        </div>
+      </div>
+      <div class="slide-badge">SUPER ADMIN ACTIF</div>
+    </div>
+    <div class="slide-body">
+      <div style="display: grid; grid-template-columns: 2.2fr 1fr; gap: 24px; height: 100%;">
+        <div style="border-radius: 10px; overflow: hidden; border: 1px solid var(--slate-light); box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
+          <img src="scripts/presentation_pdf/screenshots/dashboard.png" class="img-frame" alt="Dashboard ERP Réel">
+        </div>
+        <div class="card">
+          <div class="card-title">Indicateurs en Direct</div>
+          <div style="space-y: 12px;">
+            <div style="margin-bottom: 14px;">
+              <div style="font-size: 11px; color: var(--slate-medium); font-weight: 700;">ESPÈCES EN CAISSE (SESSION)</div>
+              <div style="font-size: 22px; font-weight: 900; color: var(--emerald-dark);">900 000 FCFA</div>
+            </div>
+            <div style="margin-bottom: 14px;">
+              <div style="font-size: 11px; color: var(--slate-medium); font-weight: 700;">ENCAISSEMENTS DU JOUR</div>
+              <div style="font-size: 22px; font-weight: 900; color: var(--navy-primary);">595 000 FCFA</div>
+            </div>
+            <div style="margin-bottom: 14px;">
+              <div style="font-size: 11px; color: var(--slate-medium); font-weight: 700;">CONTRAT ACTIF EN CIRCULATION</div>
+              <div style="font-size: 14px; font-weight: 800; color: var(--slate-dark);">SOCTRAN SA · Toyota Prado</div>
+            </div>
+            <div style="margin-bottom: 14px;">
+              <div style="font-size: 11px; color: var(--slate-medium); font-weight: 700;">DISPONIBILITÉS EN AGENCE</div>
+              <div style="font-size: 13px; color: var(--slate-dark);">Corolla Cross, GLE 450 AMG, Hilux Revo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span>Franchise Conseils Trading · Capture Réelle Connectée Claus Ephwandji</span>
+      <span>Slide 5 / 15</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
