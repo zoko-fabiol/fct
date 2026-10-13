@@ -18,18 +18,24 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file('fct-release.keystore')
-            storePassword 'fctautomobile2026'
-            keyAlias 'fctkey'
-            keyPassword 'fctautomobile2026'
+            if (file('fct-release.keystore').exists()) {
+                storeFile file('fct-release.keystore')
+                storePassword 'fctautomobile2026'
+                keyAlias 'fctkey'
+                keyPassword 'fctautomobile2026'
+            }
         }
     }
     buildTypes {
         debug {
-            signingConfig signingConfigs.release
+            if (file('fct-release.keystore').exists()) {
+                signingConfig signingConfigs.release
+            }
         }
         release {
-            signingConfig signingConfigs.release
+            if (file('fct-release.keystore').exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
