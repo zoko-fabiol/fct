@@ -126,18 +126,12 @@ jobs:
         run: |
           npx tauri android build -v --apk --debug --target aarch64 --ignore-version-mismatches 2>&1 | tee build_tauri.log
 
-      - name: Ensure APK is Assembled & Locate Binaries
+      - name: Locate Generated Packages
         run: |
-          APK_COUNT=$(find . -name "*.apk" 2>/dev/null | wc -l)
-          echo "Nombre d'APKs detectes: $APK_COUNT"
-          if [ "$APK_COUNT" -eq 0 ]; then
-            echo "Aucun APK present apres build initial, generation directe de l'APK via Gradle..."
-            cd src-tauri/gen/android
-            ./gradlew assembleUniversalDebug assembleArm64Debug --stacktrace
-            cd ../../..
-          fi
-          echo "=== FICHIERS APK ET AAB PRODUITS ==="
-          find . -type f \( -name "*.apk" -o -name "*.aab" \) -exec ls -lh {} + || true
+          echo "=== FICHIERS PACKAGES PRODUITS DANS BUILD/OUTPUTS ==="
+          find src-tauri/gen/android/app/build/outputs -type f -exec ls -lh {} + 2>/dev/null || true
+          echo "=== RECHERCHE GLOBALE DE TOUS LES APK ET AAB ==="
+          find . -type f \( -name "*.apk" -o -name "*.aab" \) -exec ls -lh {} + 2>/dev/null || true
 
       - name: Dump Detailed Gradle Failure Logs
         if: failure()
@@ -152,8 +146,7 @@ jobs:
         with:
           name: fct-automobile-debug-apk
           path: |
-            src-tauri/gen/android/app/build/outputs/apk/**
-            src-tauri/gen/android/app/build/outputs/bundle/**
+            src-tauri/gen/android/app/build/outputs/**
             **/*.apk
             **/*.aab
           if-no-files-found: warn
