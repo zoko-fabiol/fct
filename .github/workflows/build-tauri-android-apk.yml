@@ -79,42 +79,60 @@ jobs:
           npx tauri android init --ci --skip-targets-install
           # Assurer les droits d'execution sur le wrapper Gradle
           chmod +x src-tauri/gen/android/gradlew || true
-          # Symlinks de securite
+          # Symlinks de securite hierarchiques pour node_modules
           ln -sf "$(pwd)/node_modules" src-tauri/node_modules
           ln -sf "$(pwd)/node_modules" src-tauri/gen/node_modules
           ln -sf "$(pwd)/node_modules" src-tauri/gen/android/node_modules
           ln -sf "$(pwd)/node_modules" src-tauri/gen/android/app/node_modules
-          # Patch du chemin absolu de tauri.js dans BuildTask.kt
+          # Symlinks universels pour le binaire et script tauri
+          CLI_REAL="$(pwd)/node_modules/@tauri-apps/cli/tauri.js"
+          chmod +x "$CLI_REAL"
+          ln -sf "$CLI_REAL" "$(pwd)/tauri"
+          ln -sf "$CLI_REAL" "$(pwd)/tauri.js"
+          ln -sf "$CLI_REAL" "$(pwd)/src-tauri/tauri"
+          ln -sf "$CLI_REAL" "$(pwd)/src-tauri/tauri.js"
+          ln -sf "$CLI_REAL" "$(pwd)/src-tauri/gen/tauri"
+          ln -sf "$CLI_REAL" "$(pwd)/src-tauri/gen/tauri.js"
+          ln -sf "$CLI_REAL" "$(pwd)/src-tauri/gen/android/tauri"
+          ln -sf "$CLI_REAL" "$(pwd)/src-tauri/gen/android/tauri.js"
+          ln -sf "$CLI_REAL" "$(pwd)/src-tauri/gen/android/app/tauri"
+          ln -sf "$CLI_REAL" "$(pwd)/src-tauri/gen/android/app/tauri.js"
+          # Scan exhaustif et patch des scripts Kotlin de build
           python3 -c "
-          import glob, os, re
-          root_dir = os.path.abspath('.')
-          cli_path = os.path.join(root_dir, 'node_modules', '@tauri-apps', 'cli', 'tauri.js')
-          print('Chemin absolu du CLI Tauri:', cli_path)
-          assert os.path.exists(cli_path), 'tauri.js introuvable'
-          for f in glob.glob('src-tauri/gen/android/**/BuildTask.kt', recursive=True):
-              with open(f, 'r') as fp:
-                  c = fp.read()
-              print('--- Original ' + f + ' ---')
-              print(c)
-              c_patched = re.sub(r'\"[^\"]*node_modules/@tauri-apps/cli/tauri\.js\"', f'\"{cli_path}\"', c)
-              with open(f, 'w') as fp:
-                  fp.write(c_patched)
-              print('--- Patched ' + f + ' ---')
-              print(c_patched)
+          import os, re
+          cli_path = os.path.abspath('node_modules/@tauri-apps/cli/tauri.js')
+          print('Chemin absolu du CLI:', cli_path)
+          assert os.path.exists(cli_path)
+          found = 0
+          for root, dirs, files in os.walk('src-tauri/gen/android'):
+              for f in files:
+                  if f.endswith('.kt'):
+                      p = os.path.join(root, f)
+                      with open(p, 'r', encoding='utf-8', errors='ignore') as fp:
+                          c = fp.read()
+                      if 'tauri' in c.lower() or 'commandline' in c.lower() or 'buildtask' in f.lower():
+                          found += 1
+                          print('=== SCAN KOTLIN ' + p + ' ===')
+                          print(c)
+                          c_mod = re.sub(r'\"[^\"]*tauri(\.js)?\"', f'\"{cli_path}\"', c)
+                          if c_mod != c:
+                              print('--> PATCH APPLIQUE SUR ' + p)
+                              with open(p, 'w', encoding='utf-8') as fp:
+                                  fp.write(c_mod)
+          print(f'Total fichiers Kotlin inspectes avec mot-cle : {found}')
           "
 
       - name: Build Android Debug APK (Directly Installable on Phone)
         run: |
-          npx tauri android build -v --apk --debug --target aarch64 --ignore-version-mismatches
+          npx tauri android build -v --apk --debug --target aarch64 --ignore-version-mismatches 2>&1 | tee build_tauri.log
 
       - name: Dump Detailed Gradle Failure Logs
         if: failure()
         run: |
-          echo "=== RECHERCHE DES FICHIERS DE LOGS & RAPPORTS GRADLE ==="
-          find src-tauri/gen/android -name "*.log" -o -name "*.txt" -o -name "*.html" 2>/dev/null | head -n 30 | while read f; do
-            echo "--- $f ---"
-            grep -i -C 3 -m 20 "error\|exception\|failed" "$f" || head -n 30 "$f" || true
-          done
+          echo "=== EXTRAIT D'ERREUR DU LOG COMPLET ==="
+          grep -i -C 5 "error:\|exception\|failed\|cannot find" build_tauri.log | head -n 120 || true
+          echo "=== 150 DERNIERES LIGNES DU LOG ==="
+          tail -n 150 build_tauri.log || true
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
