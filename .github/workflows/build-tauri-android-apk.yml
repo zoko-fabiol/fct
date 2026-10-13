@@ -38,6 +38,7 @@ jobs:
           echo "Selected NDK: $NDK_DIR"
           echo "NDK_HOME=$NDK_DIR" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$NDK_DIR" >> $GITHUB_ENV
+          echo "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Setup Rust Toolchain
@@ -124,14 +125,21 @@ jobs:
 
       - name: Build Android Debug APK (Directly Installable on Phone)
         run: |
+          set -o pipefail
           npx tauri android build -v --apk --debug --target aarch64 --ignore-version-mismatches 2>&1 | tee build_tauri.log
 
-      - name: Locate Generated Packages
+      - name: Verify and Locate APK
         run: |
-          echo "=== FICHIERS PACKAGES PRODUITS DANS BUILD/OUTPUTS ==="
-          find src-tauri/gen/android/app/build/outputs -type f -exec ls -lh {} + 2>/dev/null || true
-          echo "=== RECHERCHE GLOBALE DE TOUS LES APK ET AAB ==="
-          find . -type f \( -name "*.apk" -o -name "*.aab" \) -exec ls -lh {} + 2>/dev/null || true
+          echo "=== RECHERCHE DES FICHIERS APK GENERES ==="
+          find . -name "*.apk" -ls 2>/dev/null || true
+          APK_FOUND=$(find . -name "*.apk" 2>/dev/null | head -n 1)
+          if [ -z "$APK_FOUND" ]; then
+            echo "ERREUR CRITIQUE: Aucun fichier .apk n'a ete genere par le build !"
+            echo "=== 100 DERNIERES LIGNES DU LOG DE BUILD ==="
+            tail -n 100 build_tauri.log || true
+            exit 1
+          fi
+          echo "APK detecte avec succes: $APK_FOUND"
 
       - name: Dump Detailed Gradle Failure Logs
         if: failure()
@@ -146,8 +154,5 @@ jobs:
         with:
           name: fct-automobile-debug-apk
           path: |
-            src-tauri/gen/android/app/build/outputs/**
             **/*.apk
-            **/*.aab
-          if-no-files-found: warn
           retention-days: 14
