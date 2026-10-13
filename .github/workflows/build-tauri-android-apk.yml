@@ -64,7 +64,10 @@ jobs:
           org.gradle.logging.level=info
           org.gradle.logging.stacktrace=all
           org.gradle.console=plain
+          org.gradle.configuration-cache=false
+          org.gradle.unsafe.configuration-cache=false
           EOF
+          echo "GRADLE_OPTS=-Dorg.gradle.configuration-cache=false" >> $GITHUB_ENV
 
       - name: Install Frontend Dependencies & Global Tauri CLI
         run: |
@@ -78,6 +81,8 @@ jobs:
         run: |
           rm -rf src-tauri/gen
           npx tauri android init --ci --skip-targets-install
+          # Assurer la desactivation du configuration cache dans le projet Android genere
+          echo "org.gradle.configuration-cache=false" >> src-tauri/gen/android/gradle.properties || true
           # Assurer les droits d'execution sur le wrapper Gradle
           chmod +x src-tauri/gen/android/gradlew || true
           # Symlinks de securite hierarchiques pour node_modules
@@ -126,7 +131,7 @@ jobs:
       - name: Build Android Debug APK (Directly Installable on Phone)
         run: |
           set -o pipefail
-          npx tauri android build -v --apk --debug --target aarch64 --ignore-version-mismatches 2>&1 | tee build_tauri.log
+          npx tauri android build -v --apk --debug --ignore-version-mismatches 2>&1 | tee build_tauri.log
 
       - name: Verify and Locate APK
         run: |
