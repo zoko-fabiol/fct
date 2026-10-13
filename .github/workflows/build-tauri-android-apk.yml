@@ -28,7 +28,14 @@ jobs:
       - name: Setup Android Environment (Pre-installed GitHub SDK)
         run: |
           echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-          NDK_DIR=$(ls -d /usr/local/lib/android/sdk/ndk/* | sort -V | tail -n 1)
+          NDK_DIR=$(find /usr/local/lib/android/sdk/ndk -maxdepth 1 -name "26.*" 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$NDK_DIR" ]; then
+            NDK_DIR=$(find /usr/local/lib/android/sdk/ndk -maxdepth 1 -name "27.*" 2>/dev/null | sort -V | tail -n 1)
+          fi
+          if [ -z "$NDK_DIR" ]; then
+            NDK_DIR=$(ls -d /usr/local/lib/android/sdk/ndk/* | sort -V | head -n 1)
+          fi
+          echo "Selected NDK: $NDK_DIR"
           echo "NDK_HOME=$NDK_DIR" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$NDK_DIR" >> $GITHUB_ENV
           yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
@@ -56,7 +63,7 @@ jobs:
 
       - name: Build Android Debug APK (Directly Installable on Phone)
         run: |
-          node ./node_modules/@tauri-apps/cli/tauri.js android build --apk --debug --target aarch64
+          node ./node_modules/@tauri-apps/cli/tauri.js android build -v --apk --debug --target aarch64 -- --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
