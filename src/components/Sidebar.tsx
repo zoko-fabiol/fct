@@ -168,6 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   return (
                     <button
                       key={item.id}
+                      data-module={item.id}
                       onClick={() => {
                         onSelectModule(item.id);
                         onCloseMobile?.();

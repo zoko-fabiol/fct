@@ -48,7 +48,11 @@ import {
   Info,
   ShieldCheck,
   X,
-  Globe
+  Globe,
+  ArrowLeft,
+  ChevronRight,
+  ArrowUpRight,
+  Sparkles
 } from 'lucide-react';
 import { UsersView } from './UsersView.tsx';
 
@@ -80,11 +84,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
   // RBAC permissions check
   const canEdit = hasEffectivePermission(currentUser, 'settings', 'update', state.rolePermissions);
 
-  // Active category tab
-  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab || 'general');
+  // Active category tab (null = Menu Hub principal des paramètres)
+  const [activeTab, setActiveTab] = useState<SettingsTab | null>(initialTab ?? null);
 
   React.useEffect(() => {
-    if (initialTab) {
+    if (initialTab !== undefined) {
       setActiveTab(initialTab);
     }
   }, [initialTab]);
@@ -289,24 +293,210 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
     );
   }, [state.auditLogs]);
 
-  // Tab navigation definitions
-  const tabs: { id: SettingsTab; label: string; icon: React.ReactNode; badge?: string }[] = [
-    { id: 'general', label: lang === 'en' ? 'General & Identity' : 'Général & Identité', icon: <Building2 className="w-4 h-4" /> },
-    { id: 'appearance', label: lang === 'en' ? 'Appearance & Theme' : 'Apparence & Préférences', icon: <Palette className="w-4 h-4" /> },
-    { id: 'numbering', label: lang === 'en' ? 'Numbering & Docs' : 'Numérotation & Documents', icon: <Hash className="w-4 h-4" /> },
-    { id: 'finance', label: lang === 'en' ? 'Finance & Cash' : 'Finances & Caisse', icon: <Coins className="w-4 h-4" /> },
-    { id: 'fleet', label: lang === 'en' ? 'Fleet & Alerts' : 'Parc & Alertes', icon: <Car className="w-4 h-4" /> },
-    { id: 'maintenance', label: lang === 'en' ? 'Maintenance & Stock' : 'Maintenance & Stock', icon: <Wrench className="w-4 h-4" /> },
-    { id: 'rentals', label: lang === 'en' ? 'Rentals & Bookings' : 'Locations & Réservations', icon: <FileCheck className="w-4 h-4" /> },
-    { id: 'modules', label: lang === 'en' ? 'Module Controls' : 'Gestion des Modules', icon: <Layers className="w-4 h-4" />, badge: '18' },
-    { id: 'users', label: lang === 'en' ? 'Staff & RBAC Rights' : 'Collaborateurs & Droits RBAC', icon: <ShieldCheck className="w-4 h-4 text-emerald-600" />, badge: `${state.users?.length || 0}` },
-    { id: 'sync', label: lang === 'en' ? 'Sync & Media' : 'Synchronisation & Médias', icon: <Cloud className="w-4 h-4" /> },
-    { id: 'backup', label: lang === 'en' ? 'Backups & Audit' : 'Sauvegardes & Audit', icon: <Database className="w-4 h-4" /> },
+  // Définition hiérarchique des 11 catégories FCT ordonnées du PLUS UTILISÉ au MOINS UTILISÉ
+  interface SettingsCategoryItem {
+    id: SettingsTab;
+    rank: number;
+    priorityLabel: string;
+    label: string;
+    shortLabel: string;
+    desc: string;
+    icon: React.ReactNode;
+    colorBg: string;
+    colorText: string;
+    badgeValue: string;
+    keywords: string[];
+  }
+
+  const categories: SettingsCategoryItem[] = [
+    {
+      id: 'general',
+      rank: 1,
+      priorityLabel: '01 • Priorité Exploitation',
+      label: lang === 'en' ? 'General & Agency Identity' : 'Général & Identité de l’Agence',
+      shortLabel: lang === 'en' ? 'Identity' : 'Identité',
+      desc: lang === 'en'
+        ? 'Official trade name, Bonamoussadi address, RCCM, Tax ID (NIU), phone numbers and official logo.'
+        : 'Raison sociale, siège Bonamoussadi, RCCM, NIU fiscal, téléphones officiels et logo concessionnaire.',
+      icon: <Building2 className="w-5 h-5" />,
+      colorBg: 'bg-blue-50 border-blue-200 text-blue-700',
+      colorText: 'text-blue-700',
+      badgeValue: formData.tradeName || 'FCT Douala',
+      keywords: ['identité', 'nom', 'adresse', 'bonamoussadi', 'rccm', 'niu', 'logo', 'téléphone', 'email', 'contact'],
+    },
+    {
+      id: 'rentals',
+      rank: 2,
+      priorityLabel: '02 • Règles Locatives',
+      label: lang === 'en' ? 'Rentals, Pricing & Deposits' : 'Locations, Tarification & Cautions',
+      shortLabel: lang === 'en' ? 'Rentals' : 'Locations',
+      desc: lang === 'en'
+        ? 'Standard security deposits, minimum rental duration, hourly late penalty rate and return inspection.'
+        : 'Caution standard (200 000 XAF), durées minimale/maximale, pénalité de retard et fiches contradictoires.',
+      icon: <FileCheck className="w-5 h-5" />,
+      colorBg: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      colorText: 'text-emerald-700',
+      badgeValue: `${(formData.defaultDepositXAF || 200000).toLocaleString()} XAF`,
+      keywords: ['caution', 'location', 'durée', 'pénalité', 'retard', 'contrat', 'inspection', 'tarif'],
+    },
+    {
+      id: 'finance',
+      rank: 3,
+      priorityLabel: '03 • Caisse & Fiscalité',
+      label: lang === 'en' ? 'Finance, Cash Desk & Tax' : 'Finances, Caisse & Fiscalité',
+      shortLabel: lang === 'en' ? 'Finance' : 'Finances',
+      desc: lang === 'en'
+        ? 'Cameroon VAT rate (19.25%), authorized payment channels, expense thresholds and cash discrepancy tolerance.'
+        : 'Taux TVA CEMAC 19.25%, tolérance écart de caisse (0 XAF), validation dépenses et modes de paiement.',
+      icon: <Coins className="w-5 h-5" />,
+      colorBg: 'bg-amber-50 border-amber-200 text-amber-700',
+      colorText: 'text-amber-700',
+      badgeValue: `TVA ${formData.taxRatePercent || 19.25}%`,
+      keywords: ['tva', 'caisse', 'fiscalité', 'impôt', 'espèces', 'virement', 'orange money', 'mtn', 'dépense', 'écart'],
+    },
+    {
+      id: 'fleet',
+      rank: 4,
+      priorityLabel: '04 • Contrôle Flotte',
+      label: lang === 'en' ? 'Fleet Management & Alerts' : 'Parc Automobile & Alertes Sécurité',
+      shortLabel: lang === 'en' ? 'Fleet' : 'Flotte',
+      desc: lang === 'en'
+        ? 'Preventive maintenance km anticipation, insurance & technical inspection alert lead-times and mandatory departure photos.'
+        : 'Anticipation vidange (km), préavis assurances & visites techniques CEMAC et photos obligatoires.',
+      icon: <Car className="w-5 h-5" />,
+      colorBg: 'bg-cyan-50 border-cyan-200 text-cyan-700',
+      colorText: 'text-cyan-700',
+      badgeValue: `${formData.insuranceAlertDays || 30}j Préavis`,
+      keywords: ['assurance', 'visite technique', 'alerte', 'photos', 'flotte', 'véhicule', 'anticipation', 'contrôle'],
+    },
+    {
+      id: 'maintenance',
+      rank: 5,
+      priorityLabel: '05 • Atelier & Stocks',
+      label: lang === 'en' ? 'Maintenance & Spare Parts' : 'Maintenance, Atelier & Stocks',
+      shortLabel: lang === 'en' ? 'Maintenance' : 'Maintenance',
+      desc: lang === 'en'
+        ? 'Standard oil change interval (km), designated partner workshop and strict weighted average cost (PMP) stock deduction.'
+        : 'Intervalle vidange périodique, garage partenaire CFAO et déstockage automatique des pièces.',
+      icon: <Wrench className="w-5 h-5" />,
+      colorBg: 'bg-orange-50 border-orange-200 text-orange-700',
+      colorText: 'text-orange-700',
+      badgeValue: `${(formData.defaultMaintenanceIntervalKm || 10000).toLocaleString()} km`,
+      keywords: ['vidange', 'garage', 'atelier', 'pièces', 'stock', 'seuil', 'pmp', 'entretien', 'cfao'],
+    },
+    {
+      id: 'appearance',
+      rank: 6,
+      priorityLabel: '06 • Confort Visuel',
+      label: lang === 'en' ? 'Appearance & Preferences' : 'Apparence, Thème & Préférences',
+      shortLabel: lang === 'en' ? 'Appearance' : 'Apparence',
+      desc: lang === 'en'
+        ? 'Theme color mode, French/English localization, data grid density and audible operation signals.'
+        : 'Thème clair/sombre, bilinguisme FR/EN, compacité des tableaux et alertes sonores de guichet.',
+      icon: <Palette className="w-5 h-5" />,
+      colorBg: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+      colorText: 'text-indigo-700',
+      badgeValue: `${formData.theme === 'dark' ? 'Sombre' : 'Clair'} • ${(formData.defaultLanguage || 'FR').toUpperCase()}`,
+      keywords: ['thème', 'sombre', 'clair', 'langue', 'anglais', 'français', 'densité', 'son', 'bip', 'affichage'],
+    },
+    {
+      id: 'numbering',
+      rank: 7,
+      priorityLabel: '07 • Séquençage Pièces',
+      label: lang === 'en' ? 'Numbering & Document Formats' : 'Numérotation des Documents Officiels',
+      shortLabel: lang === 'en' ? 'Numbering' : 'Numérotation',
+      desc: lang === 'en'
+        ? 'Atomic document prefixes (CTR, FAC, REC, COM, DEV), zero-padding format and annual calendar inclusion.'
+        : 'Préfixes officiels (CTR-, FAC-, REC-, DEV-), remplissage par zéros et millésime annuel anti-collision.',
+      icon: <Hash className="w-5 h-5" />,
+      colorBg: 'bg-violet-50 border-violet-200 text-violet-700',
+      colorText: 'text-violet-700',
+      badgeValue: `${formData.rentalPrefix || 'CTR'}- / ${formData.invoicePrefix || 'FAC'}-`,
+      keywords: ['numérotation', 'prefixe', 'contrat', 'facture', 'reçu', 'devis', 'année', 'padding', 'séquence'],
+    },
+    {
+      id: 'modules',
+      rank: 8,
+      priorityLabel: '08 • Modules FCT',
+      label: lang === 'en' ? 'ERP Modules Controls' : 'Activation & Gestion des Modules',
+      shortLabel: lang === 'en' ? 'Modules' : 'Modules',
+      desc: lang === 'en'
+        ? 'Toggle availability for the 18 operational modules across sidebar and navigation menus.'
+        : 'Activation ou désactivation sélective des 18 modules opérationnels de la concession automobile.',
+      icon: <Layers className="w-5 h-5" />,
+      colorBg: 'bg-teal-50 border-teal-200 text-teal-700',
+      colorText: 'text-teal-700',
+      badgeValue: '18 Modules',
+      keywords: ['modules', 'activation', 'désactivation', 'visibilité', 'menu', 'sidebar', 'fonctionnalités'],
+    },
+    {
+      id: 'users',
+      rank: 9,
+      priorityLabel: '09 • Gouvernance RH',
+      label: lang === 'en' ? 'Staff & RBAC Permissions' : 'Collaborateurs & Droits d’Accès (RBAC)',
+      shortLabel: lang === 'en' ? 'Staff' : 'Équipe & Accès',
+      desc: lang === 'en'
+        ? 'Employee accounts directory, password generation, 4-digit security PIN and granular role matrix.'
+        : 'Création d’employés, génération sécurisée de mots de passe, codes PIN et matrice des privilèges.',
+      icon: <ShieldCheck className="w-5 h-5" />,
+      colorBg: 'bg-rose-50 border-rose-200 text-rose-700',
+      colorText: 'text-rose-700',
+      badgeValue: `${state.users?.length || 0} Collaborateurs`,
+      keywords: ['utilisateurs', 'collaborateurs', 'mot de passe', 'pin', 'rôles', 'rbac', 'droits', 'permissions', 'accès'],
+    },
+    {
+      id: 'sync',
+      rank: 10,
+      priorityLabel: '10 • Moteur Cloud',
+      label: lang === 'en' ? 'Sync, Cloud & Persistence' : 'Synchronisation Cloud & Firebase',
+      shortLabel: lang === 'en' ? 'Sync' : 'Synchronisation',
+      desc: lang === 'en'
+        ? 'Zero-latency local IndexedDB persistence, Firestore cloud replication (fct-cmr) and Cloudinary vault.'
+        : 'Cache local IndexedDB hors-ligne, réplication cloud Firestore temps réel et coffre Cloudinary.',
+      icon: <Cloud className="w-5 h-5" />,
+      colorBg: 'bg-sky-50 border-sky-200 text-sky-700',
+      colorText: 'text-sky-700',
+      badgeValue: state.isOnline ? 'En Ligne (Firestore)' : 'Hors-Ligne (Cache)',
+      keywords: ['synchronisation', 'firebase', 'firestore', 'cloud', 'indexeddb', 'cloudinary', 'hors ligne', 'cache'],
+    },
+    {
+      id: 'backup',
+      rank: 11,
+      priorityLabel: '11 • Maintenance Système',
+      label: lang === 'en' ? 'Backups, Restore & Audit Trail' : 'Sauvegardes, Restauration & Audit',
+      shortLabel: lang === 'en' ? 'Backup' : 'Sauvegardes',
+      desc: lang === 'en'
+        ? 'Full JSON encrypted backup export, disaster recovery import, factory reset and audit change logs.'
+        : 'Export JSON chiffré de toute la base, restauration d’urgence, paramètres d’usine et journal d’audit.',
+      icon: <Database className="w-5 h-5" />,
+      colorBg: 'bg-purple-50 border-purple-200 text-purple-700',
+      colorText: 'text-purple-700',
+      badgeValue: `${settingsAuditLogs.length} Entrées Audit`,
+      keywords: ['sauvegarde', 'export', 'import', 'restauration', 'json', 'reset', 'usine', 'audit', 'journal', 'historique'],
+    },
   ];
+
+  // Filtrage dynamique du menu par recherche
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) return categories;
+    const query = searchQuery.toLowerCase().trim();
+    return categories.filter(
+      (cat) =>
+        cat.label.toLowerCase().includes(query) ||
+        cat.desc.toLowerCase().includes(query) ||
+        cat.badgeValue.toLowerCase().includes(query) ||
+        cat.keywords.some((k) => k.toLowerCase().includes(query))
+    );
+  }, [searchQuery, categories]);
+
+  // Onglet sélectionné actif
+  const currentCategory = useMemo(() => {
+    return categories.find((c) => c.id === activeTab) || null;
+  }, [activeTab, categories]);
 
   return (
     <div className="space-y-6 pb-12">
-      {/* 1. Header with title, search and persistent action buttons */}
+      {/* 1. Header Global avec Barre d'Action et Recherche */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 lg:p-6 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -322,32 +512,36 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                   </span>
                 </h1>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  {t.settingsPage.subtitle} — Douala, Cameroun
+                  {activeTab === null
+                    ? lang === 'fr'
+                      ? 'Menu Central des Paramètres FCT — Sélectionnez une rubrique ci-dessous'
+                      : 'Central FCT Settings Hub — Select a category below'
+                    : `${currentCategory?.label || ''} — Douala, Cameroun`}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center flex-wrap gap-2.5">
-            {/* Live Search */}
-            <div className="relative min-w-[200px]">
+            {/* Recherche Live */}
+            <div className="relative min-w-[220px]">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder={lang === 'fr' ? 'Rechercher un paramètre...' : 'Search settings...'}
+                placeholder={lang === 'fr' ? 'Rechercher un réglage...' : 'Search settings...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-50/50 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
               />
             </div>
 
-            {/* Cancel & Save triggers */}
+            {/* Boutons Annuler & Enregistrer persistants si modifications en attente */}
             {canEdit && (
               <>
                 {isDirty && (
                   <button
                     onClick={handleCancel}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-sm"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-sm cursor-pointer"
                   >
                     <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
                     <span>{lang === 'fr' ? 'Annuler' : 'Cancel'}</span>
@@ -370,10 +564,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
           </div>
         </div>
 
-        {/* Read-only RBAC Alert when user lacks 'settings.update' */}
+        {/* Message d'alerte en cas de droits restreints */}
         {!canEdit && (
           <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
-            <Lock className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <Lock className="w-4 h-4 text-amber-600 shrink-0" />
             <span>
               {lang === 'fr'
                 ? 'Mode consultation seule : Votre rôle actuel ne dispose pas des droits de modification sur les paramètres FCT.'
@@ -382,24 +576,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
           </div>
         )}
 
-        {/* Alerts: Success or Error */}
+        {/* Messages de retour visuel */}
         {saveSuccessMsg && (
           <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2 animate-fadeIn">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span className="font-semibold">{saveSuccessMsg}</span>
           </div>
         )}
 
         {saveErrorMsg && (
           <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-xs text-rose-900 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
             <span className="font-semibold">{saveErrorMsg}</span>
           </div>
         )}
 
-        {/* Audit trail reason input if dirty */}
+        {/* Motif d'audit quand modifications non sauvegardées */}
         {canEdit && isDirty && (
-          <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-200 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-200 flex flex-col sm:flex-row items-start sm:items-center gap-3 animate-fadeIn">
             <div className="flex items-center gap-2 text-xs font-bold text-blue-900 whitespace-nowrap">
               <History className="w-4 h-4 text-blue-700" />
               <span>{lang === 'fr' ? 'Motif de traçabilité (Audit) :' : 'Change Reason (Audit) :'}</span>
@@ -418,36 +612,127 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
           </div>
         )}
 
-        {/* 2. Responsive Tabs Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-slate-100 pt-3 no-scrollbar">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
+        {/* Navigation Drill-down : Si une catégorie est ouverte, barre de retour et raccourcis */}
+        {activeTab !== null ? (
+          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
-                  isActive
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}
+                type="button"
+                onClick={() => setActiveTab(null)}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black transition cursor-pointer shadow-xs group"
+                title="Retour au menu principal de tous les paramètres"
               >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
-                {tab.badge && (
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                      isActive ? 'bg-slate-700 text-emerald-400' : 'bg-slate-200 text-slate-700'
+                <ArrowLeft className="w-3.5 h-3.5 text-emerald-700 transition group-hover:-translate-x-0.5" />
+                <span>{lang === 'fr' ? '← Retour au Menu des Paramètres' : '← Back to Settings Menu'}</span>
+              </button>
+
+              <div className="text-xs text-slate-400 hidden md:flex items-center gap-1 font-semibold">
+                <span className="hover:underline cursor-pointer" onClick={() => setActiveTab(null)}>Paramètres FCT</span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+                <span className="text-slate-800 font-bold">{currentCategory?.label}</span>
+              </div>
+            </div>
+
+            {/* Raccourcis rapides d'onglets compacts */}
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1">
+              {categories.map((cat) => {
+                const isSelected = activeTab === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setActiveTab(cat.id)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+                    <span>{cat.shortLabel}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          /* Indicateur de synthèse du Hub */
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span className="font-semibold">
+              {filteredCategories.length} catégorie(s) de configuration disponible(s) • Ordonnées par priorité d’usage
+            </span>
+            <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full font-bold">
+              Franchise Conseils Trading Automobile
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* 2. VUE HUB MENU (Affichée quand aucun onglet n'est ouvert) */}
+      {activeTab === null && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredCategories.map((cat) => (
+              <div
+                key={cat.id}
+                onClick={() => setActiveTab(cat.id)}
+                className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs hover:shadow-md hover:border-emerald-500 transition-all cursor-pointer group flex flex-col justify-between space-y-4 text-xs"
+              >
+                <div className="space-y-3">
+                  {/* Ligne haute : Icône colorée + Badge de priorité */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center border font-bold ${cat.colorBg} shadow-xs group-hover:scale-105 transition-transform`}>
+                      {cat.icon}
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                      {cat.priorityLabel}
+                    </span>
+                  </div>
+
+                  {/* Titre & Description */}
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 group-hover:text-emerald-700 transition flex items-center justify-between">
+                      <span>{cat.label}</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500 leading-relaxed mt-1 line-clamp-2">
+                      {cat.desc}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bas de carte : Valeur clé live + Bouton d'accès */}
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="text-[11px] font-bold text-slate-700 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200/80 truncate max-w-[180px]">
+                    {cat.badgeValue}
+                  </div>
+                  <div className="inline-flex items-center gap-1 font-black text-xs text-emerald-700 group-hover:translate-x-0.5 transition-transform">
+                    <span>Ouvrir</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {filteredCategories.length === 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-2">
+              <Search className="w-8 h-8 text-slate-400 mx-auto" />
+              <h3 className="font-bold text-slate-800 text-sm">Aucun résultat trouvé</h3>
+              <p className="text-xs text-slate-500">
+                Aucune catégorie de paramètres ne correspond à « {searchQuery} ».
+              </p>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="mt-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
+              >
+                Effacer la recherche
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. CONTENUS DES SOUS-PAGES DÉTAILLÉES (Affichés uniquement quand une catégorie est sélectionnée) */}
 
       {/* 3. Tab Contents */}
 
@@ -1800,6 +2085,50 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 Restaurer la Base
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Barre d'action inférieure de navigation & enregistrement quand une section est ouverte */}
+      {activeTab !== null && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fadeIn">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab(null);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition cursor-pointer group shadow-xs w-full sm:w-auto justify-center"
+          >
+            <ArrowLeft className="w-4 h-4 text-emerald-600 transition group-hover:-translate-x-0.5" />
+            <span>{lang === 'fr' ? '← Retour au Menu des Paramètres' : '← Back to Settings Menu'}</span>
+          </button>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            {canEdit && isDirty && (
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition cursor-pointer"
+              >
+                {lang === 'fr' ? 'Annuler' : 'Cancel'}
+              </button>
+            )}
+            {canEdit && (
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={!isDirty}
+                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition shadow-sm ${
+                  isDirty
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 shadow-md cursor-pointer'
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                }`}
+              >
+                <Save className="w-4 h-4" />
+                <span>{lang === 'fr' ? 'Enregistrer les modifications' : 'Save Changes'}</span>
+              </button>
+            )}
           </div>
         </div>
       )}

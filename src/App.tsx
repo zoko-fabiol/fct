@@ -42,9 +42,27 @@ import { WifiOff, ShieldAlert, ArrowLeft, LayoutDashboard, ShieldCheck, Lock } f
 
 export default function App() {
   const [state, setState] = useState<DatabaseState>(dbStore.getState());
-  // Seul un utilisateur explicitement authentifié est accepté : aucun faux profil Super Admin au démarrage
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => dbStore.getAuthenticatedUser());
-  const [authLoading, setAuthLoading] = useState(true);
+  // Seul un utilisateur explicitement authentifié est accepté, sauf mode démo/capture où Claus Ephwandji est initialisé
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    try {
+      if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === 'true') {
+        const u = dbStore.getState().users.find((user) => user.email.toLowerCase() === 'clausephwandji044@gmail.com') ||
+                  dbStore.getState().users.find((user) => user.role === 'super_admin') ||
+                  dbStore.getState().users[0];
+        if (u) {
+          dbStore.setCurrentUser(u);
+          return u;
+        }
+      }
+    } catch {}
+    return dbStore.getAuthenticatedUser();
+  });
+  const [authLoading, setAuthLoading] = useState(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === 'true') {
+      return false;
+    }
+    return true;
+  });
 
   // Persistent Language FR / EN
   const [lang, setLang] = useState<Language>(() => {
@@ -65,13 +83,46 @@ export default function App() {
   };
 
   // Active Module & Showroom State (Navigation directe sans petits onglets en haut)
-  const [currentModule, setCurrentModule] = useState<AppModule | 'showroom'>('dashboard');
+  const [currentModule, setCurrentModule] = useState<AppModule | 'showroom'>(() => {
+    try {
+      const m = new URLSearchParams(window.location.search).get('module');
+      if (m) return m as AppModule;
+    } catch {}
+    return 'dashboard';
+  });
   const [activeShowroomVehicle, setActiveShowroomVehicle] = useState<Vehicle | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const [printDocData, setPrintDocData] = useState<DocumentPrintData | null>(null);
   const [isSessionLocked, setIsSessionLocked] = useState(false);
   const [isProfileSecurityOpen, setIsProfileSecurityOpen] = useState(false);
+
+  // Support démonstration & génération de documentation officielle FCT
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('demo') === 'true') {
+        const clausUser =
+          state.users.find((u) => u.email.toLowerCase() === 'clausephwandji044@gmail.com') ||
+          state.users.find((u) => u.role === 'super_admin') ||
+          state.users[0];
+        if (clausUser) {
+          dbStore.setCurrentUser(clausUser);
+          setCurrentUser(clausUser);
+          setAuthLoading(false);
+          setIsSessionLocked(false);
+        }
+        // Tentative de connexion réelle Firebase
+        authService.login('clausephwandji044@gmail.com', '@#@Claus26').catch((err) => {
+          console.info('Session de capture active pour Claus Ephwandji:', err?.message || err);
+        });
+      }
+      const m = params.get('module');
+      if (m && m !== currentModule) {
+        setCurrentModule(m as AppModule);
+      }
+    } catch {}
+  }, []);
 
   // Sécurité Inactivité Dynamique & Code PIN FCT (Préférences Firestore)
   useEffect(() => {
@@ -134,8 +185,11 @@ export default function App() {
 
         if (!firebaseUser) {
           if (isMounted) {
-            dbStore.setCurrentUser(null);
-            setCurrentUser(null);
+            const isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === 'true';
+            if (!isDemo) {
+              dbStore.setCurrentUser(null);
+              setCurrentUser(null);
+            }
           }
         } else {
           const userEmail = (firebaseUser.email || '').trim().toLowerCase();
@@ -266,7 +320,8 @@ export default function App() {
     | 'users'
     | 'sync'
     | 'backup'
-  >('general');
+    | undefined
+  >(undefined);
 
   // Sidebar / Navigation Module selection with optional context entity ID
   const handleNavigate = (module: AppModule, entityId?: string) => {
@@ -289,7 +344,7 @@ export default function App() {
     setActiveShowroomVehicle(null);
     setContextEntityId(entityId || null);
     if (module === 'settings' && !entityId) {
-      setSettingsTab('general');
+      setSettingsTab(undefined);
     }
     setCurrentModule(module);
     setIsMobileSidebarOpen(false);

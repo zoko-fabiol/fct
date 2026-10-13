@@ -49,6 +49,8 @@ import {
   FileText,
   ArrowRight,
   Eye,
+  EyeOff,
+  Copy,
   Pencil,
   Trash2,
   Layers,
@@ -116,7 +118,37 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
     jobTitle: '',
     role: 'sales_agent' as UserRole,
     status: 'ACTIVE' as UserAccountStatus,
+    password: '',
+    confirmPassword: '',
+    securityPin: '',
+    showPassword: false,
   });
+
+  // Modal Récapitulatif des Identifiants Créés
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    fullName: string;
+    email: string;
+    roleName: string;
+    password: string;
+    pin?: string;
+  } | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+
+  // Générateur de mot de passe fort
+  const handleGenerateRandomPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+    let pass = 'Fct!';
+    for (let i = 0; i < 6; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    pass += '26';
+    setCreateForm((prev) => ({
+      ...prev,
+      password: pass,
+      confirmPassword: pass,
+      showPassword: true,
+    }));
+  };
 
   // Modal Modification
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -164,9 +196,32 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
   }, [state.users]);
 
   // Handlers Utilisateurs
-  const handleCreateUserSubmit = (e: React.FormEvent) => {
+  const handleCreateUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // 1. Validation stricte du mot de passe
+      const rawPassword = createForm.password.trim();
+      if (!rawPassword) {
+        showAlert('Veuillez définir un mot de passe initial pour ce compte.', 'error');
+        return;
+      }
+      if (rawPassword.length < 6) {
+        showAlert('Le mot de passe doit comporter au moins 6 caractères.', 'error');
+        return;
+      }
+      if (rawPassword !== createForm.confirmPassword.trim()) {
+        showAlert('Les mots de passe ne correspondent pas. Veuillez vérifier votre saisie.', 'error');
+        return;
+      }
+
+      // 2. Validation du Code PIN (si saisi)
+      const cleanPin = createForm.securityPin.trim();
+      if (cleanPin && !/^\d{4}$/.test(cleanPin)) {
+        showAlert('Le code PIN de session doit comporter exactement 4 chiffres (ex: 2468).', 'error');
+        return;
+      }
+
+      // 3. Enregistrement dans le store local
       const newUser = dbStore.addUser({
         firstName: createForm.firstName.trim(),
         lastName: createForm.lastName.trim(),
@@ -177,7 +232,32 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
         role: createForm.role,
         status: createForm.status,
         isActive: createForm.status === 'ACTIVE' || createForm.status === 'INVITED',
+        securityPin: cleanPin || undefined,
       });
+
+      // 4. Provisionnement Firebase Auth & Firestore
+      try {
+        const staffAuth = await authService.createStaffAccount(newUser.email, rawPassword);
+        if (staffAuth?.uid && staffAuth.uid !== newUser.id) {
+          newUser.id = staffAuth.uid;
+        }
+      } catch (authErr) {
+        console.warn('Provisioning Firebase Auth différé:', authErr);
+      }
+
+      await authService.syncUserProfile(newUser).catch((err) => console.warn('Sync Firestore différée:', err));
+
+      const roleDef = ROLE_DEFINITIONS.find((r) => r.id === newUser.role);
+
+      // 5. Affichage des identifiants générés pour transmission immédiate
+      setCreatedCredentials({
+        fullName: newUser.fullName,
+        email: newUser.email,
+        roleName: roleDef?.name || newUser.role,
+        password: rawPassword,
+        pin: cleanPin || undefined,
+      });
+
       setIsCreateModalOpen(false);
       setCreateForm({
         firstName: '',
@@ -187,9 +267,12 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
         jobTitle: '',
         role: 'sales_agent',
         status: 'ACTIVE',
+        password: '',
+        confirmPassword: '',
+        securityPin: '',
+        showPassword: false,
       });
-      // Synchronisation immédiate vers Firebase Firestore
-      authService.syncUserProfile(newUser).catch((e) => console.warn('Sync Firestore collaborateur différée:', e));
+
       showAlert(`Compte collaborateur "${newUser.fullName}" créé avec succès.`);
     } catch (err: any) {
       showAlert(err.message || 'Erreur lors de la création du compte', 'error');
@@ -1788,6 +1871,88 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 </div>
               </div>
 
+              {/* SÉCURITÉ & AUTHENTIFICATION (MOT DE PASSE ET CODE PIN) */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-slate-800 font-bold">
+                    <Lock className="w-4 h-4 text-emerald-600" />
+                    <span>Sécurité & Identifiants de Connexion *</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleGenerateRandomPassword}
+                    className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 hover:bg-emerald-100 transition"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Générer mot de passe fort</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Mot de passe */}
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700">Mot de passe de connexion *</label>
+                    <div className="relative">
+                      <input
+                        type={createForm.showPassword ? 'text' : 'password'}
+                        required
+                        value={createForm.password}
+                        onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                        className="w-full border border-slate-300 rounded-lg p-2 pr-8 font-mono text-xs focus:ring-2 focus:ring-emerald-500 bg-white"
+                        placeholder="Min. 6 caractères"
+                        minLength={6}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCreateForm({ ...createForm, showPassword: !createForm.showPassword })}
+                        className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        title={createForm.showPassword ? 'Masquer' : 'Afficher'}
+                      >
+                        {createForm.showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirmation mot de passe */}
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700">Confirmer le mot de passe *</label>
+                    <input
+                      type={createForm.showPassword ? 'text' : 'password'}
+                      required
+                      value={createForm.confirmPassword}
+                      onChange={(e) => setCreateForm({ ...createForm, confirmPassword: e.target.value })}
+                      className="w-full border border-slate-300 rounded-lg p-2 font-mono text-xs focus:ring-2 focus:ring-emerald-500 bg-white"
+                      placeholder="Ressaisir le mot de passe"
+                      minLength={6}
+                    />
+                  </div>
+                </div>
+
+                {/* Code PIN de session */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-slate-200/60">
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 flex items-center gap-1">
+                      <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Code PIN de Session (4 chiffres)</span>
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={4}
+                      value={createForm.securityPin}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        setCreateForm({ ...createForm, securityPin: val });
+                      }}
+                      className="w-full border border-slate-300 rounded-lg p-2 font-mono text-xs tracking-widest focus:ring-2 focus:ring-emerald-500 bg-white text-center font-bold"
+                      placeholder="Ex: 2468"
+                    />
+                  </div>
+                  <div className="text-[11px] text-slate-500 flex items-center leading-relaxed">
+                    <span>Permet le déverrouillage instantané lors des pauses et la certification des écritures de caisse.</span>
+                  </div>
+                </div>
+              </div>
+
               <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
@@ -1798,12 +1963,82 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-xs cursor-pointer"
+                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
                 >
-                  Créer le Compte
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Créer le Compte & Identifiants</span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL RÉCAPITULATIF DES IDENTIFIANTS CRÉÉS (POUR TRANSMISSION AU COLLABORATEUR) */}
+      {createdCredentials && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-emerald-500 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-black text-slate-800 text-base">Compte Créé avec Succès !</h3>
+                <p className="text-xs text-slate-500">Identifiants officiels FCT Automobile</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Le compte collaborateur de <strong>{createdCredentials.fullName}</strong> est actif. Transmettez-lui ses identifiants de connexion :
+            </p>
+
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 font-mono text-xs">
+              <div className="flex justify-between items-center py-1 border-b border-slate-200">
+                <span className="text-slate-500 font-sans font-medium">E-mail :</span>
+                <span className="font-bold text-slate-800">{createdCredentials.email}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-200">
+                <span className="text-slate-500 font-sans font-medium">Rôle FCT :</span>
+                <span className="font-bold text-emerald-700 font-sans">{createdCredentials.roleName}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-slate-200">
+                <span className="text-slate-500 font-sans font-medium">Mot de passe :</span>
+                <span className="font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                  {createdCredentials.password}
+                </span>
+              </div>
+              {createdCredentials.pin && (
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-slate-500 font-sans font-medium">Code PIN :</span>
+                  <span className="font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 tracking-widest">
+                    {createdCredentials.pin}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const text = `Identifiants FCT Automobile :\nNom : ${createdCredentials.fullName}\nE-mail : ${createdCredentials.email}\nMot de passe : ${createdCredentials.password}${createdCredentials.pin ? `\nCode PIN : ${createdCredentials.pin}` : ''}\nAccès : https://fct-automobile.cm`;
+                  navigator.clipboard.writeText(text);
+                  setIsCopied(true);
+                  setTimeout(() => setIsCopied(false), 3000);
+                }}
+                className="flex-1 py-2.5 rounded-xl border border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition"
+              >
+                {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                <span>{isCopied ? 'Identifiants Copiés !' : 'Copier les Identifiants'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreatedCredentials(null)}
+                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs cursor-pointer"
+              >
+                Terminer
+              </button>
+            </div>
           </div>
         </div>
       )}
