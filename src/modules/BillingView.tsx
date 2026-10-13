@@ -142,7 +142,8 @@ export const BillingView: React.FC<BillingViewProps> = ({
     if (!customer) return;
 
     const subtotal = invForm.quantity * invForm.unitPriceXAF;
-    const tax = invForm.includeTVA ? Math.round(subtotal * 0.1925) : 0;
+    const taxRate = (state.settings?.taxRatePercent ?? 19.25) / 100;
+    const tax = invForm.includeTVA ? Math.round(subtotal * taxRate) : 0;
     const total = subtotal + tax;
 
     try {
@@ -1079,7 +1080,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   className="w-4 h-4 rounded text-blue-900"
                 />
                 <label htmlFor="includeTVA" className="font-bold text-slate-800 cursor-pointer">
-                  {t.billingPage.includeVatLabel}
+                  {t.billingPage.includeVatLabel} ({state.settings?.taxRatePercent ?? 19.25}%)
                 </label>
               </div>
 

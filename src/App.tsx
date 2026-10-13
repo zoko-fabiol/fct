@@ -341,6 +341,15 @@ export default function App() {
     if (!currentUser || !hasEffectivePermission(currentUser, module, 'read', state.rolePermissions)) {
       return;
     }
+    // Respecter la désactivation globale de module par la direction (hors super_admin)
+    if (
+      module !== 'settings' &&
+      module !== 'dashboard' &&
+      state.settings.moduleToggles?.[module] === false &&
+      currentUser.role !== 'super_admin'
+    ) {
+      return;
+    }
     setActiveShowroomVehicle(null);
     setContextEntityId(entityId || null);
     if (module === 'settings' && !entityId) {
@@ -370,7 +379,11 @@ export default function App() {
   const isCurrentModuleAuthorized =
     currentModule === 'showroom'
       ? hasEffectivePermission(currentUser, 'vehicles', 'read', state.rolePermissions)
-      : hasEffectivePermission(currentUser, currentModule, 'read', state.rolePermissions);
+      : hasEffectivePermission(currentUser, currentModule, 'read', state.rolePermissions) &&
+        (currentModule === 'settings' ||
+          currentModule === 'dashboard' ||
+          state.settings.moduleToggles?.[currentModule] !== false ||
+          currentUser?.role === 'super_admin');
 
   // Badges calculation for sidebar items
   const badges: Partial<Record<AppModule, number>> = {
@@ -465,6 +478,7 @@ export default function App() {
           currentUserRole={currentUser.role}
           currentUser={currentUser}
           rolePermissions={state.rolePermissions}
+          moduleToggles={state.settings.moduleToggles}
           onSelectModule={handleSelectModule}
           lang={lang}
           badges={badges}

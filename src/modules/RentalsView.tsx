@@ -123,7 +123,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString().split('T')[0],
     dailyRateXAF: 85000,
-    securityDepositXAF: 300000,
+    securityDepositXAF: state.settings?.defaultDepositXAF || 300000,
     driverIncluded: false,
     driverId: '',
   });
@@ -304,6 +304,15 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
   const handleCreateContract = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    const start = new Date(contractForm.startDate).getTime();
+    const end = new Date(contractForm.endDate).getTime();
+    const diffDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+    const minDays = state.settings?.minRentalDurationDays || 1;
+    if (diffDays < minDays) {
+      setFormError(`La durée minimale de location configurée est de ${minDays} jour(s).`);
+      return;
+    }
 
     const availability = checkVehicleAvailability(
       contractForm.vehicleId,

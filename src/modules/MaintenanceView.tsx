@@ -107,9 +107,9 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
   const [mntForm, setMntForm] = useState({
     vehicleId: state.vehicles[0]?.id || '',
     type: 'PREVENTIVE' as MaintenanceRecord['type'],
-    garageName: 'Atelier Central CFAO Bassa Douala',
+    garageName: state.settings?.defaultGarageName || 'Atelier Central CFAO Bassa Douala',
     description: 'Vidange moteur, changement des plaquettes et filtres',
-    mileageAtService: 50000,
+    mileageAtService: state.vehicles[0]?.mileage || 50000,
     laborCostXAF: 35000,
     startDate: new Date().toISOString().split('T')[0],
   });
@@ -264,8 +264,8 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
     setMntForm({
       vehicleId: vehId,
       type: 'PREVENTIVE',
-      garageName: 'Atelier Central CFAO Bassa Douala',
-      description: 'Révision périodique et remplacement consommables',
+      garageName: state.settings?.defaultGarageName || 'Atelier Central CFAO Bassa Douala',
+      description: 'Révision périodique, vidange et remplacement consommables',
       mileageAtService: veh?.mileage || 50000,
       laborCostXAF: 35000,
       startDate: new Date().toISOString().split('T')[0],
@@ -1099,28 +1099,35 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
         </div>
 
         {healthData && currentSelectedVehicle && (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pt-1 text-xs">
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
               <div className="text-[10px] font-bold text-slate-500 uppercase">Score Santé</div>
               <div className="text-base font-black text-emerald-700">{healthData.healthScore} / 100</div>
             </div>
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+              <div className="text-[10px] font-bold text-slate-500 uppercase">Prochaine Vidange</div>
+              <div className={`text-xs font-black mt-1 ${healthData.isDueForOilChange ? 'text-rose-600 animate-pulse' : 'text-emerald-700'}`}>
+                {healthData.isDueForOilChange ? '⚠️ Vidange Due !' : `dans ${healthData.kmRemainingUntilOilChange?.toLocaleString() || 0} km`}
+              </div>
+              <div className="text-[9px] text-slate-400 mt-0.5">Cycle : {healthData.oilChangeIntervalKm?.toLocaleString() || 10000} km</div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
               <div className="text-[10px] font-bold text-slate-500 uppercase">Coût Cumulé</div>
-              <div className="text-sm font-black text-slate-900">{formatXAF(healthData.totalMaintenanceCostXAF)}</div>
+              <div className="text-sm font-black text-slate-900 mt-1">{formatXAF(healthData.totalMaintenanceCostXAF)}</div>
             </div>
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
               <div className="text-[10px] font-bold text-slate-500 uppercase">Interventions</div>
-              <div className="text-sm font-black text-blue-900">
+              <div className="text-xs font-black text-blue-900 mt-1">
                 {healthData.completedCount} faites ({healthData.activeCount} en cours)
               </div>
             </div>
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
               <div className="text-[10px] font-bold text-slate-500 uppercase">Kilométrage</div>
-              <div className="text-sm font-black text-slate-900">{currentSelectedVehicle.mileage.toLocaleString()} km</div>
+              <div className="text-sm font-black text-slate-900 mt-1">{currentSelectedVehicle.mileage.toLocaleString()} km</div>
             </div>
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
               <div className="text-[10px] font-bold text-slate-500 uppercase">Statut Flotte</div>
-              <EntityStatusBadge status={currentSelectedVehicle.status} size="sm" className="mt-0.5" />
+              <EntityStatusBadge status={currentSelectedVehicle.status} size="sm" className="mt-1" />
             </div>
           </div>
         )}

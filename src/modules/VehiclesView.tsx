@@ -169,7 +169,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
     mileage: 25000,
     acquisitionCost: 25000000,
     rentalDailyRate: 65000,
-    securityDepositRate: 250000,
+    securityDepositRate: state.settings?.defaultDepositXAF || 250000,
     salePrice: 28000000,
     isForRent: true,
     isForSale: true,

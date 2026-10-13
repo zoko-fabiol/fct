@@ -816,12 +816,24 @@ class DatabaseStore {
     }
   }
 
-  public getNextDocNumber(prefix: string): string {
-    const current = this.state.documentCounters[prefix] || 1;
-    this.state.documentCounters[prefix] = current + 1;
-    const year = this.state.settings?.includeYearInDocNumber !== false ? 2026 : null;
-    const padDigits = this.state.settings?.numberPaddingDigits || 4;
-    return generateDocumentNumber(prefix, current, year, padDigits);
+  public getNextDocNumber(docTypeOrPrefix: string): string {
+    let resolvedPrefix = docTypeOrPrefix;
+    const s = this.state.settings;
+    if (s) {
+      if (docTypeOrPrefix === 'FAC' || docTypeOrPrefix === 'invoice') resolvedPrefix = s.invoicePrefix || 'FAC';
+      else if (docTypeOrPrefix === 'CTR' || docTypeOrPrefix === 'rental') resolvedPrefix = s.rentalPrefix || 'CTR';
+      else if (docTypeOrPrefix === 'REC' || docTypeOrPrefix === 'receipt') resolvedPrefix = s.receiptPrefix || 'REC';
+      else if (docTypeOrPrefix === 'COM' || docTypeOrPrefix === 'sale') resolvedPrefix = s.salePrefix || 'COM';
+      else if (docTypeOrPrefix === 'RES' || docTypeOrPrefix === 'reservation') resolvedPrefix = s.reservationPrefix || 'RES';
+      else if (docTypeOrPrefix === 'MNT' || docTypeOrPrefix === 'maintenance') resolvedPrefix = s.maintenancePrefix || 'MNT';
+      else if (docTypeOrPrefix === 'DEP' || docTypeOrPrefix === 'expense') resolvedPrefix = s.expensePrefix || 'DEP';
+    }
+
+    const current = this.state.documentCounters[resolvedPrefix] || 1;
+    this.state.documentCounters[resolvedPrefix] = current + 1;
+    const year = s?.includeYearInDocNumber !== false ? new Date().getFullYear() : null;
+    const padDigits = s?.numberPaddingDigits || 4;
+    return generateDocumentNumber(resolvedPrefix, current, year, padDigits);
   }
 
   // --- 1. VÉHICULES ---
@@ -1966,6 +1978,13 @@ class DatabaseStore {
     const reservations = this.state.reservations.filter((r) => r.vehicleId === vehicleId);
     const sales = this.state.sales.filter((s) => s.vehicleId === vehicleId);
 
+    // Lecture dynamique des paramètres FCT de la concession
+    const s = this.state.settings;
+    const oilInterval = s?.defaultMaintenanceIntervalKm || 10000;
+    const oilAlertThreshold = s?.maintenanceAlertMileageKm || 1000;
+    const ctAlertDays = s?.technicalInspectionAlertDays || 30;
+    const insuranceAlertDays = s?.insuranceAlertDays || 30;
+
     // Calcul du score de santé (sur 100)
     let score = 95;
     if (vehicle.mileage > 100000) score -= 15;
@@ -1977,17 +1996,35 @@ class DatabaseStore {
     const ctDate = new Date(vehicle.nextTechnicalInspectionDate).getTime();
     const daysToCT = (ctDate - today) / (1000 * 3600 * 24);
     if (daysToCT < 0) score -= 25; // CT expiré
-    else if (daysToCT < 30) score -= 5;
+    else if (daysToCT <= ctAlertDays) score -= 8;
+
+    const insDate = new Date(vehicle.insuranceExpiryDate).getTime();
+    const daysToInsurance = (insDate - today) / (1000 * 3600 * 24);
+    if (daysToInsurance < 0) score -= 25; // Assurance expirée
+    else if (daysToInsurance <= insuranceAlertDays) score -= 5;
+
+    // Recherche de la dernière vidange/intervention préventive complétée
+    const lastOilIntervention = interventions
+      .filter((m) => m.status === 'COMPLETED')
+      .sort((a, b) => (b.mileageAtService || 0) - (a.mileageAtService || 0))[0];
+    const lastOilMileage = lastOilIntervention?.mileageAtService || 0;
+    const kmSinceLastOilChange = Math.max(0, vehicle.mileage - lastOilMileage);
+    const kmRemainingUntilOilChange = Math.max(0, oilInterval - (kmSinceLastOilChange % oilInterval));
+    const isDueForOilChange = kmRemainingUntilOilChange <= oilAlertThreshold;
+
+    if (isDueForOilChange) score -= 12;
 
     score = Math.max(10, Math.min(100, Math.round(score)));
 
     let recommendation = 'Véhicule en excellent état mécanique opérationnel.';
     if (activeCount > 0) {
-      recommendation = `Intervention en cours dans les ateliers (${interventions.find((m) => m.status !== 'COMPLETED')?.garageName}).`;
+      recommendation = `Intervention en cours dans les ateliers (${interventions.find((m) => m.status !== 'COMPLETED')?.garageName || s?.defaultGarageName || 'Atelier FCT'}).`;
     } else if (daysToCT < 0) {
       recommendation = 'URGENT : Contrôle technique périodique expiré à Douala.';
-    } else if (vehicle.mileage > 0 && vehicle.mileage % 10000 > 8500) {
-      recommendation = 'Prochaine vidange moteur recommandée dans moins de 1 500 km.';
+    } else if (daysToInsurance < 0) {
+      recommendation = 'URGENT : Police d’assurance véhicule expirée.';
+    } else if (isDueForOilChange) {
+      recommendation = `Prochaine vidange moteur recommandée dans moins de ${kmRemainingUntilOilChange.toLocaleString()} km (Intervalle FCT configuré : ${oilInterval.toLocaleString()} km).`;
     }
 
     return {
@@ -2004,6 +2041,14 @@ class DatabaseStore {
       sales,
       healthScore: score,
       daysToCT: Math.round(daysToCT),
+      daysToInsurance: Math.round(daysToInsurance),
+      isInsuranceAlert: daysToInsurance <= insuranceAlertDays,
+      isCTAlert: daysToCT <= ctAlertDays,
+      isDueForOilChange,
+      kmRemainingUntilOilChange,
+      kmSinceLastOilChange,
+      oilChangeIntervalKm: oilInterval,
+      oilAlertThresholdKm: oilAlertThreshold,
       recommendation,
     };
   }

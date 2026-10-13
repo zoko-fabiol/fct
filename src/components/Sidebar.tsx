@@ -36,6 +36,7 @@ interface SidebarProps {
   currentUserRole: UserRole;
   currentUser?: UserProfile;
   rolePermissions?: Record<UserRole, Record<AppModule, PermissionAction[]>>;
+  moduleToggles?: Partial<Record<AppModule, boolean>>;
   onSelectModule: (module: AppModule) => void;
   lang: Language;
   badges: Partial<Record<AppModule, number>>;
@@ -56,6 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentUserRole,
   currentUser,
   rolePermissions,
+  moduleToggles,
   onSelectModule,
   lang,
   badges,
@@ -108,6 +110,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   const checkReadPermission = (moduleId: AppModule) => {
+    // Si le module a été explicitement désactivé dans les paramètres FCT
+    // (Les modules vitaux 'settings' et 'dashboard' restent accessibles pour le contrôle de gestion)
+    if (
+      moduleId !== 'settings' &&
+      moduleId !== 'dashboard' &&
+      moduleToggles?.[moduleId] === false &&
+      currentUserRole !== 'super_admin'
+    ) {
+      return false;
+    }
+
     if (currentUser) {
       return hasEffectivePermission(currentUser, moduleId, 'read', rolePermissions);
     }
