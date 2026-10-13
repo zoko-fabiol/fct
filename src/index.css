@@ -23,6 +23,69 @@
   }
 }
 
+/* --- THEME SOMBRE (DARK MODE FCT) --- */
+html.dark {
+  color-scheme: dark;
+}
+html.dark body {
+  background-color: #0b1120 !important;
+  color: #f1f5f9 !important;
+}
+html.dark .bg-slate-50,
+html.dark .bg-slate-100\/50 {
+  background-color: #0b1120 !important;
+}
+html.dark .bg-white {
+  background-color: #131d33 !important;
+  color: #f8fafc !important;
+}
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #f8fafc !important;
+}
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+html.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+html.dark .border-slate-200,
+html.dark .border-slate-100 {
+  border-color: #1e293b !important;
+}
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-100 {
+  background-color: #1a2744 !important;
+}
+
+/* --- DENSITÉ D'AFFICHAGE (TABLEAUX & CARTES) --- */
+[data-density="compact"] table th,
+[data-density="compact"] table td {
+  padding-top: 0.35rem !important;
+  padding-bottom: 0.35rem !important;
+  font-size: 0.75rem !important;
+}
+[data-density="compact"] .density-target {
+  padding: 0.6rem !important;
+}
+
+[data-density="comfortable"] table th,
+[data-density="comfortable"] table td {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+[data-density="spacious"] table th,
+[data-density="spacious"] table td {
+  padding-top: 1.15rem !important;
+  padding-bottom: 1.15rem !important;
+  font-size: 0.875rem !important;
+}
+[data-density="spacious"] .density-target {
+  padding: 1.5rem !important;
+}
+
 /* Print styles for official FCT documents (Contracts, Invoices, Receipts) */
 @media print {
   nav, header, aside, .no-print {

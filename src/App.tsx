@@ -77,6 +77,9 @@ export default function App() {
     setLang(newLang);
     try {
       localStorage.setItem('fct_erp_lang', newLang);
+      if (dbStore.getState().settings.defaultLanguage !== newLang) {
+        dbStore.updateSettings({ defaultLanguage: newLang }, 'Changement de langue');
+      }
     } catch {
       // Ignore
     }
@@ -307,6 +310,35 @@ export default function App() {
     scrollToTop();
   }, [currentModule, activeShowroomVehicle?.id]);
 
+  // Synchronisation dynamique de l'Apparence (Thème sombre/clair/système & Densité d'affichage)
+  useEffect(() => {
+    const theme = state.settings?.theme || 'light';
+    const applyTheme = () => {
+      const isDark =
+        theme === 'dark' ||
+        (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', isDark);
+    };
+    applyTheme();
+
+    if (theme === 'system' && typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      mediaQuery.addEventListener('change', applyTheme);
+      return () => mediaQuery.removeEventListener('change', applyTheme);
+    }
+  }, [state.settings?.theme]);
+
+  useEffect(() => {
+    const density = state.settings?.density || 'comfortable';
+    document.documentElement.setAttribute('data-density', density);
+  }, [state.settings?.density]);
+
+  useEffect(() => {
+    if (state.settings?.defaultLanguage && state.settings.defaultLanguage !== lang) {
+      setLang(state.settings.defaultLanguage as Language);
+    }
+  }, [state.settings?.defaultLanguage]);
+
   const [contextEntityId, setContextEntityId] = useState<string | null>(null);
   const [settingsTab, setSettingsTab] = useState<
     | 'general'
@@ -318,8 +350,6 @@ export default function App() {
     | 'rentals'
     | 'modules'
     | 'users'
-    | 'sync'
-    | 'backup'
     | undefined
   >(undefined);
 
@@ -643,10 +673,10 @@ export default function App() {
                 <ReportsView state={state} lang={lang} />
               )}
               {currentModule === 'users' && (
-                <SettingsView state={state} lang={lang} onNavigate={handleNavigate} initialTab="users" />
+                <SettingsView state={state} lang={lang} onNavigate={handleNavigate} onLanguageChange={handleLanguageChange} initialTab="users" />
               )}
               {currentModule === 'settings' && (
-                <SettingsView state={state} lang={lang} onNavigate={handleNavigate} initialTab={settingsTab} />
+                <SettingsView state={state} lang={lang} onNavigate={handleNavigate} onLanguageChange={handleLanguageChange} initialTab={settingsTab} />
               )}
               {currentModule === 'audit' && (
                 <AuditSyncView state={state} lang={lang} />

@@ -176,4 +176,41 @@ describe('Impact Dynamique en Direct des Paramètres FCT', () => {
       expect(current.moduleToggles?.stock).toBe(true);
     });
   });
+
+  describe('5. Préférences d’Apparence Visuelle & Régionales', () => {
+    it('doit persister et mettre à jour le thème sombre/clair/système', () => {
+      dbStore.updateSettings({ theme: 'dark' });
+      expect(dbStore.getSettings().theme).toBe('dark');
+
+      dbStore.updateSettings({ theme: 'system' });
+      expect(dbStore.getSettings().theme).toBe('system');
+
+      dbStore.updateSettings({ theme: 'light' });
+      expect(dbStore.getSettings().theme).toBe('light');
+    });
+
+    it('doit persister et appliquer la densité d’affichage (compact, confortable, spacieuse)', () => {
+      dbStore.updateSettings({ density: 'compact' });
+      expect(dbStore.getSettings().density).toBe('compact');
+
+      dbStore.updateSettings({ density: 'spacious' });
+      expect(dbStore.getSettings().density).toBe('spacious');
+
+      dbStore.updateSettings({ density: 'comfortable' });
+      expect(dbStore.getSettings().density).toBe('comfortable');
+    });
+
+    it('doit persister la langue principale, le format de date et les alertes sonores', () => {
+      dbStore.updateSettings({
+        defaultLanguage: 'en',
+        dateFormat: 'YYYY-MM-DD',
+        enableSoundAlerts: false,
+      });
+
+      const s = dbStore.getSettings();
+      expect(s.defaultLanguage).toBe('en');
+      expect(s.dateFormat).toBe('YYYY-MM-DD');
+      expect(s.enableSoundAlerts).toBe(false);
+    });
+  });
 });
