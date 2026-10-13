@@ -16,6 +16,10 @@ jobs:
   build-apk:
     runs-on: ubuntu-latest
 
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -32,6 +36,11 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
+      - name: Setup Android SDK Environment & Licences
+        run: |
+          echo "sdk.dir=/usr/local/lib/android/sdk" > android/local.properties
+          yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
       - name: Install Dependencies
         run: npm install
 
@@ -46,7 +55,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --stacktrace
 
       - name: Verify Generated APK
         run: |
