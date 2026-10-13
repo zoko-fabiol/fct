@@ -51,6 +51,20 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
+      - name: Ensure Global Node Symlinks and Gradle Configuration
+        run: |
+          NODE_PATH=$(which node)
+          echo "Node.js detected at: $NODE_PATH"
+          sudo ln -sf "$NODE_PATH" /usr/local/bin/node
+          sudo ln -sf "$NODE_PATH" /usr/bin/node
+          mkdir -p ~/.gradle
+          cat << 'EOF' > ~/.gradle/gradle.properties
+          org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m
+          org.gradle.logging.level=lifecycle
+          org.gradle.logging.stacktrace=all
+          org.gradle.console=plain
+          EOF
+
       - name: Install Frontend Dependencies
         run: npm install
 
@@ -64,6 +78,15 @@ jobs:
       - name: Build Android Debug APK (Directly Installable on Phone)
         run: |
           node ./node_modules/@tauri-apps/cli/tauri.js android build -v --apk --debug --target aarch64
+
+      - name: Dump Detailed Gradle Failure Logs
+        if: failure()
+        run: |
+          echo "=== RECHERCHE DES FICHIERS DE LOGS & RAPPORTS GRADLE ==="
+          find src-tauri/gen/android -name "*.log" -o -name "*.txt" 2>/dev/null | head -n 30 | while read f; do
+            echo "--- $f ---"
+            head -n 50 "$f" || true
+          done
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
