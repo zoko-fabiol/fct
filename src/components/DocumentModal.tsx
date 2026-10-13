@@ -24,6 +24,7 @@ import {
 import { downloadInvoicePdf } from '../utils/invoicePdf.ts';
 import { FCT_LOGO_BASE64 } from '../utils/logoBase64.ts';
 import { exportDocumentToExcel } from '../utils/excelExport.ts';
+import { isNativeMobile } from '../services/mobileFileService.ts';
 
 import { Language } from '../services/i18n.ts';
 
@@ -89,6 +90,10 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({ data, onClose, lan
   };
 
   const handlePrint = async () => {
+    if (isNativeMobile()) {
+      await handleDownloadPdf();
+      return;
+    }
     await printElementById('fct-official-doc-sheet', `${data.title}_${data.docNumber}`);
   };
 

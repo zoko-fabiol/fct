@@ -14,6 +14,7 @@ import autoTable from 'jspdf-autotable';
 import type { DocumentPrintData } from '../components/DocumentModal.tsx';
 import { amountInWordsFCFA, buildPdfFileName, formatAmountPlain } from './invoiceFormat.ts';
 import { FCT_LOGO_BASE64 } from './logoBase64.ts';
+import { isNativeMobile, exportOrSharePdf } from '../services/mobileFileService.ts';
 
 export { formatAmountPlain };
 
@@ -278,9 +279,16 @@ export function buildInvoicePdf(data: DocumentPrintData, options: InvoicePdfOpti
   return doc;
 }
 
-/** Télécharge directement le PDF. */
-export function downloadInvoicePdf(data: DocumentPrintData, options: InvoicePdfOptions = {}): void {
-  buildInvoicePdf(data, options).save(buildPdfFileName(data.title, data.docNumber));
+/** Télécharge directement le PDF ou l'ouvre dans la feuille de partage native Android. */
+export async function downloadInvoicePdf(data: DocumentPrintData, options: InvoicePdfOptions = {}): Promise<void> {
+  const fileName = buildPdfFileName(data.title, data.docNumber);
+  const pdfDoc = buildInvoicePdf(data, options);
+  if (isNativeMobile()) {
+    const base64 = pdfDoc.output('datauristring');
+    await exportOrSharePdf(fileName, base64, `${data.title} ${data.docNumber}`);
+  } else {
+    pdfDoc.save(fileName);
+  }
 }
 
 /** Retourne le PDF sous forme de Blob (pour l'archivage Cloudinary). */

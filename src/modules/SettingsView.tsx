@@ -60,6 +60,8 @@ import {
   Monitor
 } from 'lucide-react';
 import { UsersView } from './UsersView.tsx';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { isNativeMobile } from '../services/mobileFileService.ts';
 
 interface SettingsViewProps {
   state: DatabaseState;
@@ -175,8 +177,39 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
 
   const testBrowserNotification = async () => {
+    if (isNativeMobile()) {
+      try {
+        const check = await LocalNotifications.checkPermissions();
+        if (check.display !== 'granted') {
+          const req = await LocalNotifications.requestPermissions();
+          if (req.display !== 'granted') {
+            setNotificationMsg('Autorisation de notification refusée sur l’appareil.');
+            setTimeout(() => setNotificationMsg(null), 4000);
+            return;
+          }
+        }
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              title: 'FCT Automobile — Douala',
+              body: 'Alerte sonore et notification système opérationnelles !',
+              id: Math.floor(Math.random() * 100000) + 1,
+              schedule: { at: new Date(Date.now() + 100) },
+            },
+          ],
+        });
+        setNotificationMsg('Notification système envoyée sur votre smartphone !');
+      } catch (e) {
+        console.error('Erreur notification native:', e);
+        setNotificationMsg('Erreur lors de l’envoi de la notification native.');
+      }
+      setTimeout(() => setNotificationMsg(null), 4000);
+      return;
+    }
+
     if (typeof window === 'undefined' || !('Notification' in window)) {
       setNotificationMsg('Les notifications ne sont pas supportées par ce navigateur.');
+      setTimeout(() => setNotificationMsg(null), 4000);
       return;
     }
     try {
@@ -1282,7 +1315,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                     className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer shadow-xs"
                   >
                     <Bell className="w-3.5 h-3.5" />
-                    <span>🔔 Tester la Notification Bureau</span>
+                    <span>🔔 {isNativeMobile() ? 'Tester la Notification Smartphone' : 'Tester la Notification Système'}</span>
                   </button>
                 </div>
 

@@ -17,6 +17,8 @@ import { LockScreenModal } from './components/LockScreenModal.tsx';
 import { AppLoader } from './components/auth/AppLoader.tsx';
 import { LoginView } from './components/auth/LoginView.tsx';
 import { authService } from './services/firebase.ts';
+import { App as CapApp } from '@capacitor/app';
+import { isNativeMobile } from './services/mobileFileService.ts';
 
 // 18 Feature Modules + Showroom
 import { DashboardView } from './modules/DashboardView.tsx';
@@ -309,6 +311,47 @@ export default function App() {
   useEffect(() => {
     scrollToTop();
   }, [currentModule, activeShowroomVehicle?.id]);
+
+  // Gestion intelligente de la touche Retour matériel Android (Back Button)
+  useEffect(() => {
+    if (!isNativeMobile()) return;
+
+    let lastBackPressTime = 0;
+
+    const backListenerPromise = CapApp.addListener('backButton', () => {
+      // 1. Fermer le tiroir mobile latéral s'il est ouvert
+      if (isMobileSidebarOpen) {
+        setIsMobileSidebarOpen(false);
+        return;
+      }
+      // 2. Fermer la modale d'impression de document
+      if (printDocData) {
+        setPrintDocData(null);
+        return;
+      }
+      // 3. Fermer la vue détaillée de véhicule showroom
+      if (activeShowroomVehicle) {
+        setActiveShowroomVehicle(null);
+        return;
+      }
+      // 4. Si on est dans un module autre que le tableau de bord, revenir au tableau de bord
+      if (currentModule !== 'dashboard') {
+        setCurrentModule('dashboard');
+        return;
+      }
+      // 5. Sur le tableau de bord : double-appui en 2 secondes pour quitter
+      const now = Date.now();
+      if (now - lastBackPressTime < 2000) {
+        CapApp.exitApp();
+      } else {
+        lastBackPressTime = now;
+      }
+    });
+
+    return () => {
+      backListenerPromise.then((handle) => handle.remove()).catch(() => {});
+    };
+  }, [isMobileSidebarOpen, printDocData, activeShowroomVehicle, currentModule]);
 
   // Synchronisation dynamique de l'Apparence (Thème sombre/clair/système & Densité d'affichage)
   useEffect(() => {

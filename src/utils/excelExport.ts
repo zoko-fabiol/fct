@@ -13,6 +13,21 @@
 
 import XLSX from 'xlsx-js-style';
 import type { DocumentPrintData } from '../components/DocumentModal.tsx';
+import { isNativeMobile, exportOrShareExcel } from '../services/mobileFileService.ts';
+
+async function deliverWorkbook(wb: any, fileName: string): Promise<void> {
+  const safeFileName = fileName.endsWith('.xlsx') ? fileName : `${fileName}.xlsx`;
+  if (isNativeMobile()) {
+    try {
+      const base64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+      await exportOrShareExcel(safeFileName, base64);
+    } catch (err) {
+      console.error('[deliverWorkbook] Erreur export natif Excel:', err);
+    }
+  } else {
+    XLSX.writeFile(wb, safeFileName);
+  }
+}
 
 export interface ExcelColumn<T = any> {
   header: string;
@@ -216,8 +231,7 @@ export function exportCollectionToExcel<T>(
   ];
 
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  const safeFileName = fileName.endsWith('.xlsx') ? fileName : `${fileName}.xlsx`;
-  XLSX.writeFile(wb, safeFileName);
+  deliverWorkbook(wb, fileName);
 }
 
 /**
@@ -412,5 +426,5 @@ export function exportDocumentToExcel(docData: DocumentPrintData, lang: 'fr' | '
 
   const cleanDocNum = docData.docNumber.replace(/[^a-zA-Z0-9_-]/g, '_');
   XLSX.utils.book_append_sheet(wb, ws, 'Facture FCT');
-  XLSX.writeFile(wb, `FCT_${cleanDocNum}.xlsx`);
+  deliverWorkbook(wb, `FCT_${cleanDocNum}.xlsx`);
 }
