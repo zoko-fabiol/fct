@@ -28,12 +28,12 @@ jobs:
       - name: Setup Android Environment (Pre-installed GitHub SDK)
         run: |
           echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-          NDK_DIR=$(find /usr/local/lib/android/sdk/ndk -maxdepth 1 -name "26.*" 2>/dev/null | sort -V | tail -n 1)
+          NDK_DIR=$(find /usr/local/lib/android/sdk/ndk -maxdepth 1 -name "28.*" 2>/dev/null | sort -V | tail -n 1)
           if [ -z "$NDK_DIR" ]; then
             NDK_DIR=$(find /usr/local/lib/android/sdk/ndk -maxdepth 1 -name "27.*" 2>/dev/null | sort -V | tail -n 1)
           fi
           if [ -z "$NDK_DIR" ]; then
-            NDK_DIR=$(ls -d /usr/local/lib/android/sdk/ndk/* | sort -V | head -n 1)
+            NDK_DIR=$(ls -d /usr/local/lib/android/sdk/ndk/* | sort -V | tail -n 1)
           fi
           echo "Selected NDK: $NDK_DIR"
           echo "NDK_HOME=$NDK_DIR" >> $GITHUB_ENV
@@ -43,7 +43,7 @@ jobs:
       - name: Setup Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android, armv7-linux-androideabi
+          targets: aarch64-linux-android, armv7-linux-androideabi, i686-linux-android, x86_64-linux-android
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -60,7 +60,7 @@ jobs:
           mkdir -p ~/.gradle
           cat << 'EOF' > ~/.gradle/gradle.properties
           org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m
-          org.gradle.logging.level=lifecycle
+          org.gradle.logging.level=info
           org.gradle.logging.stacktrace=all
           org.gradle.console=plain
           EOF
@@ -69,19 +69,19 @@ jobs:
         run: |
           npm install
           npm install -g @tauri-apps/cli@2.12.2
-          # Symlinks de securite pour garantir que Gradle trouve toujours node_modules a tous les niveaux d'arborescence
-          ln -sf "$(pwd)/node_modules" src-tauri/node_modules
-          mkdir -p src-tauri/gen/android/app
-          ln -sf "$(pwd)/node_modules" src-tauri/gen/node_modules
-          ln -sf "$(pwd)/node_modules" src-tauri/gen/android/node_modules
-          ln -sf "$(pwd)/node_modules" src-tauri/gen/android/app/node_modules
 
       - name: Build Frontend Web Assets
         run: npm run build
 
       - name: Initialize Tauri Android Target
         run: |
+          rm -rf src-tauri/gen
           npx tauri android init --ci --skip-targets-install
+          # Symlinks de securite poses apres l'initialisation propre
+          ln -sf "$(pwd)/node_modules" src-tauri/node_modules
+          ln -sf "$(pwd)/node_modules" src-tauri/gen/node_modules
+          ln -sf "$(pwd)/node_modules" src-tauri/gen/android/node_modules
+          ln -sf "$(pwd)/node_modules" src-tauri/gen/android/app/node_modules
           echo "=== FICHIERS BUILDTASK DETECTES DANS GEN/ANDROID ==="
           find src-tauri/gen/android -name "*BuildTask*.kt" -exec echo "--- {} ---" \; -exec cat {} \; || true
 
