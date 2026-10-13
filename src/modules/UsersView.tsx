@@ -26,6 +26,7 @@ import {
   hasEffectivePermission,
   getPermissionOrigin,
   compareRolePermissions,
+  getUserVisibleModules,
 } from '../../packages/business-rules/index.ts';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal.tsx';
 import { exportCollectionToExcel } from '../utils/excelExport.ts';
@@ -68,7 +69,179 @@ import {
   Clock,
   Sparkles,
   Share2,
+  Car,
+  Boxes,
+  Wrench,
+  UserSquare2,
+  TrendingUp,
+  Users2,
+  CalendarCheck2,
+  Receipt,
+  Wallet,
+  BarChart3,
+  Settings,
+  HelpCircle,
+  FolderLock,
+  BellRing,
+  ChevronDown,
+  RotateCcw,
 } from 'lucide-react';
+
+interface ModuleInfo {
+  id: AppModule;
+  labelFr: string;
+  labelEn: string;
+  category: 'FLEET' | 'COMMERCIAL' | 'FINANCE' | 'SYSTEM';
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const MODULE_REGISTRY: Record<AppModule, ModuleInfo> = {
+  dashboard: {
+    id: 'dashboard',
+    labelFr: 'Tableau de Bord',
+    labelEn: 'Dashboard & Overview',
+    category: 'SYSTEM',
+    description: 'Vue d\'ensemble exécutive, indicateurs clés et activité de la concession',
+    icon: BarChart3,
+  },
+  vehicles: {
+    id: 'vehicles',
+    labelFr: 'Véhicules & Flotte',
+    labelEn: 'Vehicles & Fleet',
+    category: 'FLEET',
+    description: 'Parc automobile, cartes grises, fiches techniques et affectations',
+    icon: Car,
+  },
+  stock: {
+    id: 'stock',
+    labelFr: 'Pièces & Stock',
+    labelEn: 'Inventory & Spare Parts',
+    category: 'FLEET',
+    description: 'Stock magasin, réapprovisionnement, pièces détachées et alertes',
+    icon: Boxes,
+  },
+  rentals: {
+    id: 'rentals',
+    labelFr: 'Locations & Contrats',
+    labelEn: 'Rentals & Contracts',
+    category: 'COMMERCIAL',
+    description: 'Mises à disposition longue et courte durée, départs, retours et cautions',
+    icon: CalendarCheck2,
+  },
+  sales: {
+    id: 'sales',
+    labelFr: 'Vente de Véhicules',
+    labelEn: 'Vehicle Sales',
+    category: 'COMMERCIAL',
+    description: 'Showroom neuf et occasion, mandats de vente, devis et cessions',
+    icon: Car,
+  },
+  crm: {
+    id: 'crm',
+    labelFr: 'CRM & Prospects',
+    labelEn: 'CRM & Leads',
+    category: 'COMMERCIAL',
+    description: 'Pipeline commercial Douala/Kribi/Yaoundé, relances et clients VIP',
+    icon: UserSquare2,
+  },
+  reservations: {
+    id: 'reservations',
+    labelFr: 'Réservations & Plannings',
+    labelEn: 'Reservations & Planning',
+    category: 'COMMERCIAL',
+    description: 'Calendrier des réservations, disponibilités et confirmations',
+    icon: Calendar,
+  },
+  billing: {
+    id: 'billing',
+    labelFr: 'Factures & Proformas',
+    labelEn: 'Invoices & Billing',
+    category: 'FINANCE',
+    description: 'Facturation certifiée FCT, proformas, avoirs et acomptes',
+    icon: Receipt,
+  },
+  cash: {
+    id: 'cash',
+    labelFr: 'Journal de Caisse & Dépenses',
+    labelEn: 'Cash Register & Expenses',
+    category: 'FINANCE',
+    description: 'Encaissements, décaissements caisse physique, reçus et réconciliations',
+    icon: Wallet,
+  },
+  maintenance: {
+    id: 'maintenance',
+    labelFr: 'Maintenance & Ateliers',
+    labelEn: 'Maintenance & Repairs',
+    category: 'FLEET',
+    description: 'Entretiens périodiques, pannes, ordres de réparation et prestataires',
+    icon: Wrench,
+  },
+  drivers: {
+    id: 'drivers',
+    labelFr: 'Chauffeurs & Conducteurs',
+    labelEn: 'Drivers & Operators',
+    category: 'FLEET',
+    description: 'Permis, plannings de course, assignations et suivis des chauffeurs',
+    icon: Users2,
+  },
+  documents: {
+    id: 'documents',
+    labelFr: 'Registre GED & Archives',
+    labelEn: 'Document Registry',
+    category: 'SYSTEM',
+    description: 'Contrats signés, scans de CNI, passeports, assurances et expertises',
+    icon: FileText,
+  },
+  notifications: {
+    id: 'notifications',
+    labelFr: 'Alertes & Relances',
+    labelEn: 'Notifications & Alerts',
+    category: 'SYSTEM',
+    description: 'Notifications temps réel, alertes vidange, assurances à échéance',
+    icon: BellRing,
+  },
+  reports: {
+    id: 'reports',
+    labelFr: 'Rapports & Indicateurs',
+    labelEn: 'Reports & Analytics',
+    category: 'FINANCE',
+    description: 'Rapports de rentabilité, bilans financiers et analyses d\'activité',
+    icon: BarChart3,
+  },
+  users: {
+    id: 'users',
+    labelFr: 'Collaborateurs & Permissions',
+    labelEn: 'Users & Permissions',
+    category: 'SYSTEM',
+    description: 'Comptes internes, rôles RBAC, codes PIN et assignations d\'onglets',
+    icon: ShieldCheck,
+  },
+  settings: {
+    id: 'settings',
+    labelFr: 'Paramètres Concession',
+    labelEn: 'Concession Settings',
+    category: 'SYSTEM',
+    description: 'Coordonnées FCT Douala, logos officiels, mentions légales et sauvegardes',
+    icon: Settings,
+  },
+  audit: {
+    id: 'audit',
+    labelFr: 'Journal d\'Audit & Traçabilité',
+    labelEn: 'Audit Log & History',
+    category: 'SYSTEM',
+    description: 'Historique immuable append-only des opérations et accès sensibles',
+    icon: History,
+  },
+  help: {
+    id: 'help',
+    labelFr: 'Assistance & Aide',
+    labelEn: 'Support & Help Desk',
+    category: 'SYSTEM',
+    description: 'Guides d\'utilisation, tickets internes et assistance FCT',
+    icon: HelpCircle,
+  },
+};
 
 interface UsersViewProps {
   state: DatabaseState;
@@ -440,6 +613,9 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
   // -------------------------------------------------------------
   const [overrideModalUser, setOverrideModalUser] = useState<UserProfile | null>(null);
   const [overrideDraft, setOverrideDraft] = useState<UserPermissionOverrides>({});
+  const [overrideSearch, setOverrideSearch] = useState('');
+  const [overrideCategory, setOverrideCategory] = useState<'ALL' | 'FLEET' | 'COMMERCIAL' | 'FINANCE' | 'SYSTEM'>('ALL');
+  const [expandedOverrideModules, setExpandedOverrideModules] = useState<Record<string, boolean>>({});
 
   const openOverrideModal = (user: UserProfile) => {
     setOverrideModalUser(user);
@@ -447,15 +623,191 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
       allow: user.permissionsOverrides?.allow ? JSON.parse(JSON.stringify(user.permissionsOverrides.allow)) : {},
       deny: user.permissionsOverrides?.deny ? JSON.parse(JSON.stringify(user.permissionsOverrides.deny)) : {},
     });
+    setOverrideSearch('');
+    setOverrideCategory('ALL');
+    setExpandedOverrideModules({});
+  };
+
+  // Liste des modules visibles calculée pour le brouillon en cours
+  const draftVisibleModules = useMemo(() => {
+    if (!overrideModalUser) return [];
+    const tempUser: UserProfile = {
+      ...overrideModalUser,
+      permissionsOverrides: overrideDraft,
+    };
+    return getUserVisibleModules(tempUser, state.rolePermissions);
+  }, [overrideModalUser, overrideDraft, state.rolePermissions]);
+
+  // Actions effectives calculées par module pour le brouillon
+  const draftEffectivePermissions = useMemo(() => {
+    if (!overrideModalUser) return {} as Record<AppModule, PermissionAction[]>;
+    const tempUser: UserProfile = {
+      ...overrideModalUser,
+      permissionsOverrides: overrideDraft,
+    };
+    return calculateEffectivePermissions(tempUser, state.rolePermissions);
+  }, [overrideModalUser, overrideDraft, state.rolePermissions]);
+
+  // Actions par défaut du rôle de base pour le collaborateur dans le modal
+  const modalUserBaseRoleActions = useMemo(() => {
+    if (!overrideModalUser) return {} as Record<AppModule, PermissionAction[]>;
+    const matrix = state.rolePermissions || DEFAULT_ROLE_PERMISSIONS;
+    return matrix[overrideModalUser.role] || DEFAULT_ROLE_PERMISSIONS[overrideModalUser.role] || ({} as Record<AppModule, PermissionAction[]>);
+  }, [overrideModalUser, state.rolePermissions]);
+
+  // Basculer la visibilité d'un onglet (ON / OFF)
+  const handleToggleModuleVisibility = (mod: AppModule, targetVisible: boolean) => {
+    if (!overrideModalUser) return;
+    const baseActions = modalUserBaseRoleActions[mod] || [];
+    const baseHasRead = baseActions.includes('read');
+
+    setOverrideDraft((prev) => {
+      const curAllow = prev.allow?.[mod] || [];
+      const curDeny = prev.deny?.[mod] || [];
+
+      let nextAllow = [...curAllow];
+      let nextDeny = [...curDeny];
+
+      if (targetVisible) {
+        // Rendre visible : supprimer 'read' des interdictions
+        nextDeny = nextDeny.filter((a) => a !== 'read');
+        // Si le rôle de base n'a pas 'read', ajouter 'read' dans allow
+        if (!baseHasRead && !nextAllow.includes('read')) {
+          nextAllow.push('read');
+        }
+      } else {
+        // Masquer l'onglet : supprimer 'read' des autorisations
+        nextAllow = nextAllow.filter((a) => a !== 'read');
+        // Si le rôle de base a 'read', ajouter 'read' dans deny
+        if (baseHasRead && !nextDeny.includes('read')) {
+          nextDeny.push('read');
+        }
+      }
+
+      const nextDraft: UserPermissionOverrides = {
+        allow: { ...prev.allow, [mod]: nextAllow },
+        deny: { ...prev.deny, [mod]: nextDeny },
+      };
+
+      if (nextAllow.length === 0 && nextDraft.allow) {
+        delete nextDraft.allow[mod];
+      }
+      if (nextDeny.length === 0 && nextDraft.deny) {
+        delete nextDraft.deny[mod];
+      }
+
+      return nextDraft;
+    });
+  };
+
+  // Appliquer un preset d'action sur un onglet visible
+  const handleSetModulePreset = (mod: AppModule, preset: 'ROLE_DEFAULT' | 'READ_ONLY' | 'READ_CREATE' | 'FULL') => {
+    if (!overrideModalUser) return;
+    const baseActions = modalUserBaseRoleActions[mod] || [];
+    const baseHasRead = baseActions.includes('read');
+
+    setOverrideDraft((prev) => {
+      const nextAllow = { ...(prev.allow || {}) };
+      const nextDeny = { ...(prev.deny || {}) };
+
+      if (preset === 'ROLE_DEFAULT') {
+        // Revenir strictement au rôle par défaut pour ce module
+        delete nextAllow[mod];
+        delete nextDeny[mod];
+        return { allow: nextAllow, deny: nextDeny };
+      }
+
+      // Pour les 3 autres modes, l'onglet DOIT être visible
+      let modAllow: PermissionAction[] = (nextAllow[mod] || []).filter((a) => a !== 'read');
+      let modDeny: PermissionAction[] = (nextDeny[mod] || []).filter((a) => a !== 'read');
+
+      if (!baseHasRead) {
+        modAllow.push('read');
+      }
+
+      const writeActions: PermissionAction[] = ['create', 'update', 'delete', 'approve'];
+
+      if (preset === 'READ_ONLY') {
+        // Lecture seule : bloquer toutes les modifications
+        modAllow = modAllow.filter((a) => !writeActions.includes(a));
+        for (const act of writeActions) {
+          if (baseActions.includes(act) && !modDeny.includes(act)) {
+            modDeny.push(act);
+          }
+        }
+      } else if (preset === 'READ_CREATE') {
+        // Lecture + Ajout : autoriser create, bloquer update, delete, approve
+        if (!baseActions.includes('create') && !modAllow.includes('create')) {
+          modAllow.push('create');
+        }
+        modDeny = modDeny.filter((a) => a !== 'create');
+        const restricted: PermissionAction[] = ['update', 'delete', 'approve'];
+        modAllow = modAllow.filter((a) => !restricted.includes(a));
+        for (const act of restricted) {
+          if (baseActions.includes(act) && !modDeny.includes(act)) {
+            modDeny.push(act);
+          }
+        }
+      } else if (preset === 'FULL') {
+        // Accès complet : accorder read, create, update, delete
+        const fullActions: PermissionAction[] = ['create', 'update', 'delete'];
+        for (const act of fullActions) {
+          if (!baseActions.includes(act) && !modAllow.includes(act)) {
+            modAllow.push(act);
+          }
+        }
+        modDeny = modDeny.filter((a) => !['read', ...fullActions].includes(a));
+      }
+
+      nextAllow[mod] = modAllow;
+      nextDeny[mod] = modDeny;
+
+      if (modAllow.length === 0) delete nextAllow[mod];
+      if (modDeny.length === 0) delete nextDeny[mod];
+
+      return { allow: nextAllow, deny: nextDeny };
+    });
+  };
+
+  // Gestion fine action par action dans l'accordéon
+  const handleToggleFineAction = (mod: AppModule, act: PermissionAction, mode: 'INHERIT' | 'ALLOW' | 'DENY') => {
+    setOverrideDraft((prev) => {
+      const curAllow = prev.allow?.[mod] || [];
+      const curDeny = prev.deny?.[mod] || [];
+
+      let nextAllow = curAllow.filter((a) => a !== act);
+      let nextDeny = curDeny.filter((a) => a !== act);
+
+      if (mode === 'ALLOW') {
+        nextAllow.push(act);
+      } else if (mode === 'DENY') {
+        nextDeny.push(act);
+      }
+
+      const nextDraft: UserPermissionOverrides = {
+        allow: { ...prev.allow, [mod]: nextAllow },
+        deny: { ...prev.deny, [mod]: nextDeny },
+      };
+
+      if (nextAllow.length === 0 && nextDraft.allow) delete nextDraft.allow[mod];
+      if (nextDeny.length === 0 && nextDraft.deny) delete nextDraft.deny[mod];
+
+      return nextDraft;
+    });
+  };
+
+  // Réinitialiser toutes les exceptions d'un coup
+  const handleResetAllOverridesToRoleDefault = () => {
+    setOverrideDraft({ allow: {}, deny: {} });
   };
 
   const handleSaveOverrides = () => {
     if (!overrideModalUser) return;
     try {
-      const updated = dbStore.updateUserOverrides(overrideModalUser.id, overrideDraft, 'Mise à jour des exceptions individuelles');
+      const updated = dbStore.updateUserOverrides(overrideModalUser.id, overrideDraft, 'Mise à jour des assignations d\'onglets et permissions');
       setOverrideModalUser(null);
       if (selectedUser?.id === updated.id) setSelectedUser(updated);
-      showAlert(`Exceptions individuelles mises à jour pour "${updated.fullName}".`);
+      showAlert(`Assignation des onglets et permissions enregistrée pour "${updated.fullName}".`);
     } catch (err: any) {
       showAlert(err.message || 'Erreur', 'error');
     }
@@ -837,10 +1189,26 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                       </div>
                     </div>
 
-                    {/* Footer : Bouton Showroom */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-blue-700 font-bold group-hover:text-blue-800">
-                      <span>{up.viewDetails}</span>
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    {/* Footer : Bouton Showroom & Bouton Onglets */}
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                      {hasEffectivePermission(currentUser, 'users', 'update') ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openOverrideModal(usr);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-[11px] border border-purple-200 flex items-center gap-1.5 transition cursor-pointer"
+                          title="Assigner des onglets supplémentaires ou restreindre les droits"
+                        >
+                          <Sliders className="w-3.5 h-3.5" />
+                          <span>Onglets &amp; Droits</span>
+                        </button>
+                      ) : <span />}
+                      <div className="flex items-center gap-1 text-blue-700 font-bold group-hover:text-blue-800">
+                        <span>{up.viewDetails}</span>
+                        <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </div>
                   </div>
                 );
@@ -900,16 +1268,25 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                               <Eye className="w-3.5 h-3.5" />
                             </button>
                             {hasEffectivePermission(currentUser, 'users', 'update') && (
-                              <button
-                                onClick={() => {
-                                  setEditingUser({ ...usr });
-                                  setIsEditModalOpen(true);
-                                }}
-                                className="p-1 rounded bg-slate-100 hover:bg-amber-50 text-slate-600 hover:text-amber-700 transition"
-                                title="Modifier"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => openOverrideModal(usr)}
+                                  className="p-1 rounded bg-slate-100 hover:bg-purple-50 text-slate-600 hover:text-purple-700 transition"
+                                  title="Assigner des onglets et droits d'accès"
+                                >
+                                  <Sliders className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingUser({ ...usr });
+                                    setIsEditModalOpen(true);
+                                  }}
+                                  className="p-1 rounded bg-slate-100 hover:bg-amber-50 text-slate-600 hover:text-amber-700 transition"
+                                  title="Modifier le profil"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -1540,9 +1917,69 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
               {/* Onglet 2 : Droits Effectifs & Origine */}
               {userDetailTab === 'EFFECTIVE_RIGHTS' && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between text-slate-500">
+                  {/* Cartes récapitulatives des onglets visibles */}
+                  {(() => {
+                    const userVisibleMods = getUserVisibleModules(selectedUser, state.rolePermissions);
+                    return (
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="font-bold text-slate-800 flex items-center gap-2">
+                            <Eye className="w-4 h-4 text-emerald-600" />
+                            <span>Onglets Visibles dans la Barre Latérale ({userVisibleMods.length} / 18)</span>
+                          </div>
+                          {hasEffectivePermission(currentUser, 'users', 'update') && (
+                            <button
+                              onClick={() => openOverrideModal(selectedUser)}
+                              className="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                            >
+                              <Sliders className="w-3.5 h-3.5" />
+                              <span>Modifier l'Assignation des Onglets</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                          {ALL_APP_MODULES.map((mod) => {
+                            const isVis = userVisibleMods.includes(mod);
+                            const meta = MODULE_REGISTRY[mod];
+                            const IconC = meta?.icon || Layers;
+                            const isOverrideAllow = selectedUser.permissionsOverrides?.allow?.[mod]?.includes('read');
+                            const isOverrideDeny = selectedUser.permissionsOverrides?.deny?.[mod]?.includes('read');
+
+                            return (
+                              <div
+                                key={mod}
+                                className={`p-2 rounded-lg border flex items-center gap-2 text-[11px] ${
+                                  isVis
+                                    ? 'bg-white border-slate-200 text-slate-800 shadow-2xs'
+                                    : 'bg-slate-100/60 border-dashed border-slate-300 text-slate-400'
+                                }`}
+                              >
+                                <IconC className={`w-3.5 h-3.5 shrink-0 ${isVis ? 'text-purple-600' : 'text-slate-400'}`} />
+                                <span className={`truncate font-medium ${!isVis ? 'line-through text-slate-400' : ''}`}>
+                                  {meta?.labelFr || mod}
+                                </span>
+                                {isOverrideAllow && (
+                                  <span className="ml-auto text-[9px] font-black text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200 shrink-0">
+                                    +
+                                  </span>
+                                )}
+                                {isOverrideDeny && (
+                                  <span className="ml-auto text-[9px] font-black text-rose-700 bg-rose-50 px-1 rounded border border-rose-200 shrink-0">
+                                    -
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <div className="flex items-center justify-between text-slate-500 pt-1">
                     <p>
-                      Synthèse des droits calculés pour <strong className="text-slate-900">{selectedUser.fullName}</strong> avec provenance de chaque permission :
+                      Synthèse détaillée des 7 actions calculées pour <strong className="text-slate-900">{selectedUser.fullName}</strong> :
                     </p>
                     <div className="flex items-center gap-3 text-[10px] font-bold">
                       <span className="flex items-center gap-1">
@@ -2154,114 +2591,466 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
       )}
 
       {/* ========================================================= */}
-      {/* MODAL GESTION DES SURCHARGES (ALLOW / DENY)               */}
+      {/* MODAL GESTION DE L'ASSIGNATION D'ONGLETS & DROITS         */}
       {/* ========================================================= */}
       {overrideModalUser && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full p-4 sm:p-6 space-y-4 my-auto max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
-              <div>
-                <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
-                  <Sliders className="w-5 h-5 text-purple-600" />
-                  <span>Exceptions pour : {overrideModalUser.fullName}</span>
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Rôle de base : <strong className="text-slate-800">{t.roles[overrideModalUser.role]}</strong>
-                </p>
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full p-4 sm:p-6 space-y-4 my-auto max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Header du Modal */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 shrink-0 gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 shadow-xs">
+                  <Sliders className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-black text-base text-slate-900">
+                      Assignation d'Onglets &amp; Droits
+                    </h3>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getRoleBadgeColor(overrideModalUser.role)}`}>
+                      {t.roles[overrideModalUser.role] || overrideModalUser.role}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Collaborateur : <strong className="text-slate-900">{overrideModalUser.fullName}</strong> ({overrideModalUser.email})
+                  </p>
+                </div>
               </div>
-              <button
-                onClick={() => setOverrideModalUser(null)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-700 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+
+              {/* Badges d'état et fermeture */}
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <button
+                  type="button"
+                  onClick={handleResetAllOverridesToRoleDefault}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                  title="Réinitialiser toutes les exceptions pour hériter du rôle standard"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Rétablir Rôle Standard</span>
+                </button>
+                <button
+                  onClick={() => setOverrideModalUser(null)}
+                  className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            <div className="overflow-y-auto space-y-4 flex-1 text-xs pr-1">
-              <p className="text-slate-600">
-                Cochez pour ajouter une autorisation exceptionnelle (<strong className="text-emerald-700">+Allow</strong>) ou appliquer une restriction stricte (<strong className="text-rose-700">-Deny</strong>).
-              </p>
+            {/* Barre de Synthèse Dynamique & Filtres */}
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-3 shrink-0 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-700">Visibilité effective :</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-black text-xs border border-emerald-300 flex items-center gap-1">
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>{draftVisibleModules.length} / 18 onglets visibles</span>
+                  </span>
+                  {(() => {
+                    const addedCount = ALL_APP_MODULES.filter((m) => {
+                      const baseHas = (modalUserBaseRoleActions[m] || []).includes('read');
+                      return !baseHas && draftVisibleModules.includes(m);
+                    }).length;
+                    const removedCount = ALL_APP_MODULES.filter((m) => {
+                      const baseHas = (modalUserBaseRoleActions[m] || []).includes('read');
+                      return baseHas && !draftVisibleModules.includes(m);
+                    }).length;
+                    return (
+                      <>
+                        {addedCount > 0 && (
+                          <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px] border border-blue-300">
+                            +{addedCount} accordé(s)
+                          </span>
+                        )}
+                        {removedCount > 0 && (
+                          <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold text-[10px] border border-rose-300">
+                            -{removedCount} masqué(s)
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
 
-              <div className="space-y-3">
-                {ALL_APP_MODULES.map((mod) => {
-                  const allows = overrideDraft.allow?.[mod] || [];
-                  const denies = overrideDraft.deny?.[mod] || [];
+                <div className="text-slate-500 italic text-[11px]">
+                  Les modifications sont appliquées immédiatement au profil du collaborateur.
+                </div>
+              </div>
 
-                  return (
-                    <div key={mod} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                      <div className="font-bold text-slate-900 uppercase text-[11px] flex items-center justify-between">
-                        <span>{mod}</span>
-                        <div className="flex items-center gap-3 text-[10px]">
-                          <span className="text-emerald-700 font-bold">Allow (+)</span>
-                          <span className="text-rose-700 font-bold">Deny (-)</span>
+              {/* Recherche et Catégories */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-200">
+                <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-sm">
+                  <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Filtrer un onglet (ex: Stock, Maintenance, Caisse)..."
+                    value={overrideSearch}
+                    onChange={(e) => setOverrideSearch(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1 text-[11px] font-bold">
+                  {(['ALL', 'FLEET', 'COMMERCIAL', 'FINANCE', 'SYSTEM'] as const).map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setOverrideCategory(cat)}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                        overrideCategory === cat
+                          ? 'bg-purple-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {cat === 'ALL'
+                        ? 'Tous'
+                        : cat === 'FLEET'
+                        ? 'Flotte'
+                        : cat === 'COMMERCIAL'
+                        ? 'Commercial'
+                        : cat === 'FINANCE'
+                        ? 'Finance'
+                        : 'Système'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Corps Défilable : Liste des 18 Modules et Assignations */}
+            <div className="overflow-y-auto space-y-3 flex-1 text-xs pr-1">
+              {ALL_APP_MODULES.filter((mod) => {
+                const meta = MODULE_REGISTRY[mod];
+                const matchSearch =
+                  !overrideSearch ||
+                  mod.toLowerCase().includes(overrideSearch.toLowerCase()) ||
+                  meta?.labelFr.toLowerCase().includes(overrideSearch.toLowerCase()) ||
+                  meta?.labelEn.toLowerCase().includes(overrideSearch.toLowerCase());
+                const matchCat = overrideCategory === 'ALL' || meta?.category === overrideCategory;
+                return matchSearch && matchCat;
+              }).map((mod) => {
+                const meta = MODULE_REGISTRY[mod];
+                const IconComponent = meta?.icon || Layers;
+                const baseActions = modalUserBaseRoleActions[mod] || [];
+                const isBaseVisible = baseActions.includes('read');
+                const isDraftVisible = draftVisibleModules.includes(mod);
+                const effActions = draftEffectivePermissions[mod] || [];
+                const allows = overrideDraft.allow?.[mod] || [];
+                const denies = overrideDraft.deny?.[mod] || [];
+                const isExpanded = !!expandedOverrideModules[mod];
+
+                // Détermination du preset actif
+                const hasCustomOverrides = allows.length > 0 || denies.length > 0;
+                let activePreset: 'ROLE_DEFAULT' | 'READ_ONLY' | 'READ_CREATE' | 'FULL' | 'CUSTOM' = 'ROLE_DEFAULT';
+                if (!hasCustomOverrides) {
+                  activePreset = 'ROLE_DEFAULT';
+                } else if (
+                  isDraftVisible &&
+                  !effActions.includes('update') &&
+                  !effActions.includes('delete') &&
+                  !effActions.includes('create') &&
+                  denies.includes('update')
+                ) {
+                  activePreset = 'READ_ONLY';
+                } else if (
+                  isDraftVisible &&
+                  effActions.includes('create') &&
+                  !effActions.includes('update') &&
+                  !effActions.includes('delete') &&
+                  denies.includes('update')
+                ) {
+                  activePreset = 'READ_CREATE';
+                } else if (
+                  isDraftVisible &&
+                  effActions.includes('create') &&
+                  effActions.includes('update') &&
+                  effActions.includes('delete') &&
+                  !denies.includes('update')
+                ) {
+                  activePreset = 'FULL';
+                } else {
+                  activePreset = 'CUSTOM';
+                }
+
+                return (
+                  <div
+                    key={mod}
+                    className={`rounded-xl border transition-all p-3.5 space-y-3 ${
+                      isDraftVisible
+                        ? 'bg-white border-slate-200 shadow-xs'
+                        : 'bg-slate-50/70 border-dashed border-slate-300 opacity-80'
+                    }`}
+                  >
+                    {/* Ligne principale : Info Module + Interrupteur ON/OFF */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                            isDraftVisible
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'bg-slate-200 text-slate-500'
+                          }`}
+                        >
+                          <IconComponent className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 text-sm">
+                              {meta?.labelFr || mod}
+                            </span>
+                            <span className="font-mono text-[10px] text-slate-400">({mod})</span>
+                            {/* Badge statut visibilité par rapport au rôle */}
+                            {isDraftVisible ? (
+                              isBaseVisible ? (
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold text-[10px]">
+                                  Hérité du rôle
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px] border border-emerald-300">
+                                  + Accordé en supplément
+                                </span>
+                              )
+                            ) : isBaseVisible ? (
+                              <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 font-bold text-[10px] border border-rose-300">
+                                - Masqué exceptionnellement
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 font-normal text-[10px]">
+                                Non inclus
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                            {meta?.description}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1">
-                        {ALL_PERMISSION_ACTIONS.map((act) => {
-                          const isAllow = allows.includes(act);
-                          const isDeny = denies.includes(act);
-
-                          return (
-                            <div key={act} className="flex items-center justify-between bg-white p-1.5 rounded border border-slate-200">
-                              <span className="font-medium text-slate-700 text-[11px]">{act}</span>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  title={`Allow ${act}`}
-                                  checked={isAllow}
-                                  onChange={(e) => {
-                                    const nextAllows = e.target.checked
-                                      ? [...allows, act]
-                                      : allows.filter((a) => a !== act);
-                                    setOverrideDraft({
-                                      ...overrideDraft,
-                                      allow: { ...overrideDraft.allow, [mod]: nextAllows },
-                                      deny: { ...overrideDraft.deny, [mod]: denies.filter((d) => d !== act) },
-                                    });
-                                  }}
-                                  className="w-3.5 h-3.5 text-emerald-600 rounded border-slate-300"
-                                />
-                                <input
-                                  type="checkbox"
-                                  title={`Deny ${act}`}
-                                  checked={isDeny}
-                                  onChange={(e) => {
-                                    const nextDenies = e.target.checked
-                                      ? [...denies, act]
-                                      : denies.filter((a) => a !== act);
-                                    setOverrideDraft({
-                                      ...overrideDraft,
-                                      deny: { ...overrideDraft.deny, [mod]: nextDenies },
-                                      allow: { ...overrideDraft.allow, [mod]: allows.filter((a) => a !== act) },
-                                    });
-                                  }}
-                                  className="w-3.5 h-3.5 text-rose-600 rounded border-slate-300"
-                                />
-                              </div>
-                            </div>
-                          );
-                        })}
+                      {/* Interrupteur ON / OFF de visibilité */}
+                      <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                        <div className="text-right">
+                          <span
+                            className={`text-xs font-bold block ${
+                              isDraftVisible ? 'text-emerald-700' : 'text-slate-400'
+                            }`}
+                          >
+                            {isDraftVisible ? 'Onglet Visible' : 'Onglet Masqué'}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block">
+                            {isDraftVisible ? 'Barre latérale active' : 'Accès bloqué'}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleModuleVisibility(mod, !isDraftVisible)}
+                          className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out ${
+                            isDraftVisible ? 'bg-emerald-600 justify-end' : 'bg-slate-300 justify-start'
+                          }`}
+                          title={isDraftVisible ? 'Masquer cet onglet' : 'Rendre cet onglet visible'}
+                        >
+                          <span className="bg-white w-4 h-4 rounded-full shadow-md transform transition duration-200 ease-in-out" />
+                        </button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+
+                    {/* Si l'onglet est VISIBLE : Options de Droits & Presets */}
+                    {isDraftVisible && (
+                      <div className="pt-2 border-t border-slate-100 space-y-2.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-[11px] font-bold text-slate-700">
+                            Niveau d'action sur cet onglet :
+                          </span>
+
+                          {/* Boutons Presets Rapides */}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleSetModulePreset(mod, 'READ_ONLY')}
+                              className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
+                                activePreset === 'READ_ONLY'
+                                  ? 'bg-amber-600 text-white shadow-xs'
+                                  : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+                              }`}
+                              title="Peut consulter toutes les données de l'onglet mais ne peut rien modifier ni supprimer"
+                            >
+                              <Eye className="w-3 h-3" />
+                              <span>Lecture Seule</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleSetModulePreset(mod, 'READ_CREATE')}
+                              className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
+                                activePreset === 'READ_CREATE'
+                                  ? 'bg-blue-600 text-white shadow-xs'
+                                  : 'bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100'
+                              }`}
+                              title="Peut consulter et ajouter de nouvelles fiches sans modifier ni supprimer l'existant"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Lecture + Ajout</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleSetModulePreset(mod, 'FULL')}
+                              className={`px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
+                                activePreset === 'FULL'
+                                  ? 'bg-emerald-700 text-white shadow-xs'
+                                  : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+                              }`}
+                              title="Création, consultation et modification complètes"
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              <span>Complet (Créer &amp; Modifier)</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleSetModulePreset(mod, 'ROLE_DEFAULT')}
+                              className={`px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
+                                activePreset === 'ROLE_DEFAULT'
+                                  ? 'bg-slate-800 text-white'
+                                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              }`}
+                              title="Réinitialiser pour hériter des droits standard du rôle"
+                            >
+                              <span>Standard Rôle</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Actions Effectives Résumées & Bouton Accordéon */}
+                        <div className="flex items-center justify-between pt-1 text-[11px]">
+                          <div className="flex flex-wrap items-center gap-1 text-slate-600">
+                            <span className="font-semibold text-slate-500">Actions effectives :</span>
+                            {effActions.map((act) => {
+                              const isAllow = allows.includes(act);
+                              const isDeny = denies.includes(act);
+                              return (
+                                <span
+                                  key={act}
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    isAllow
+                                      ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                                      : isDeny
+                                      ? 'bg-rose-100 text-rose-900 line-through'
+                                      : 'bg-slate-100 text-slate-700'
+                                  }`}
+                                >
+                                  {act}
+                                </span>
+                              );
+                            })}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedOverrideModules((prev) => ({
+                                ...prev,
+                                [mod]: !prev[mod],
+                              }))
+                            }
+                            className="text-purple-700 hover:text-purple-900 font-bold flex items-center gap-1 cursor-pointer shrink-0"
+                          >
+                            <span>Détails 7 actions</span>
+                            <ChevronDown
+                              className={`w-3.5 h-3.5 transition-transform ${
+                                isExpanded ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Panneau Accordéon : Réglage fin des 7 actions */}
+                        {isExpanded && (
+                          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-2 mt-2 animate-in fade-in duration-100">
+                            <div className="text-[11px] font-bold text-slate-700">
+                              Ajustement granulaire des 7 actions pour {meta?.labelFr || mod} :
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                              {ALL_PERMISSION_ACTIONS.map((act) => {
+                                const baseHas = baseActions.includes(act);
+                                const isAllow = allows.includes(act);
+                                const isDeny = denies.includes(act);
+                                const mode: 'INHERIT' | 'ALLOW' | 'DENY' = isAllow
+                                  ? 'ALLOW'
+                                  : isDeny
+                                  ? 'DENY'
+                                  : 'INHERIT';
+
+                                return (
+                                  <div
+                                    key={act}
+                                    className="bg-white p-2 rounded border border-slate-200 flex items-center justify-between gap-1 text-[11px]"
+                                  >
+                                    <div>
+                                      <span className="font-bold text-slate-800">{act}</span>
+                                      <span className="block text-[9px] text-slate-400">
+                                        Rôle : {baseHas ? 'Oui' : 'Non'}
+                                      </span>
+                                    </div>
+                                    <select
+                                      value={mode}
+                                      onChange={(e) =>
+                                        handleToggleFineAction(
+                                          mod,
+                                          act,
+                                          e.target.value as 'INHERIT' | 'ALLOW' | 'DENY'
+                                        )
+                                      }
+                                      className={`text-[10px] font-bold rounded px-1.5 py-0.5 border cursor-pointer ${
+                                        mode === 'ALLOW'
+                                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                          : mode === 'DENY'
+                                          ? 'bg-rose-50 text-rose-800 border-rose-300'
+                                          : 'bg-slate-50 text-slate-600 border-slate-200'
+                                      }`}
+                                    >
+                                      <option value="INHERIT">Rôle ({baseHas ? 'Actif' : 'Inactif'})</option>
+                                      <option value="ALLOW">+ Accorder</option>
+                                      <option value="DENY">- Bloquer</option>
+                                    </select>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2 shrink-0">
-              <button
-                onClick={() => setOverrideModalUser(null)}
-                className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSaveOverrides}
-                className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-xs cursor-pointer"
-              >
-                Appliquer les Exceptions
-              </button>
+            {/* Footer Modal avec Résumé et Boutons d'Action */}
+            <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+              <div className="text-xs text-slate-500">
+                <span>Règle de sécurité : </span>
+                <strong className="text-slate-800">
+                  Deny l'emporte toujours sur Allow et sur le rôle par défaut.
+                </strong>
+              </div>
+
+              <div className="flex items-center gap-2 self-end">
+                <button
+                  type="button"
+                  onClick={() => setOverrideModalUser(null)}
+                  className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer text-xs transition"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveOverrides}
+                  className="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-xs cursor-pointer text-xs flex items-center gap-1.5 transition"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Enregistrer les Assignations</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

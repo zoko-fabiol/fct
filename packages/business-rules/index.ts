@@ -480,6 +480,21 @@ export function hasEffectivePermission(
 }
 
 /**
+ * Retourne la liste de tous les modules / onglets visibles pour un collaborateur
+ * (un onglet est visible si l'utilisateur possède la permission effective 'read')
+ */
+export function getUserVisibleModules(
+  user: UserProfile | null | undefined,
+  customMatrix?: Record<UserRole, Record<AppModule, PermissionAction[]>>
+): AppModule[] {
+  if (!user || !user.isActive || user.status === 'DISABLED' || user.status === 'SUSPENDED') {
+    return [];
+  }
+  const effective = calculateEffectivePermissions(user, customMatrix);
+  return ALL_APP_MODULES.filter((mod) => effective[mod]?.includes('read'));
+}
+
+/**
  * Vérifie si un rôle possède une permission spécifique sur un module (Compatibilité existante)
  */
 export function hasPermission(

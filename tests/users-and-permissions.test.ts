@@ -13,6 +13,7 @@ import {
   getPermissionOrigin,
   DEFAULT_ROLE_PERMISSIONS,
   ALL_APP_MODULES,
+  getUserVisibleModules,
 } from '../packages/business-rules/index.ts';
 import { UserProfile, UserRole, AppModule } from '../packages/shared-types/index.ts';
 
@@ -345,4 +346,65 @@ describe('Module Utilisateurs, Rôles, Permissions & Sécurité RBAC (18 Scénar
     expect(hasEffectivePermission(admin, 'users', 'update')).toBe(true);
     expect(hasEffectivePermission(admin, 'users', 'delete')).toBe(true);
   });
+
+  // SCÉNARIO 19 : Assignation d'onglet supplémentaire en Lecture Seule à un chauffeur (Demande vocale utilisateur)
+  it('Scénario 19: permet d’assigner un onglet supplémentaire en Lecture Seule (voir sans modifier)', () => {
+    const driver = dbStore.getUsers().find((u) => u.role === 'driver')!;
+
+    // 1. Par défaut, le rôle chauffeur n'a pas accès au stock
+    expect(hasEffectivePermission(driver, 'stock', 'read')).toBe(false);
+    const initialVisible = getUserVisibleModules(driver);
+    expect(initialVisible.includes('stock')).toBe(false);
+
+    // 2. L'administrateur lui accorde l'onglet Stock en Lecture Seule (read=true, create/update/delete=false)
+    dbStore.updateUserOverrides(
+      driver.id,
+      {
+        allow: { stock: ['read'] },
+        deny: { stock: ['create', 'update', 'delete'] },
+      },
+      'Attribution exceptionnelle de l\'onglet Stock en consultation seule pour inventaire véhicule'
+    );
+
+    const updatedDriver = dbStore.getUserById(driver.id)!;
+
+    // 3. L'onglet Stock est désormais visible dans sa barre latérale
+    const newVisible = getUserVisibleModules(updatedDriver);
+    expect(newVisible.includes('stock')).toBe(true);
+    expect(hasEffectivePermission(updatedDriver, 'stock', 'read')).toBe(true);
+
+    // 4. MAIS il ne peut PAS modifier ni créer de pièces (règle stricte : voir sans modifier)
+    expect(hasEffectivePermission(updatedDriver, 'stock', 'update')).toBe(false);
+    expect(hasEffectivePermission(updatedDriver, 'stock', 'create')).toBe(false);
+    expect(hasEffectivePermission(updatedDriver, 'stock', 'delete')).toBe(false);
+  });
+
+  // SCÉNARIO 20 : Décochage et masquage d'un onglet par défaut pour un utilisateur spécifique
+  it('Scénario 20: permet de masquer un onglet par défaut d’un collaborateur sans impacter son rôle', () => {
+    const driver = dbStore.getUsers().find((u) => u.role === 'driver')!;
+
+    // 1. Masquer l'onglet 'drivers' pour ce chauffeur spécifique via Deny
+    dbStore.updateUserOverrides(
+      driver.id,
+      {
+        deny: { drivers: ['read'] },
+      },
+      'Masquage exceptionnel de l\'onglet Conducteurs pour ce profil'
+    );
+
+    const updatedDriver = dbStore.getUserById(driver.id)!;
+
+    // 2. L'onglet 'drivers' disparaît de sa liste visible
+    const visibleMods = getUserVisibleModules(updatedDriver);
+    expect(visibleMods.includes('drivers')).toBe(false);
+    expect(hasEffectivePermission(updatedDriver, 'drivers', 'read')).toBe(false);
+
+    // 3. Un autre chauffeur conserve son accès normal hérité du rôle
+    const anotherDriver = dbStore.getUsers().find((u) => u.role === 'driver' && u.id !== driver.id);
+    if (anotherDriver) {
+      expect(getUserVisibleModules(anotherDriver).includes('drivers')).toBe(true);
+      expect(hasEffectivePermission(anotherDriver, 'drivers', 'read')).toBe(true);
+    }
+  });
 });
+
