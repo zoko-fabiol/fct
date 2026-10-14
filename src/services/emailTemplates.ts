@@ -570,3 +570,157 @@ export function buildContactLeadEmail(params: {
   const text = `${subject}\n\nLead : ${params.prospectName} (${params.prospectPhone})\nModèle : ${params.requestedModel}\nDates : ${params.dates}`;
   return { subject, html, text };
 }
+
+/**
+ * 5. Modèle Contrat de Location Officiel & Remise des Clés
+ */
+export function buildContractActiveEmail(params: {
+  customerName: string;
+  contractNumber: string;
+  vehicleName: string;
+  startDate: string;
+  endDate: string;
+  driverName?: string;
+  lang?: 'fr' | 'en';
+}): { subject: string; html: string; text: string } {
+  const isEn = params.lang === 'en';
+
+  const subject = isEn
+    ? `FCT Automobile - Rental Agreement Activated #${params.contractNumber}`
+    : `FCT Automobile - Votre contrat de location ${params.contractNumber} est actif`;
+
+  const contentHtml = `
+    <p style="margin-top:0;">
+      ${isEn ? 'Dear' : 'Cher(e)'} <strong>${params.customerName}</strong>,
+    </p>
+    <p>
+      ${isEn
+        ? `We are pleased to confirm that rental agreement <strong>${params.contractNumber}</strong> is now officially active. Your vehicle <strong>${params.vehicleName}</strong> has been handed over in certified condition.`
+        : `Nous avons le plaisir de vous confirmer que votre contrat de location <strong>${params.contractNumber}</strong> est désormais actif. Votre véhicule <strong>${params.vehicleName}</strong> a été mis à votre disposition après inspection de départ.`}
+    </p>
+
+    <div class="card-box">
+      <table class="table-data">
+        <tr>
+          <td class="label">${isEn ? 'Contract Reference' : 'Numéro de Contrat'}</td>
+          <td class="value"><span class="highlight-badge">${params.contractNumber}</span></td>
+        </tr>
+        <tr>
+          <td class="label">${isEn ? 'Assigned Vehicle' : 'Véhicule Assigné'}</td>
+          <td class="value">${params.vehicleName}</td>
+        </tr>
+        <tr>
+          <td class="label">${isEn ? 'Mission Period' : 'Période de Location'}</td>
+          <td class="value">${params.startDate} ${isEn ? 'to' : 'au'} ${params.endDate}</td>
+        </tr>
+        ${params.driverName ? `
+        <tr>
+          <td class="label">${isEn ? 'VIP Assigned Driver' : 'Chauffeur Professionnel FCT'}</td>
+          <td class="value"><strong>${params.driverName}</strong></td>
+        </tr>` : ''}
+        <tr>
+          <td class="label">${isEn ? '24/7 Roadside Assistance' : 'Assistance Dépannage 24/7'}</td>
+          <td class="value"><strong>${FCT_PHONE_PRIMARY}</strong></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="alert-notice">
+      <strong>${isEn ? 'Important Guidelines' : 'Consignes de Sécurité'} :</strong><br/>
+      ${isEn
+        ? 'Please keep your copy of the rental agreement and vehicle registration in the glove box throughout the mission.'
+        : 'Veuillez conserver l\'exemplaire du contrat et le dossier de bord du véhicule dans la boîte à gants durant toute la mission.'}
+    </div>
+  `;
+
+  const html = wrapFctEmailLayout({
+    title: subject,
+    preheader: `Contrat actif : ${params.vehicleName} (${params.contractNumber})`,
+    headerBadge: isEn ? 'Rental Agreement Live' : 'Contrat de Mission Actif',
+    contentHtml,
+    callToAction: {
+      text: isEn ? 'View Digital Health Record' : 'Consulter le Carnet de Santé Véhicule',
+      url: `${FCT_OFFICIAL_URL}/health`,
+    },
+    lang: params.lang,
+  });
+
+  const text = `${subject}\n\nContrat ${params.contractNumber} actif pour ${params.vehicleName}.\nFCT Douala: ${FCT_PHONE_PRIMARY}`;
+  return { subject, html, text };
+}
+
+/**
+ * 6. Modèle Alerte Révision & Entretien Atelier Flotte
+ */
+export function buildMaintenanceAlertEmail(params: {
+  vehicleName: string;
+  licensePlate: string;
+  maintenanceType: string;
+  dueDate: string;
+  currentKm: number | string;
+  lang?: 'fr' | 'en';
+}): { subject: string; html: string; text: string } {
+  const isEn = params.lang === 'en';
+
+  const subject = isEn
+    ? `FCT Workshop Alert - Maintenance Due for ${params.licensePlate}`
+    : `FCT Atelier - Échéance d'entretien pour le véhicule ${params.licensePlate}`;
+
+  const contentHtml = `
+    <p style="margin-top:0;">
+      <strong>${isEn ? 'Technical Service Notification' : 'Alerte Technique Atelier Central FCT'} :</strong>
+    </p>
+    <p>
+      ${isEn
+        ? `A scheduled maintenance intervention is required for vehicle <strong>${params.vehicleName}</strong> (${params.licensePlate}):`
+        : `Une intervention d'entretien périodique est requise pour le véhicule <strong>${params.vehicleName}</strong> (${params.licensePlate}) :`}
+    </p>
+
+    <div class="card-box">
+      <table class="table-data">
+        <tr>
+          <td class="label">${isEn ? 'Vehicle' : 'Véhicule'}</td>
+          <td class="value">${params.vehicleName}</td>
+        </tr>
+        <tr>
+          <td class="label">${isEn ? 'Registration' : 'Immatriculation CEMAC'}</td>
+          <td class="value"><span class="highlight-badge">${params.licensePlate}</span></td>
+        </tr>
+        <tr>
+          <td class="label">${isEn ? 'Intervention Type' : 'Type d\'Intervention'}</td>
+          <td class="value">${params.maintenanceType}</td>
+        </tr>
+        <tr>
+          <td class="label">${isEn ? 'Current Mileage' : 'Kilométrage Actuel'}</td>
+          <td class="value">${typeof params.currentKm === 'number' ? params.currentKm.toLocaleString() : params.currentKm} km</td>
+        </tr>
+        <tr>
+          <td class="label">${isEn ? 'Scheduled Deadline' : 'Date Limite Prévue'}</td>
+          <td class="value"><strong>${params.dueDate}</strong></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="alert-notice">
+      ${isEn
+        ? 'Action: Please book the vehicle into the central workshop at Bonamoussadi for inspection and consumable replacement.'
+        : 'Action requise : Merci de planifier l\'entrée du véhicule à l\'Atelier Central pour vidange et points de contrôle.'}
+    </div>
+  `;
+
+  const html = wrapFctEmailLayout({
+    title: subject,
+    preheader: `Entretien : ${params.licensePlate} (${params.maintenanceType})`,
+    headerBadge: isEn ? 'Workshop Fleet Maintenance' : 'Maintenance Flotte & Sécurité',
+    contentHtml,
+    callToAction: {
+      text: isEn ? 'Open Workshop Module' : 'Accéder au Module Atelier ERP',
+      url: `${FCT_OFFICIAL_URL}/app`,
+    },
+    lang: params.lang,
+  });
+
+  const text = `${subject}\n\nVéhicule : ${params.vehicleName} (${params.licensePlate})\nIntervention : ${params.maintenanceType}\nÉchéance : ${params.dueDate}`;
+  return { subject, html, text };
+}
+
