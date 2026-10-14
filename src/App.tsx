@@ -63,6 +63,9 @@ export default function App() {
     if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === 'true') {
       return false;
     }
+    if (dbStore.getAuthenticatedUser()) {
+      return false;
+    }
     return true;
   });
 
@@ -182,16 +185,28 @@ export default function App() {
       }
     });
 
+    // Timer de garde pour garantir l'absence de fond blanc ou de blocage d'écran
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) {
+        setAuthLoading(false);
+      }
+    }, 1200);
+
     // 2. Initialisation asynchrone robuste avec Firebase Auth
     const unsubAuth = authService.onAuthChanged(async (firebaseUser) => {
       try {
-        // Attendre que la persistance locale Firebase (IndexedDB) soit pleinement résolue
-        await authService.authReady();
+        // Attendre la résolution de la persistance locale Firebase
+        await Promise.race([
+          authService.authReady(),
+          new Promise((resolve) => setTimeout(resolve, 1000)),
+        ]);
 
         if (!firebaseUser) {
           if (isMounted) {
             const isDemo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === 'true';
-            if (!isDemo) {
+            const activeSession = dbStore.getAuthenticatedUser();
+            // On ne réinitialise QUE si aucune session persistée n'est active
+            if (!isDemo && !activeSession) {
               dbStore.setCurrentUser(null);
               setCurrentUser(null);
             }
@@ -250,7 +265,8 @@ export default function App() {
         }
       } catch (err) {
         console.warn('Erreur vérification session Firebase:', err);
-        if (isMounted) {
+        // Ne pas déconnecter si une session persistée est présente
+        if (isMounted && !dbStore.getAuthenticatedUser()) {
           dbStore.setCurrentUser(null);
           setCurrentUser(null);
         }
@@ -263,6 +279,7 @@ export default function App() {
 
     return () => {
       isMounted = false;
+      clearTimeout(safetyTimer);
       unsubAuth();
       unsubscribeStore();
     };

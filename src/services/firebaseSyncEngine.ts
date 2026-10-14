@@ -77,7 +77,12 @@ export function clearAllLocalStorage(): { clearedKeys: string[]; bytesFreed: num
   // Suppression de toute clé orpheline résiduelle liée à la base de données
   for (let i = localStorage.length - 1; i >= 0; i--) {
     const key = localStorage.key(i);
-    if (key && (key.startsWith('fct_') || key.startsWith('FCT_')) && key !== 'fct_erp_lang') {
+    if (
+      key &&
+      (key.startsWith('fct_') || key.startsWith('FCT_')) &&
+      key !== 'fct_erp_lang' &&
+      key !== 'fct_auth_session_user'
+    ) {
       const val = localStorage.getItem(key);
       if (val) bytesFreed += val.length * 2;
       localStorage.removeItem(key);

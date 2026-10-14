@@ -73,6 +73,7 @@ import {
   listenToFirebaseRealtime,
   TransferResult,
 } from './firebaseSyncEngine.ts';
+import { sessionService } from './sessionService.ts';
 
 export interface FctDocument {
   id: string;
@@ -291,11 +292,19 @@ class DatabaseStore {
   }
 
   public getAuthenticatedUser(): UserProfile | null {
+    if (!this.currentUser) {
+      this.currentUser = sessionService.getActiveSession();
+    }
     return this.currentUser;
   }
 
   public setCurrentUser(user: UserProfile | null) {
     this.currentUser = user;
+    if (user) {
+      sessionService.saveSession(user);
+    } else {
+      sessionService.clearSession();
+    }
     this.notify();
   }
 
