@@ -7,10 +7,12 @@ import { SalesPage } from './pages/SalesPage.tsx';
 import { VehicleShowroomPage } from './pages/VehicleShowroomPage.tsx';
 import { HealthPassportPage } from './pages/HealthPassportPage.tsx';
 import { ClientPortalPage } from './pages/ClientPortalPage.tsx';
+import { PartnerPortalPage } from './pages/PartnerPortalPage.tsx';
 import { AgencyPage } from './pages/AgencyPage.tsx';
 import { Vehicle } from './types/index.ts';
 import { AppPage, RouteState } from './types/router.ts';
 import { subscribePublicVehicles } from './services/firebase.ts';
+import { trackPartnerLandingRef } from './services/partnerService.ts';
 import { WebsiteLanguage, websiteTranslations } from './services/i18n.ts';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -51,6 +53,21 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Détection automatique du lien affilié partenaire FCT (?ref=CODE ou ?partner=CODE)
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref') || urlParams.get('partner');
+        if (refCode) {
+          trackPartnerLandingRef(refCode);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   // Gestion du routage par hash URL pour l'historique du navigateur
   useEffect(() => {
     const handleHashChange = () => {
@@ -69,6 +86,8 @@ export default function App() {
         setRoute({ page: 'carnet-sante', initialPlate: plate });
       } else if (hash === 'espace-client') {
         setRoute({ page: 'espace-client' });
+      } else if (hash === 'partenaires') {
+        setRoute({ page: 'partenaires' });
       } else if (hash === 'agence') {
         setRoute({ page: 'agence' });
       }
@@ -175,6 +194,15 @@ export default function App() {
           <ClientPortalPage
             onToast={(msg) => showToast(msg)}
             onNavigate={(p) => navigate(p)}
+            lang={lang}
+          />
+        )}
+
+        {route.page === 'partenaires' && (
+          <PartnerPortalPage
+            vehicles={vehicles}
+            onToast={(msg) => showToast(msg)}
+            onNavigate={(p, vId) => navigate(p, vId)}
             lang={lang}
           />
         )}

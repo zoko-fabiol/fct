@@ -11,6 +11,11 @@ import {
   serverTimestamp,
   doc,
   setDoc,
+  updateDoc,
+  increment,
+  query,
+  where,
+  getDocs,
 } from 'firebase/firestore';
 import {
   getAuth,
@@ -135,6 +140,7 @@ export async function submitBooking(booking: BookingRequest): Promise<{ success:
   try {
     const bookingDocId = `res_web_${Date.now()}`;
     const reservationNumber = `RES-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const partnerRef = typeof window !== 'undefined' ? (sessionStorage.getItem('fct_affiliate_partner_ref') || localStorage.getItem('fct_affiliate_partner_ref')) : null;
 
     // 1. Écriture pour le module Réservations de l'ERP
     await setDoc(doc(firestore, 'reservations', bookingDocId), {
@@ -156,7 +162,8 @@ export async function submitBooking(booking: BookingRequest): Promise<{ success:
       depositAmount: booking.depositAmount,
       advancePayment: 0,
       status: 'PENDING',
-      notes: booking.notes ? `[Site Web] ${booking.notes}` : '[Site Web] Réservation en ligne',
+      partnerRef: partnerRef || null,
+      notes: booking.notes ? `[Site Web] ${booking.notes}${partnerRef ? ` (Partenaire: ${partnerRef})` : ''}` : `[Site Web] Réservation en ligne${partnerRef ? ` (Partenaire: ${partnerRef})` : ''}`,
       createdAt: new Date().toISOString(),
       source: 'WEBSITE',
     });
@@ -165,10 +172,29 @@ export async function submitBooking(booking: BookingRequest): Promise<{ success:
     await setDoc(doc(firestore, 'web_bookings', bookingDocId), {
       ...booking,
       reservationNumber,
+      partnerRef: partnerRef || null,
       createdAt: serverTimestamp(),
       status: 'PENDING',
       source: 'WEBSITE',
     });
+
+    // 3. Incrémenter les stats du partenaire si présent
+    if (partnerRef) {
+      try {
+        const q = query(collection(firestore, 'partners'), where('partnerCode', '==', partnerRef.toUpperCase()));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const partnerDoc = snap.docs[0];
+          await updateDoc(doc(firestore, 'partners', partnerDoc.id), {
+            'stats.totalLeads': increment(1),
+            'stats.lastActivityDate': new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      } catch (e) {
+        console.warn('[FCT Affiliate] Erreur maj stats partner lead booking :', e);
+      }
+    }
 
     return { success: true, id: bookingDocId };
   } catch (err: any) {
@@ -185,6 +211,7 @@ export async function submitBooking(booking: BookingRequest): Promise<{ success:
 export async function submitPurchaseLead(lead: PurchaseRequest): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     const leadDocId = `lead_web_${Date.now()}`;
+    const partnerRef = typeof window !== 'undefined' ? (sessionStorage.getItem('fct_affiliate_partner_ref') || localStorage.getItem('fct_affiliate_partner_ref')) : null;
 
     // 1. Écriture dans le CRM de l'ERP
     await setDoc(doc(firestore, 'leads', leadDocId), {
@@ -196,7 +223,8 @@ export async function submitPurchaseLead(lead: PurchaseRequest): Promise<{ succe
       vehicleId: lead.vehicleId,
       financingNeeded: lead.financingNeeded,
       status: 'NEW',
-      notes: lead.notes ? `[Site Web Devis] ${lead.notes}` : '[Site Web Devis] Demande de facture proforma',
+      partnerRef: partnerRef || null,
+      notes: lead.notes ? `[Site Web Devis] ${lead.notes}${partnerRef ? ` (Partenaire: ${partnerRef})` : ''}` : `[Site Web Devis] Demande de facture proforma${partnerRef ? ` (Partenaire: ${partnerRef})` : ''}`,
       createdAt: new Date().toISOString(),
       source: 'WEBSITE_SALES',
     });
@@ -204,10 +232,29 @@ export async function submitPurchaseLead(lead: PurchaseRequest): Promise<{ succe
     // 2. Écriture dans web_leads
     await setDoc(doc(firestore, 'web_leads', leadDocId), {
       ...lead,
+      partnerRef: partnerRef || null,
       createdAt: serverTimestamp(),
       status: 'NEW',
       source: 'WEBSITE',
     });
+
+    // 3. Incrémenter les stats du partenaire si présent
+    if (partnerRef) {
+      try {
+        const q = query(collection(firestore, 'partners'), where('partnerCode', '==', partnerRef.toUpperCase()));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const partnerDoc = snap.docs[0];
+          await updateDoc(doc(firestore, 'partners', partnerDoc.id), {
+            'stats.totalLeads': increment(1),
+            'stats.lastActivityDate': new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      } catch (e) {
+        console.warn('[FCT Affiliate] Erreur maj stats partner lead sales :', e);
+      }
+    }
 
     return { success: true, id: leadDocId };
   } catch (err: any) {

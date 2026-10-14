@@ -61,6 +61,7 @@ export const translations = {
       settings: 'Paramètres FCT',
       audit: 'Journal d’Audit & Sync',
       help: 'Centre d’Aide & SOP',
+      partners: 'Partenaires & Affiliés',
     },
 
     // Roles
@@ -1189,6 +1190,7 @@ export const translations = {
       settings: 'FCT Settings',
       audit: 'Audit Trail & Sync',
       help: 'Help Center & SOP',
+      partners: 'Partners & Affiliates',
     },
 
     // Roles

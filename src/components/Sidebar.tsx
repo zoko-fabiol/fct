@@ -28,6 +28,7 @@ import {
   History,
   HelpCircle,
   ShieldAlert,
+  Sparkles,
   X,
 } from 'lucide-react';
 
@@ -87,6 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'sales', icon: TrendingUp },
         { id: 'crm', icon: Users2 },
         { id: 'reservations', icon: CalendarCheck2 },
+        { id: 'partners', icon: Sparkles },
       ],
     },
     {

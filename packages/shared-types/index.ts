@@ -48,7 +48,8 @@ export type AppModule =
   | 'users'
   | 'settings'
   | 'audit'
-  | 'help';
+  | 'help'
+  | 'partners';
 
 export interface UserProfile {
   id: string;
@@ -563,4 +564,81 @@ export interface AgencySettings {
   cloudinaryUploadPreset?: string;
   cloudinaryFolderRoot?: string;
   autoSyncIntervalSeconds?: number;
+}
+
+// ==========================================
+// SYSTÈME DE PARTENAIRES & AFFILIATION FCT
+// ==========================================
+
+export type PartnerStatus = 'ACTIVE' | 'PENDING' | 'SUSPENDED';
+export type PartnerTier = 'BRONZE' | 'SILVER' | 'GOLD';
+export type PartnerPayoutMethod = 'ORANGE_MONEY' | 'MTN_MOMO' | 'CASH' | 'BANK_TRANSFER';
+
+export interface PartnerActivityStats {
+  totalShares: number;
+  totalClicks: number;
+  totalLeads: number;
+  totalConversions: number;
+  totalEarnedXAF: number;
+  balanceAvailableXAF: number;
+  paidOutXAF: number;
+  lastActivityDate: string;
+  dailySharesCount: Record<string, number>; // ex: "2026-10-14": 4
+}
+
+export interface PartnerProfile {
+  id: string;
+  partnerCode: string; // ex: FCT-FAB-45
+  fullName: string;
+  phone: string; // WhatsApp
+  email: string;
+  city: string; // ex: Douala
+  payoutMethod: PartnerPayoutMethod;
+  payoutPhone: string;
+  status: PartnerStatus;
+  tier: PartnerTier;
+  stats: PartnerActivityStats;
+  commissionOverride?: {
+    rentalPercent?: number;
+    rentalDailyFixedXAF?: number;
+    saleFixedXAF?: number;
+    salePercent?: number;
+  };
+  userId?: string; // Lien avec le compte client si converti
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CommissionDealType = 'RENTAL' | 'SALE';
+export type CommissionStatus = 'PENDING_APPROVAL' | 'APPROVED' | 'PAID' | 'REJECTED';
+
+export interface PartnerCommission {
+  id: string;
+  partnerId: string;
+  partnerCode: string;
+  partnerName: string;
+  dealType: CommissionDealType;
+  dealId: string;
+  dealReference: string; // ex: CTR-2026-0034 ou VTE-2026-0012
+  vehicleName: string;
+  dealAmountXAF: number;
+  commissionAmountXAF: number;
+  status: CommissionStatus;
+  cashMovementId?: string; // ID du mouvement de caisse FCT quand payé
+  receiptNumber?: string;
+  paidAt?: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export type SharePlatform = 'WHATSAPP_STATUS' | 'WHATSAPP_CHAT' | 'FACEBOOK' | 'INSTAGRAM' | 'COPY_LINK' | 'OTHER';
+
+export interface PartnerShareLog {
+  id: string;
+  partnerId: string;
+  partnerCode: string;
+  vehicleId: string;
+  vehicleName: string;
+  platform: SharePlatform;
+  timestamp: string;
 }

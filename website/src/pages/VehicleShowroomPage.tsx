@@ -22,11 +22,23 @@ import {
   X,
   Eye,
   Shield,
+  Share2,
+  Copy,
+  Sparkles,
+  Wallet,
 } from 'lucide-react';
 import { Vehicle } from '../types/index.ts';
 import { FCT_AGENCY_INFO, CERTIFIED_HEALTH_RECORDS } from '../data/defaultCatalog.ts';
 import { formatXAF, formatDateFR } from '../utils/formatters.ts';
-import { submitBooking, submitPurchaseLead } from '../services/firebase.ts';
+import { submitBooking, submitPurchaseLead, auth, onAuthStateChanged } from '../services/firebase.ts';
+import {
+  PartnerAccount,
+  fetchCurrentPartnerProfile,
+  logPartnerShare,
+  generateAffiliateUrl,
+  generateShareCopyText,
+  SharePlatform,
+} from '../services/partnerService.ts';
 import { WebsiteLanguage, websiteI18n } from '../services/i18n.ts';
 
 interface VehicleShowroomPageProps {
@@ -67,6 +79,50 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
   const [notes, setNotes] = useState('');
   const [financingNeeded, setFinancingNeeded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // État du Partenaire Connecté
+  const [partner, setPartner] = useState<PartnerAccount | null>(null);
+  const [copiedAffiliate, setCopiedAffiliate] = useState(false);
+
+  // Vérification de la session Partenaire
+  React.useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        const p = await fetchCurrentPartnerProfile(u.uid, u.email || '');
+        setPartner(p);
+      } else {
+        setPartner(null);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  // Déclenchement du partage avec tracking Firestore
+  const handlePartnerShare = async (platform: SharePlatform) => {
+    if (!partner) return;
+    const affUrl = generateAffiliateUrl(vehicle.id, partner.partnerCode);
+    const isRent = activeTab === 'rent';
+    const copyText = generateShareCopyText(vehicle, affUrl, isRent);
+
+    await logPartnerShare(partner, vehicle, platform);
+
+    if (platform === 'WHATSAPP_STATUS' || platform === 'WHATSAPP_CHAT') {
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(copyText)}`, '_blank');
+      onToast(isEn ? 'Opening WhatsApp with your partner link...' : 'Ouverture de WhatsApp avec votre lien partenaire...');
+    } else if (platform === 'FACEBOOK') {
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(affUrl)}`, '_blank');
+      onToast(isEn ? 'Opening Facebook...' : 'Ouverture de Facebook...');
+    } else if (platform === 'COPY_LINK') {
+      try {
+        await navigator.clipboard.writeText(affUrl);
+        setCopiedAffiliate(true);
+        setTimeout(() => setCopiedAffiliate(false), 3000);
+        onToast(isEn ? 'Partner affiliate link copied!' : 'Lien affilié copié avec succès !');
+      } catch {
+        onToast(isEn ? 'Could not copy link.' : 'Impossible de copier le lien.');
+      }
+    }
+  };
 
   // Photos réelles ou aperçu stylisé
   const photos = vehicle.photoUrls && vehicle.photoUrls.length > 0 ? vehicle.photoUrls : [];
@@ -485,6 +541,153 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
 
           {/* Colonne de Droite : Bloc d'Action Intégré dans la Page (Zéro Popup) */}
           <div>
+            {/* Widget Espace Partenaire FCT */}
+            {partner ? (
+              <div
+                style={{
+                  marginBottom: 16,
+                  padding: '16px 20px',
+                  borderRadius: 16,
+                  background: 'linear-gradient(135deg, rgba(15,42,74,0.06) 0%, rgba(200,90,40,0.1) 100%)',
+                  border: '1.5px solid rgba(200,90,40,0.3)',
+                  boxShadow: '0 4px 12px rgba(200,90,40,0.08)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Sparkles size={18} color="#d97706" />
+                    <span style={{ fontSize: 13, fontWeight: 800, color: '#9a3412', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {isEn ? 'FCT Partner Area' : 'Espace Partenaire FCT'}
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      fontWeight: 800,
+                      backgroundColor: '#ffffff',
+                      color: '#c2410c',
+                      padding: '2px 8px',
+                      borderRadius: 6,
+                      border: '1px solid #fdba74',
+                    }}
+                  >
+                    {partner.partnerCode}
+                  </span>
+                </div>
+
+                <p style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 12, lineHeight: 1.4 }}>
+                  {isEn
+                    ? 'Share this vehicle to earn commissions on verified rental or purchase.'
+                    : 'Republiez ce véhicule pour toucher vos commissions sur location ou vente.'}
+                </p>
+
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handlePartnerShare('WHATSAPP_STATUS')}
+                    style={{
+                      flex: 1,
+                      minWidth: 140,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      backgroundColor: '#059669',
+                      color: '#ffffff',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <MessageSquare size={14} />
+                    <span>WhatsApp</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePartnerShare('FACEBOOK')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      backgroundColor: '#2563eb',
+                      color: '#ffffff',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Share2 size={14} />
+                    <span>Facebook</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handlePartnerShare('COPY_LINK')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      padding: '8px 12px',
+                      borderRadius: 10,
+                      backgroundColor: '#ffffff',
+                      color: '#1e293b',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      border: '1px solid #cbd5e1',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {copiedAffiliate ? <CheckCircle2 size={14} color="#059669" /> : <Copy size={14} />}
+                    <span>{copiedAffiliate ? (isEn ? 'Copied' : 'Copié') : (isEn ? 'Link' : 'Lien')}</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                style={{
+                  marginBottom: 16,
+                  padding: '12px 16px',
+                  borderRadius: 14,
+                  backgroundColor: 'rgba(200,90,40,0.05)',
+                  border: '1px dashed rgba(200,90,40,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                }}
+              >
+                <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+                  <strong style={{ color: '#c2410c' }}>{isEn ? 'Partner Program: ' : 'Apporteur d\'affaires : '}</strong>
+                  {isEn ? 'Earn cash commissions by sharing this car.' : 'Gagnez des commissions en partageant ce véhicule.'}
+                </div>
+                <a
+                  href="#/partenaires"
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    backgroundColor: '#ea580c',
+                    color: '#ffffff',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {isEn ? 'Join' : 'Rejoindre'}
+                </a>
+              </div>
+            )}
+
             <div className="fct-showroom-action-card">
               {/* Onglets Location vs Achat si les deux sont disponibles */}
               {vehicle.isForRent && vehicle.isForSale && (

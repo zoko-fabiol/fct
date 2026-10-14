@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Car, Phone, ShieldCheck, UserCheck, Menu, X, MessageSquare, KeyRound, ShoppingBag, MapPin, Globe } from 'lucide-react';
+import { Car, Phone, ShieldCheck, UserCheck, Menu, X, MessageSquare, KeyRound, ShoppingBag, MapPin, Globe, Sparkles } from 'lucide-react';
 import { AppPage } from '../types/router.ts';
 import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
 import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
@@ -80,6 +80,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <MapPin size={15} />
               <span>{t.agency}</span>
+            </button>
+            <button
+              onClick={() => handleNav('partenaires')}
+              className={`fct-nav-btn ${currentPage === 'partenaires' ? 'active' : ''}`}
+              style={{ color: '#d97706', fontWeight: 700 }}
+            >
+              <Sparkles size={15} color="#d97706" />
+              <span>{lang === 'en' ? 'Partners' : 'Partenaires'}</span>
             </button>
           </nav>
 
@@ -188,6 +196,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button onClick={() => handleNav('agence')} className="fct-nav-btn" style={{ justifyContent: 'flex-start' }}>
               <MapPin size={16} />
               <span>{t.agency}</span>
+            </button>
+            <button onClick={() => handleNav('partenaires')} className="fct-nav-btn" style={{ justifyContent: 'flex-start', color: '#d97706', fontWeight: 700 }}>
+              <Sparkles size={16} color="#d97706" />
+              <span>{lang === 'en' ? 'Partners & Affiliation' : 'Programme Partenaires & Affiliés'}</span>
             </button>
             <button onClick={() => handleNav('espace-client')} className="btn-primary" style={{ justifyContent: 'center', marginTop: 10 }}>
               <UserCheck size={16} />

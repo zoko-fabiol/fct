@@ -69,6 +69,7 @@ function initFirestoreInstance(): Firestore {
 }
 
 export const db: Firestore = initFirestoreInstance();
+export const firestore: Firestore = db;
 
 // Types d'opérations et gestion des erreurs Firestore
 export enum OperationType {

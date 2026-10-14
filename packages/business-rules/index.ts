@@ -180,6 +180,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Record<AppModule, Permis
     settings: ['read', 'create', 'update', 'delete', 'approve', 'export', 'sensitiveData'],
     audit: ['read', 'create', 'update', 'delete', 'approve', 'export', 'sensitiveData'],
     help: ['read', 'create', 'update', 'delete', 'approve', 'export', 'sensitiveData'],
+    partners: ['read', 'create', 'update', 'delete', 'approve', 'export', 'sensitiveData'],
   },
   director: {
     dashboard: ['read', 'export', 'sensitiveData'],
@@ -200,6 +201,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Record<AppModule, Permis
     settings: ['read', 'update'],
     audit: ['read', 'export'],
     help: ['read'],
+    partners: ['read', 'create', 'update', 'approve', 'export', 'sensitiveData'],
   },
   sales_agent: {
     dashboard: ['read'],
@@ -220,6 +222,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Record<AppModule, Permis
     settings: [],
     audit: [],
     help: ['read'],
+    partners: ['read', 'create', 'update', 'export'],
   },
   rental_agent: {
     dashboard: ['read'],
@@ -240,6 +243,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Record<AppModule, Permis
     settings: [],
     audit: [],
     help: ['read'],
+    partners: ['read', 'create'],
   },
   accountant_cashier: {
     dashboard: ['read', 'export', 'sensitiveData'],
@@ -260,6 +264,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Record<AppModule, Permis
     settings: ['read'],
     audit: ['read'],
     help: ['read'],
+    partners: ['read', 'approve', 'export', 'sensitiveData'],
   },
   fleet_manager: {
     dashboard: ['read'],
@@ -280,6 +285,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Record<AppModule, Permis
     settings: [],
     audit: [],
     help: ['read'],
+    partners: [],
   },
   driver: {
     dashboard: ['read'],
@@ -300,6 +306,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Record<AppModule, Permis
     settings: [],
     audit: [],
     help: ['read'],
+    partners: [],
   },
   viewer: {
     dashboard: ['read'],
@@ -320,6 +327,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, Record<AppModule, Permis
     settings: ['read'],
     audit: [],
     help: ['read'],
+    partners: ['read'],
   },
 };
 

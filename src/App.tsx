@@ -39,6 +39,7 @@ import { ReportsView } from './modules/ReportsView.tsx';
 import { SettingsView } from './modules/SettingsView.tsx';
 import { AuditSyncView } from './modules/AuditSyncView.tsx';
 import { HelpCenterView } from './modules/HelpCenterView.tsx';
+import { PartnersView } from './modules/PartnersView.tsx';
 
 import { WifiOff, ShieldAlert, ArrowLeft, LayoutDashboard, ShieldCheck, Lock } from 'lucide-react';
 
@@ -681,6 +682,13 @@ export default function App() {
                   lang={lang}
                   onNavigate={handleNavigate}
                   contextEntityId={contextEntityId}
+                />
+              )}
+              {currentModule === 'partners' && (
+                <PartnersView
+                  state={state}
+                  lang={lang}
+                  onNavigate={handleNavigate}
                 />
               )}
               {currentModule === 'billing' && (

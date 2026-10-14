@@ -53,6 +53,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, lang = 'fr' }) => {
               <li><button onClick={() => handleNav('vente')}>{t.certifiedSales}</button></li>
               <li><button onClick={() => handleNav('carnet-sante')} style={{ color: 'var(--fct-green-primary)', fontWeight: 700 }}>{t.healthPassport}</button></li>
               <li><button onClick={() => handleNav('espace-client')}>{t.clientPortal}</button></li>
+              <li><button onClick={() => handleNav('partenaires')} style={{ color: '#d97706', fontWeight: 700 }}>{lang === 'en' ? 'Partners & Affiliation' : 'Programme Partenaires & Affiliés'}</button></li>
             </ul>
           </div>
 
