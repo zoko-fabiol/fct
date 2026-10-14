@@ -28,14 +28,12 @@ interface LoginViewProps {
   onLoginSuccess: (user: UserProfile) => void;
   lang?: Language;
   onLanguageChange?: (lang: Language) => void;
-  onOpenPartnerProgram?: () => void;
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({
   onLoginSuccess,
   lang = 'fr',
   onLanguageChange,
-  onOpenPartnerProgram,
 }) => {
   const t = translations[lang];
 
@@ -325,33 +323,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
         </div>
       )}
 
-      {/* 🌟 BANDEAU PRESTIGE : PROGRAMME PARTENAIRE & AFFILIATION */}
-      {onOpenPartnerProgram && (
-        <div className="relative z-10 w-full max-w-md mb-2 p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white shadow-xl flex items-center justify-between gap-3 border border-amber-300/30 animate-fadeIn">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-white/20 shadow-xs">
-              <Sparkles className="w-5 h-5 text-yellow-200 animate-pulse" />
-            </div>
-            <div>
-              <div className="font-extrabold text-[11px] uppercase tracking-wider text-yellow-100 flex items-center gap-1">
-                <span>Programme Partenaires FCT</span>
-              </div>
-              <div className="font-bold text-xs text-white">
-                Gagnez jusqu'à 5% & 100 000 FCFA
-              </div>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onOpenPartnerProgram}
-            className="px-3 py-1.5 rounded-xl bg-white text-orange-700 hover:bg-amber-50 font-extrabold text-xs shadow-md transition cursor-pointer flex items-center gap-1 shrink-0"
-          >
-            <span>Devenir Partenaire</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
       {/* Carte d'Authentification Centrale */}
       <div className="relative z-10 w-full max-w-md my-auto bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-6 sm:p-8 text-slate-800 space-y-6 animate-scaleUp">
         {/* En-tête : Logo Officiel FCT Douala */}
@@ -560,20 +531,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </button>
             </div>
           </form>
-        )}
-
-        {/* Lien direct Devenir Partenaire */}
-        {onOpenPartnerProgram && (
-          <div className="pt-2 text-center border-t border-slate-100">
-            <button
-              type="button"
-              onClick={onOpenPartnerProgram}
-              className="inline-flex items-center gap-1.5 text-xs font-extrabold text-amber-600 hover:text-amber-700 transition cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Vous souhaitez devenir Partenaire ? Cliquez ici pour vous inscrire</span>
-            </button>
-          </div>
         )}
 
         {/* Note de Sécurité Entreprise & Création Admin-Only */}

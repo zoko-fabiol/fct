@@ -57,9 +57,11 @@ import {
   Bell,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  Users
 } from 'lucide-react';
 import { UsersView } from './UsersView.tsx';
+import { PartnersView } from './PartnersView.tsx';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNativeMobile } from '../services/mobileFileService.ts';
 import { notificationEngine } from '../services/pushNotificationService.ts';
@@ -81,7 +83,8 @@ export type SettingsTab =
   | 'maintenance'
   | 'rentals'
   | 'modules'
-  | 'users';
+  | 'users'
+  | 'partners';
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavigate, onLanguageChange, initialTab }) => {
   const { settings } = state;
@@ -527,6 +530,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
       colorText: 'text-rose-700',
       badgeValue: `${state.users?.length || 0} Collaborateurs`,
       keywords: ['utilisateurs', 'collaborateurs', 'mot de passe', 'pin', 'rôles', 'rbac', 'droits', 'permissions', 'accès'],
+    },
+    {
+      id: 'partners',
+      rank: 10,
+      priorityLabel: '10 • Réseau Partenaires',
+      label: lang === 'en' ? 'Partners & Business Introducers' : 'Gestion des Partenaires & Apporteurs',
+      shortLabel: lang === 'en' ? 'Partners' : 'Gestion Partenaires',
+      desc: lang === 'en'
+        ? 'Website-registered partners, individual performance metrics, account approval, commission ledger and MoMo payouts.'
+        : 'Partenaires enregistrés sur le site web, statistiques de chaque partenaire, validation, commissions et retraits Mobile Money.',
+      icon: <Users className="w-5 h-5" />,
+      colorBg: 'bg-amber-50 border-amber-200 text-amber-700',
+      colorText: 'text-amber-700',
+      badgeValue: 'Gestion des Partenaires',
+      keywords: ['partenaires', 'affiliation', 'apporteurs', 'statistiques', 'commissions', 'retrait', 'orange money', 'mtn momo'],
     },
   ];
 
@@ -1897,6 +1915,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
       {activeTab === 'users' && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-2 sm:p-4 lg:p-6 overflow-hidden">
           <UsersView state={state} lang={lang} onNavigate={onNavigate} />
+        </div>
+      )}
+
+      {/* TAB J: GESTION DES PARTENAIRES & APPORTEURS */}
+      {activeTab === 'partners' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-2 sm:p-4 lg:p-6 overflow-hidden">
+          <PartnersView state={state} lang={lang} onNavigate={onNavigate} />
         </div>
       )}
 

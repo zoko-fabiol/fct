@@ -40,7 +40,6 @@ import { SettingsView } from './modules/SettingsView.tsx';
 import { AuditSyncView } from './modules/AuditSyncView.tsx';
 import { HelpCenterView } from './modules/HelpCenterView.tsx';
 import { PartnersView } from './modules/PartnersView.tsx';
-import { PartnerProgramPublicView } from './components/partners/PartnerProgramPublicView.tsx';
 
 import { WifiOff, ShieldAlert, ArrowLeft, LayoutDashboard, ShieldCheck, Lock } from 'lucide-react';
 
@@ -102,14 +101,6 @@ export default function App() {
   });
   const [activeShowroomVehicle, setActiveShowroomVehicle] = useState<Vehicle | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isPartnerProgramPublicOpen, setIsPartnerProgramPublicOpen] = useState(() => {
-    try {
-      const p = new URLSearchParams(window.location.search);
-      return p.get('page') === 'partenaires' || p.get('partner') === 'true' || p.get('module') === 'partenaires';
-    } catch {
-      return false;
-    }
-  });
 
   const [printDocData, setPrintDocData] = useState<DocumentPrintData | null>(null);
   const [isSessionLocked, setIsSessionLocked] = useState(false);
@@ -522,16 +513,6 @@ export default function App() {
     return <AppLoader message="Initialisation sécurisée de l'écosystème FCT..." />;
   }
 
-  // 1.B. Page Publique : Programme Partenaires & Affiliation
-  if (isPartnerProgramPublicOpen) {
-    return (
-      <PartnerProgramPublicView
-        onBack={() => setIsPartnerProgramPublicOpen(false)}
-        lang={lang}
-      />
-    );
-  }
-
   // 2. Vue de connexion plein écran si non authentifié
   if (!currentUser) {
     return (
@@ -542,7 +523,6 @@ export default function App() {
         }}
         lang={lang}
         onLanguageChange={handleLanguageChange}
-        onOpenPartnerProgram={() => setIsPartnerProgramPublicOpen(true)}
       />
     );
   }
@@ -559,7 +539,6 @@ export default function App() {
         onOpenProfileSecurity={() => setIsProfileSecurityOpen(true)}
         onLockNow={() => setIsSessionLocked(true)}
         onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-        onOpenPartnerProgram={() => setIsPartnerProgramPublicOpen(true)}
       />
 
       {/* Offline Alert Strip when disconnected */}

@@ -33,7 +33,6 @@ interface NavbarProps {
   onOpenProfileSecurity?: () => void;
   onLockNow?: () => void;
   onToggleMobileSidebar?: () => void;
-  onOpenPartnerProgram?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -45,7 +44,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenProfileSecurity,
   onLockNow,
   onToggleMobileSidebar,
-  onOpenPartnerProgram,
 }) => {
   const t = translations[lang];
   const pendingSyncCount = state.syncQueue.filter((q) => q.status === 'PENDING').length;
@@ -149,19 +147,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </>
             )}
           </button>
-
-          {/* Bouton Prestige : Programme Partenaire */}
-          {onOpenPartnerProgram && (
-            <button
-              onClick={onOpenPartnerProgram}
-              title="Programme Partenaires & Affiliation FCT Automobile"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-sm transition cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-slate-950" />
-              <span className="hidden md:inline">Programme Partenaires</span>
-              <span className="md:hidden">Partenaires</span>
-            </button>
-          )}
 
           {/* Language Switcher */}
           <div className="flex items-center bg-slate-800/80 rounded-md border border-slate-700 p-0.5">
