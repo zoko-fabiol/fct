@@ -261,22 +261,24 @@ export function generateShareCopyText(vehicle: Vehicle, affiliateUrl: string, is
     : (vehicle.salePrice || (vehicle as any).sellingPrice || 0);
 
   if (isRent) {
-    return `🚗 *LOCATION VÉHICULE DE QUALITÉ À DOUALA - FCT AUTOMOBILE*\n\n` +
-      `🔥 Modèle : *${vehicle.brand} ${vehicle.model} (${vehicle.year})*\n` +
-      `💰 Tarif : *${price.toLocaleString('fr-FR')} FCFA / jour*\n` +
-      `🛡️ Assurance complète & Entretien certifié FCT\n` +
-      `📍 Disponible immédiatement à Douala (avec ou sans chauffeur)\n\n` +
-      `👉 *Voir la fiche et réserver en direct ici :*\n` +
+    return `*LOCATION VÉHICULE CERTIFIÉ - FCT AUTOMOBILE DOUALA*\n\n` +
+      `• Modèle : *${vehicle.brand} ${vehicle.model} (${vehicle.year})*\n` +
+      `• Tarif : *${price.toLocaleString('fr-FR')} FCFA / jour*\n` +
+      `• Garantie : Assurance complète & Entretien certifié FCT\n` +
+      `• Disponibilité : Immédiate à Douala (avec ou sans chauffeur)\n\n` +
+      `*Consulter la fiche et réserver en ligne :*\n` +
       `${affiliateUrl}\n\n` +
-      `📞 Infos rapides FCT : (+237) 674 38 68 81 / 699 90 28 89`;
+      `Contact direct agence : (+237) 674 38 68 81 / 699 90 28 89\n` +
+      `FCT Douala - Carrefour Santa Barbara, Bonamoussadi`;
   }
 
-  return `💎 *VÉHICULE À VENDRE GARANTI À DOUALA - FCT AUTOMOBILE*\n\n` +
-    `🔥 Modèle : *${vehicle.brand} ${vehicle.model} (${vehicle.year})*\n` +
-    `💰 Prix : *${price.toLocaleString('fr-FR')} FCFA*\n` +
-    `✨ État certifié, immatriculé et prêt à rouler\n` +
-    `📍 Visible au Showroom FCT à Bonamoussadi, Carrefour Santa Barbara\n\n` +
-    `👉 *Découvrir les photos et demander une proforma :*\n` +
+  return `*VÉHICULE CERTIFIÉ À VENDRE - FCT AUTOMOBILE DOUALA*\n\n` +
+    `• Modèle : *${vehicle.brand} ${vehicle.model} (${vehicle.year})*\n` +
+    `• Prix : *${price.toLocaleString('fr-FR')} FCFA*\n` +
+    `• Statut : Certifié FCT, révisé et prêt à rouler\n` +
+    `• Emplacement : Showroom Bonamoussadi, Carrefour Santa Barbara\n\n` +
+    `*Consulter les photos et demander une proforma officielle :*\n` +
     `${affiliateUrl}\n\n` +
-    `📞 Contact direct : (+237) 674 38 68 81 / 699 90 28 89`;
+    `Contact direct agence : (+237) 674 38 68 81 / 699 90 28 89\n` +
+    `FCT Douala - Carrefour Santa Barbara, Bonamoussadi`;
 }

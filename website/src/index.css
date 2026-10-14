@@ -1309,4 +1309,470 @@ img {
   }
 }
 
+/* ==========================================================================
+   FORMULAIRES ET CHAMPS DE SAISIE FCT (COULEURS CHARTE FCT)
+   ========================================================================== */
+.fct-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.fct-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fct-blue-dark);
+  letter-spacing: -0.01em;
+}
+
+.fct-input,
+.fct-select,
+.fct-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background-color: #ffffff;
+  border: 1.5px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-main);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.fct-input:focus,
+.fct-select:focus,
+.fct-textarea:focus {
+  outline: none;
+  border-color: var(--fct-blue-primary);
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12);
+  background-color: #ffffff;
+}
+
+.fct-input::placeholder,
+.fct-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.fct-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+/* ==========================================================================
+   ESPACE PARTENAIRE FCT (DESIGN PRESTIGE & CHARTE OFFICIELLE)
+   ========================================================================== */
+.fct-partner-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: var(--fct-amber-soft);
+  color: var(--fct-amber-primary);
+  border: 1px solid rgba(217, 119, 6, 0.25);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fct-partner-intro-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 36px;
+  align-items: start;
+  margin-bottom: 50px;
+}
+
+.fct-partner-benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.fct-partner-benefit-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fct-partner-benefit-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-medium);
+}
+
+.fct-partner-benefit-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fct-partner-benefit-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--fct-blue-dark);
+  margin: 0;
+}
+
+.fct-partner-benefit-desc {
+  font-size: 12.5px;
+  color: var(--text-sub);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.fct-partner-steps-box {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-sm);
+  margin-top: 24px;
+}
+
+.fct-partner-step-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.fct-partner-step-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.fct-partner-step-row:first-child {
+  padding-top: 0;
+}
+
+.fct-partner-step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--fct-blue-dark);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fct-partner-step-content h5 {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--fct-blue-dark);
+  margin: 0 0 3px 0;
+}
+
+.fct-partner-step-content p {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* CARTE DE FORMULAIRE CONNEXION / INSCRIPTION */
+.fct-partner-auth-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 32px 28px;
+  box-shadow: var(--shadow-md);
+  position: sticky;
+  top: 100px;
+}
+
+.fct-auth-tabs {
+  display: flex;
+  background: var(--bg-surface-alt);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+  border: 1px solid var(--border-subtle);
+}
+
+.fct-auth-tab-btn {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-sub);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.fct-auth-tab-btn.active {
+  background: #ffffff;
+  color: var(--fct-blue-dark);
+  box-shadow: var(--shadow-sm);
+}
+
+.fct-alert-error {
+  padding: 12px 16px;
+  background-color: #fef2f2;
+  border: 1px solid #f87171;
+  border-radius: var(--radius-md);
+  color: #991b1b;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+/* DASHBOARD PARTENAIRE CONNECTÉ */
+.fct-partner-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.fct-partner-banner {
+  background: linear-gradient(135deg, var(--fct-blue-dark) 0%, #1e3a8a 100%);
+  color: #ffffff;
+  border-radius: var(--radius-xl);
+  padding: 28px 32px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.fct-partner-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.fct-partner-banner-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fef08a;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.fct-partner-code-card {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.fct-partner-code-number {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #fbbf24;
+}
+
+/* GRILLE DES KPIS STATISTIQUES */
+.fct-partner-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.fct-partner-stat-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fct-partner-stat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fct-partner-stat-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.fct-partner-stat-val {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--fct-blue-dark);
+  line-height: 1.1;
+}
+
+.fct-partner-stat-sub {
+  font-size: 11.5px;
+  color: var(--text-sub);
+}
+
+/* OUTIL DE PARTAGE VÉHICULE EN 1 CLIC */
+.fct-partner-share-panel {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 28px 32px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fct-partner-share-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.fct-partner-share-body {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.fct-partner-share-photo {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-subtle);
+}
+
+.fct-partner-share-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fct-partner-share-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fct-partner-share-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.fct-partner-share-preview {
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-main);
+  white-space: pre-wrap;
+  line-height: 1.6;
+  max-height: 130px;
+  overflow-y: auto;
+}
+
+/* CARTE RETRAIT COMMISSION */
+.fct-partner-payout-panel {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* RESPONSIVE ESPACE PARTENAIRE */
+@media (max-width: 900px) {
+  .fct-partner-intro-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .fct-partner-auth-card {
+    position: static;
+  }
+  .fct-partner-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .fct-partner-share-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .fct-partner-benefits-grid {
+    grid-template-columns: 1fr;
+  }
+  .fct-partner-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .fct-partner-banner {
+    padding: 20px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .fct-partner-code-card {
+    width: 100%;
+  }
+  .fct-partner-share-panel {
+    padding: 20px 16px;
+  }
+}
+
+
 

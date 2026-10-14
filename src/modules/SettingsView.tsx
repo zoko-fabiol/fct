@@ -1298,7 +1298,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                     className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer shadow-xs"
                   >
                     <Volume2 className="w-3.5 h-3.5" />
-                    <span>🔊 Écouter l’Alerte Sonore</span>
+                    <span>Écouter l’Alerte Sonore</span>
                   </button>
 
                   <button
@@ -1307,7 +1307,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                     className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer shadow-xs"
                   >
                     <Bell className="w-3.5 h-3.5" />
-                    <span>🔔 {isNativeMobile() ? 'Tester la Notification Smartphone' : 'Tester la Notification Système'}</span>
+                    <span>{isNativeMobile() ? 'Tester la Notification Smartphone' : 'Tester la Notification Système'}</span>
                   </button>
                 </div>
 

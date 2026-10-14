@@ -103,7 +103,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }}
             >
               <Sparkles size={15} color="#fef08a" />
-              <span>{lang === 'en' ? '★ Become a Partner' : '★ Devenir Partenaire'}</span>
+              <span>{lang === 'en' ? 'Become a Partner' : 'Devenir Partenaire'}</span>
             </button>
           </nav>
 
@@ -233,7 +233,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Sparkles size={18} color="#fef08a" />
-                <span>{lang === 'en' ? '★ Become a Partner (Earn 5% & 100k)' : '★ Devenir Partenaire (Commissions 5% & 100k)'}</span>
+                <span>{lang === 'en' ? 'Become a Partner (Earn 5% & 100k)' : 'Devenir Partenaire (Commissions 5% & 100k)'}</span>
               </div>
             </button>
             <button onClick={() => handleNav('espace-client')} className="btn-primary" style={{ justifyContent: 'center', marginTop: 10 }}>

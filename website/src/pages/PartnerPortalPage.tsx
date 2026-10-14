@@ -21,6 +21,15 @@ import {
   ChevronRight,
   LogOut,
   BarChart3,
+  UserCheck,
+  Check,
+  KeyRound,
+  Mail,
+  Phone,
+  MapPin,
+  BadgePercent,
+  CircleDollarSign,
+  Zap,
 } from 'lucide-react';
 import { auth, onAuthStateChanged, FirebaseUser, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from '../services/firebase.ts';
 import {
@@ -54,9 +63,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   const [partner, setPartner] = useState<PartnerAccount | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Authentification & État
+  // Authentification & Formulaire
   const [isRegister, setIsRegister] = useState(true);
-  const [justActivated, setJustActivated] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -67,12 +75,11 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
-  // Partage rapide depuis le dashboard
+  // Partage d'un véhicule du showroom
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>(vehicles[0]?.id || '');
   const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedText, setCopiedText] = useState(false);
 
-  // Écoute de l'utilisateur connecté
+  // Synchronisation avec l'authentification Firebase
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
@@ -93,7 +100,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     return vehicles.find((v) => v.id === selectedVehicleId) || vehicles[0] || null;
   }, [vehicles, selectedVehicleId]);
 
-  // Authentification / Inscription
+  // Connexion ou Inscription Partenaire
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
@@ -125,7 +132,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
         if (regRes.success && regRes.partner) {
           setPartner(regRes.partner);
-          setJustActivated(true);
           onToast(isEn ? 'Partner account activated successfully!' : 'Compte Partenaire FCT activé avec succès !');
         }
       } else {
@@ -135,7 +141,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
           setPartner(profile);
           onToast(isEn ? `Welcome back, ${profile.fullName}!` : `Bienvenue ${profile.fullName} !`);
         } else {
-          // L'utilisateur existe en auth mais n'est pas encore partenaire (compte client standard)
           onToast(isEn ? 'Logged in as client. Activate your partner profile below!' : 'Compte client connecté. Activez votre profil Partenaire ci-dessous !');
         }
       }
@@ -161,8 +166,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
     if (regRes.success && regRes.partner) {
       setPartner(regRes.partner);
-      setJustActivated(true);
-      onToast(isEn ? 'Congratulations! Your account is now active.' : 'Félicitations ! Votre compte Partenaire est maintenant activé.');
+      onToast(isEn ? 'Congratulations! Your partner account is active.' : 'Félicitations ! Votre compte Partenaire est activé.');
     } else {
       onToast(regRes.error || (isEn ? 'Activation error.' : "Erreur lors de l'activation."));
     }
@@ -176,7 +180,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     onToast(isEn ? 'Logged out.' : 'Déconnecté avec succès.');
   };
 
-  // Gestion du partage d'un véhicule
+  // Déclencher le partage traqué
   const handleTriggerShare = async (platform: SharePlatform) => {
     if (!partner || !selectedVehicle) return;
 
@@ -184,10 +188,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     const isRent = selectedVehicle.isForRent;
     const shareText = generateShareCopyText(selectedVehicle, affUrl, isRent);
 
-    // Logging de l'activité dans Firestore
     await logPartnerShare(partner, selectedVehicle, platform);
 
-    // Mise à jour optimiste de l'état local
     setPartner((prev) => {
       if (!prev) return prev;
       const todayStr = new Date().toISOString().split('T')[0];
@@ -229,40 +231,81 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   const sharesToday = partner?.stats.dailySharesCount?.[todayStr] || 0;
 
   return (
-    <div className="min-h-screen pb-16" style={{ backgroundColor: 'var(--bg-page)' }}>
-      {/* 1. HERO BANNER PROGRAMME PARTENAIRE */}
-      <section className="relative overflow-hidden py-12 px-4 sm:px-6 lg:px-8 border-b" style={{ borderColor: 'var(--border-subtle)', background: 'linear-gradient(135deg, rgba(15,42,74,0.06) 0%, rgba(200,90,40,0.05) 100%)' }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-wrap items-center justify-between gap-6">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4 border" style={{ backgroundColor: 'rgba(200,90,40,0.1)', color: 'var(--accent-orange)', borderColor: 'rgba(200,90,40,0.25)' }}>
-                <Sparkles size={14} />
-                <span>{isEn ? 'FCT Business Network • Partner Program' : 'Réseau d\'Apporteurs d\'Affaires FCT Automobile Douala'}</span>
+    <div className="fct-page-wrapper" style={{ minHeight: '100vh', paddingBottom: '80px', backgroundColor: 'var(--bg-page)' }}>
+      {/* 1. EN-TÊTE DE SECTION PRINCIPALE (CHARTE FCT PRESTIGE) */}
+      <section className="fct-page-header">
+        <div className="fct-container">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
+            <div>
+              <div className="fct-hero-badge" style={{ marginBottom: '14px' }}>
+                <Zap size={14} />
+                <span>{isEn ? 'FCT Business Network • Partner Program' : "Réseau d'Affiliation FCT Automobile Douala"}</span>
               </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900 mb-3">
-                {isEn ? 'Earn commissions on every vehicle sale & rental' : 'Gagnez des commissions sur chaque location et vente de véhicule'}
+              <h1 style={{ margin: '0 0 10px 0' }}>
+                {isEn ? 'Earn Guaranteed Commissions with FCT' : 'Devenez Apporteur d’Affaires FCT Automobile'}
               </h1>
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+              <p style={{ maxWidth: '680px', margin: 0 }}>
                 {isEn
-                  ? 'Share our verified vehicles to your WhatsApp contacts, status, and Facebook networks. Get paid automatically on Orange Money, MTN MoMo, or cash at FCT Douala agency.'
-                  : 'Partagez nos véhicules certifiés sur vos statuts WhatsApp, groupes et Facebook. Touchez vos commissions directement sur Orange Money, MTN MoMo ou à la caisse de l\'agence FCT.'}
+                  ? 'Monetize your network in Douala and Cameroon. Share verified vehicles to your contacts and receive automatic payouts directly on Orange Money, MTN MoMo or agency cash desk.'
+                  : 'Monétisez votre carnet d’adresses à Douala et au Cameroun. Partagez nos véhicules certifiés et touchez vos commissions immédiatement par Orange Money, MTN MoMo ou à la caisse de l’agence.'}
               </p>
             </div>
 
             {partner && (
-              <div className="flex items-center gap-3 bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200">
-                <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-lg">
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  backgroundColor: '#ffffff',
+                  padding: '12px 18px',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--border-subtle)',
+                  boxShadow: 'var(--shadow-sm)',
+                }}
+              >
+                <div
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '12px',
+                    backgroundColor: 'var(--fct-blue-soft)',
+                    color: 'var(--fct-blue-dark)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 900,
+                    fontSize: '15px',
+                    fontFamily: 'var(--font-display)',
+                  }}
+                >
                   {partner.fullName.slice(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <div className="text-xs text-slate-500 font-medium">{isEn ? 'Logged in as Partner' : 'Partenaire Connecté'}</div>
-                  <div className="font-bold text-slate-900 text-sm">{partner.fullName}</div>
-                  <div className="text-xs font-mono font-semibold text-orange-600">{partner.partnerCode}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+                    {isEn ? 'Connected Partner' : 'Partenaire Actif'}
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--fct-blue-dark)' }}>{partner.fullName}</div>
+                  <div style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'monospace', color: 'var(--fct-amber-primary)' }}>
+                    {partner.partnerCode}
+                  </div>
                 </div>
                 <button
+                  type="button"
                   onClick={handleLogout}
                   title={isEn ? 'Log out' : 'Se déconnecter'}
-                  className="ml-2 p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-100 transition-colors"
+                  style={{
+                    marginLeft: '8px',
+                    padding: '8px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: 'var(--radius-md)',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
                 >
                   <LogOut size={16} />
                 </button>
@@ -272,146 +315,196 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         </div>
       </section>
 
-      {/* 2. CONTENU PRINCIPAL */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+      {/* 2. CORPS PRINCIPAL DE LA PAGE */}
+      <div className="fct-container" style={{ marginTop: '36px' }}>
         {isLoading ? (
-          <div className="text-center py-20 text-slate-500">
-            <Clock className="w-8 h-8 animate-spin mx-auto mb-2 text-orange-500" />
-            <p>{isEn ? 'Loading partner dashboard...' : 'Chargement de votre espace partenaire...'}</p>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
+            <Clock size={32} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px auto', color: 'var(--fct-blue-primary)' }} />
+            <p style={{ fontWeight: 600 }}>{isEn ? 'Loading partner space...' : 'Chargement de votre espace partenaire...'}</p>
           </div>
         ) : !partner ? (
-          /* CAS 1 : NON CONNECTÉ OU NON ENREGISTRÉ EN PARTENAIRE */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Colonne Explication & Avantages */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-orange-100 text-orange-600">
-                    <Sparkles size={20} />
+          /* =================================================================
+             CAS 1 : NON CONNECTÉ OU NON ACTIVÉ EN TANT QUE PARTENAIRE
+             ================================================================= */
+          <div className="fct-partner-intro-grid">
+            {/* Colonne Gauche : Présentation du Programme & Avantages */}
+            <div>
+              <div
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-xl)',
+                  padding: '32px',
+                  boxShadow: 'var(--shadow-sm)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px' }}>
+                  <div
+                    style={{
+                      width: '46px',
+                      height: '46px',
+                      borderRadius: '12px',
+                      backgroundColor: 'var(--fct-blue-soft)',
+                      color: 'var(--fct-blue-dark)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Award size={22} />
                   </div>
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900">
-                      {isEn ? 'Become an Official FCT Partner' : 'Devenir Partenaire FCT Automobile'}
+                    <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 900, color: 'var(--fct-blue-dark)' }}>
+                      {isEn ? 'Join the Official FCT Network' : 'Rejoindre le Réseau Officiel FCT'}
                     </h2>
-                    <p className="text-xs text-slate-500 font-medium">
-                      {isEn ? 'Monetize your network in Douala with zero capital investment' : 'Monétisez votre réseau à Douala sans aucun capital de départ'}
+                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-sub)' }}>
+                      {isEn ? 'Monetize your relations with zero investment or stock' : 'Rentabilisez votre relationnel sans aucun stock ni investissement'}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-orange-50/60 border border-orange-100 space-y-1.5">
-                    <div className="text-orange-700 font-bold text-sm flex items-center gap-1.5">
-                      <Car size={16} />
-                      <span>{isEn ? 'Rentals: 5% Direct' : 'Location : 5% Direct'}</span>
+                {/* Grille des 4 Piliers de Rémunération */}
+                <div className="fct-partner-benefits-grid">
+                  {/* Pilier 1 : Location */}
+                  <div className="fct-partner-benefit-card">
+                    <div className="fct-partner-benefit-icon" style={{ backgroundColor: 'var(--fct-blue-soft)', color: 'var(--fct-blue-dark)' }}>
+                      <BadgePercent size={22} />
                     </div>
-                    <p className="text-xs text-slate-600">
+                    <h4 className="fct-partner-benefit-title">{isEn ? 'Rentals: 5% Direct' : 'Location : 5% Direct'}</h4>
+                    <p className="fct-partner-benefit-desc">
                       {isEn
-                        ? 'Earn 5% on every rental contract signed through your partner link.'
-                        : 'Touchez 5% de commission brute sur chaque contrat de location validé.'}
+                        ? 'Earn 5% direct commission on the total value of each signed car rental contract.'
+                        : 'Touchez 5% de commission brute sur le montant total de chaque contrat de location validé.'}
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-1.5">
-                    <div className="text-blue-700 font-bold text-sm flex items-center gap-1.5">
-                      <TrendingUp size={16} />
-                      <span>{isEn ? 'Sales: 100,000 FCFA' : 'Vente : 100 000 FCFA'}</span>
+                  {/* Pilier 2 : Vente */}
+                  <div className="fct-partner-benefit-card">
+                    <div className="fct-partner-benefit-icon" style={{ backgroundColor: 'var(--fct-amber-soft)', color: 'var(--fct-amber-primary)' }}>
+                      <CircleDollarSign size={22} />
                     </div>
-                    <p className="text-xs text-slate-600">
+                    <h4 className="fct-partner-benefit-title">{isEn ? 'Sales: 100,000 FCFA' : 'Vente : 100 000 FCFA'}</h4>
+                    <p className="fct-partner-benefit-desc">
                       {isEn
-                        ? 'Fixed bonus of 100,000 FCFA guaranteed on every vehicle sale completed.'
-                        : 'Prime forfaitaire garantie de 100 000 FCFA sur chaque vente de véhicule conclue.'}
+                        ? 'Fixed bonus of 100,000 FCFA guaranteed on every vehicle sale completed via your link.'
+                        : 'Prime forfaitaire garantie de 100 000 FCFA sur chaque vente de véhicule conclue via votre code.'}
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100 space-y-1.5">
-                    <div className="text-emerald-700 font-bold text-sm flex items-center gap-1.5">
-                      <Smartphone size={16} />
-                      <span>{isEn ? '24h Mobile Payout' : 'Paiement Mobile 24h'}</span>
+                  {/* Pilier 3 : Paiement 24h */}
+                  <div className="fct-partner-benefit-card">
+                    <div className="fct-partner-benefit-icon" style={{ backgroundColor: '#ecfdf5', color: '#059669' }}>
+                      <Smartphone size={22} />
                     </div>
-                    <p className="text-xs text-slate-600">
+                    <h4 className="fct-partner-benefit-title">{isEn ? '24h Mobile Payout' : 'Paiement Mobile 24h'}</h4>
+                    <p className="fct-partner-benefit-desc">
                       {isEn
-                        ? 'Direct transfer via Orange Money, MTN MoMo, or cash at Douala agency.'
-                        : 'Virement direct sur Orange Money, MTN MoMo ou retrait espèces à Bonamoussadi.'}
+                        ? 'Direct automated payouts on Orange Money, MTN MoMo, or cash desk at Bonamoussadi agency.'
+                        : 'Virements directs sur Orange Money, MTN MoMo ou retrait en espèces à l’agence de Bonamoussadi.'}
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-100 space-y-1.5">
-                    <div className="text-purple-700 font-bold text-sm flex items-center gap-1.5">
-                      <Share2 size={16} />
-                      <span>{isEn ? '1-Click WhatsApp' : 'Partage 1-Clic WhatsApp'}</span>
+                  {/* Pilier 4 : Partage 1-Clic */}
+                  <div className="fct-partner-benefit-card">
+                    <div className="fct-partner-benefit-icon" style={{ backgroundColor: '#f5f3ff', color: '#7c3aed' }}>
+                      <Share2 size={22} />
                     </div>
-                    <p className="text-xs text-slate-600">
+                    <h4 className="fct-partner-benefit-title">{isEn ? '1-Click Sharing' : 'Partage 1-Clic Fluide'}</h4>
+                    <p className="fct-partner-benefit-desc">
                       {isEn
-                        ? 'Fiches and photos formatted for instant WhatsApp status posting.'
-                        : 'Fiches et photos multi-angles prêtes pour publication en statut WhatsApp.'}
+                        ? 'Fiches and photos formatted automatically for immediate WhatsApp status publication.'
+                        : 'Fiches techniques et photos haute résolution préformatées pour vos statuts WhatsApp.'}
                     </p>
                   </div>
                 </div>
 
-                {/* 3 Étapes Simples */}
-                <div className="pt-4 border-t border-slate-100 space-y-3">
-                  <div className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                    <CheckCircle2 size={16} className="text-orange-500" />
-                    <span>{isEn ? 'How it works in 3 steps:' : 'Comment ça marche en 3 étapes :'}</span>
+                {/* 3 Étapes Claires */}
+                <div className="fct-partner-steps-box">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                    <CheckCircle2 size={16} color="var(--fct-blue-primary)" />
+                    <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--fct-blue-dark)' }}>
+                      {isEn ? 'How to start in 3 simple steps:' : 'Comment démarrer en 3 étapes :'}
+                    </span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs text-slate-600">
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                      <strong className="text-slate-900 block font-bold mb-0.5">1. Enregistrez-vous</strong>
-                      Remplissez le formulaire ci-contre en 30 secondes.
+
+                  <div className="fct-partner-step-row">
+                    <div className="fct-partner-step-num">1</div>
+                    <div className="fct-partner-step-content">
+                      <h5>{isEn ? 'Register your Profile' : 'Créez votre profil en 30 secondes'}</h5>
+                      <p>{isEn ? 'Fill in your WhatsApp contact and choose your preferred mobile payout method.' : 'Renseignez votre numéro WhatsApp et choisissez votre mode de paiement mobile.'}</p>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                      <strong className="text-slate-900 block font-bold mb-0.5">2. Compte Activé</strong>
-                      Votre compte est activé et votre code unique généré.
+                  </div>
+
+                  <div className="fct-partner-step-row">
+                    <div className="fct-partner-step-num">2</div>
+                    <div className="fct-partner-step-content">
+                      <h5>{isEn ? 'Receive your Unique Code' : 'Obtenez votre Code Partenaire unique'}</h5>
+                      <p>{isEn ? 'Your dedicated affiliate code and custom web link are generated immediately.' : 'Votre code d’apporteur d’affaires et vos liens personnalisés sont activés instantanément.'}</p>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                      <strong className="text-slate-900 block font-bold mb-0.5">3. Partagez & Encaissez</strong>
-                      Partagez sur WhatsApp et recevez vos commissions.
+                  </div>
+
+                  <div className="fct-partner-step-row">
+                    <div className="fct-partner-step-num">3</div>
+                    <div className="fct-partner-step-content">
+                      <h5>{isEn ? 'Share & Cash In' : 'Partagez sur WhatsApp & Encaissez'}</h5>
+                      <p>{isEn ? 'Post verified cars to your status. When a deal closes, commissions are credited to your balance.' : 'Publiez nos véhicules sur vos statuts. Dès validation du contrat, vos gains sont crédités.'}</p>
                     </div>
                   </div>
                 </div>
 
+                {/* Raccourci pour utilisateur déjà connecté comme client */}
                 {currentUser && !partner && (
-                  <div className="p-4 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-between gap-4">
+                  <div
+                    style={{
+                      marginTop: '24px',
+                      padding: '18px 22px',
+                      backgroundColor: 'var(--fct-blue-soft)',
+                      borderRadius: 'var(--radius-lg)',
+                      border: '1px solid rgba(15,42,74,0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '14px',
+                    }}
+                  >
                     <div>
-                      <div className="font-bold text-orange-900 text-sm">
-                        {isEn ? 'You are logged in with your client account' : 'Vous êtes connecté avec votre compte client'}
+                      <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--fct-blue-dark)' }}>
+                        {isEn ? 'Already signed in with client account' : 'Vous êtes connecté avec votre compte FCT'}
                       </div>
-                      <div className="text-xs text-orange-700">
-                        {isEn
-                          ? 'Activate your Partner profile in one click without re-registering.'
-                          : 'Activez votre profil Partenaire en un seul clic sans recréer de compte.'}
+                      <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '2px' }}>
+                        {isEn ? 'Activate your Partner capabilities with one single click.' : 'Activez vos fonctionnalités Apporteur d’Affaires immédiatement.'}
                       </div>
                     </div>
                     <button
+                      type="button"
                       onClick={handleActivatePartner}
                       disabled={authLoading}
-                      className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow transition-colors flex items-center gap-1.5 shrink-0"
+                      className="fct-btn fct-btn-primary"
+                      style={{ fontSize: '13px', padding: '10px 18px' }}
                     >
-                      <Sparkles size={14} />
-                      <span>{isEn ? 'Activate in 1-Click' : 'Activer en 1 Clic'}</span>
+                      <UserCheck size={16} />
+                      <span>{isEn ? 'Activate Partner Status' : 'Activer mon Profil Partenaire'}</span>
                     </button>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Colonne Formulaire Inscription / Connexion */}
-            <div className="lg:col-span-5">
-              <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm">
-                <div className="flex items-center justify-between mb-6 pb-3 border-b border-slate-100">
+            {/* Colonne Droite : Formulaire d'Inscription / Connexion */}
+            <div>
+              <div className="fct-partner-auth-card">
+                <div className="fct-auth-tabs">
                   <button
                     type="button"
                     onClick={() => {
                       setIsRegister(true);
                       setAuthError('');
                     }}
-                    className={`font-black text-sm pb-1 transition-colors flex items-center gap-1.5 ${
-                      isRegister ? 'text-orange-600 border-b-2 border-orange-600' : 'text-slate-400 hover:text-slate-700'
-                    }`}
+                    className={`fct-auth-tab-btn ${isRegister ? 'active' : ''}`}
                   >
-                    <Sparkles size={14} className={isRegister ? 'text-orange-600' : 'text-slate-400'} />
-                    <span>{isEn ? 'Register as Partner' : "S'enregistrer comme Partenaire"}</span>
+                    <UserCheck size={15} />
+                    <span>{isEn ? 'Create Partner Account' : "Créer un Compte"}</span>
                   </button>
                   <button
                     type="button"
@@ -419,126 +512,114 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       setIsRegister(false);
                       setAuthError('');
                     }}
-                    className={`font-bold text-sm pb-1 transition-colors ${
-                      !isRegister ? 'text-orange-600 border-b-2 border-orange-600' : 'text-slate-400 hover:text-slate-700'
-                    }`}
+                    className={`fct-auth-tab-btn ${!isRegister ? 'active' : ''}`}
                   >
-                    {isEn ? 'Already Partner? Sign in' : 'Déjà Partenaire ? Connexion'}
+                    <KeyRound size={15} />
+                    <span>{isEn ? 'Sign In' : 'Connexion'}</span>
                   </button>
                 </div>
 
                 {authError && (
-                  <div className="p-3 mb-4 rounded-xl bg-red-50 text-red-700 text-xs flex items-center gap-2 border border-red-200">
-                    <AlertCircle size={14} className="shrink-0" />
+                  <div className="fct-alert-error">
+                    <AlertCircle size={16} style={{ flexShrink: 0 }} />
                     <span>{authError}</span>
                   </div>
                 )}
 
-                <form onSubmit={handleAuthSubmit} className="space-y-4">
+                <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {isRegister && (
                     <>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          {isEn ? 'Full Name *' : 'Nom Complet *'}
-                        </label>
+                      <div className="fct-field">
+                        <label className="fct-label">{isEn ? 'Full Name *' : 'Nom & Prénom *'}</label>
                         <input
                           type="text"
                           required
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
-                          placeholder="ex: Kevin Tagne"
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-orange-500"
+                          placeholder="ex: Jean-Paul Mvogo"
+                          className="fct-input"
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          {isEn ? 'WhatsApp Phone *' : 'Téléphone WhatsApp *'}
-                        </label>
+                      <div className="fct-field">
+                        <label className="fct-label">{isEn ? 'WhatsApp Phone *' : 'Numéro Téléphone WhatsApp *'}</label>
                         <input
                           type="tel"
                           required
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           placeholder="ex: 699 90 28 89"
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-orange-500"
+                          className="fct-input"
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">
-                            {isEn ? 'Payout Method' : 'Paiement Gains'}
-                          </label>
+                      <div className="fct-form-row">
+                        <div className="fct-field">
+                          <label className="fct-label">{isEn ? 'Payout Method' : 'Versement des Gains'}</label>
                           <select
                             value={payoutMethod}
                             onChange={(e: any) => setPayoutMethod(e.target.value)}
-                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-orange-500"
+                            className="fct-select"
                           >
                             <option value="ORANGE_MONEY">Orange Money</option>
-                            <option value="MTN_MOMO">MTN MoMo</option>
-                            <option value="CASH">Caisse FCT</option>
+                            <option value="MTN_MOMO">MTN Mobile Money</option>
+                            <option value="CASH">Caisse Agence FCT Douala</option>
                           </select>
                         </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">
-                            {isEn ? 'City' : 'Ville'}
-                          </label>
+                        <div className="fct-field">
+                          <label className="fct-label">{isEn ? 'City' : 'Ville de Résidence'}</label>
                           <input
                             type="text"
                             value={city}
                             onChange={(e) => setCity(e.target.value)}
-                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-orange-500"
+                            className="fct-input"
                           />
                         </div>
                       </div>
                     </>
                   )}
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      {isEn ? 'Email Address *' : 'Adresse Email *'}
-                    </label>
+                  <div className="fct-field">
+                    <label className="fct-label">{isEn ? 'Email Address *' : 'Adresse Email *'}</label>
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="votre-email@domaine.com"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-orange-500"
+                      placeholder="nom@exemple.com"
+                      className="fct-input"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      {isEn ? 'Password *' : 'Mot de passe *'}
-                    </label>
+                  <div className="fct-field">
+                    <label className="fct-label">{isEn ? 'Password *' : 'Mot de Passe *'}</label>
                     <input
                       type="password"
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-orange-500"
+                      className="fct-input"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={authLoading}
-                    className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-2"
+                    className="fct-btn fct-btn-primary"
+                    style={{ width: '100%', marginTop: '8px', padding: '13px' }}
                   >
                     {authLoading ? (
-                      <Clock size={16} className="animate-spin" />
+                      <Clock size={16} style={{ animation: 'spin 1s linear infinite' }} />
                     ) : isRegister ? (
                       <>
-                        <Sparkles size={16} />
-                        <span>{isEn ? '✨ Register & Activate Partner Account' : "✨ S'enregistrer & Activer mon Compte"}</span>
+                        <ShieldCheck size={16} />
+                        <span>{isEn ? 'Register & Activate Account' : "Activer mon Compte Partenaire"}</span>
                       </>
                     ) : (
                       <>
-                        <ShieldCheck size={16} />
-                        <span>{isEn ? 'Log in to Partner Space' : 'Accéder à mon Espace Partenaire'}</span>
+                        <KeyRound size={16} />
+                        <span>{isEn ? 'Sign in to Partner Portal' : 'Accéder à mon Espace Partenaire'}</span>
                       </>
                     )}
                   </button>
@@ -547,161 +628,165 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             </div>
           </div>
         ) : (
-          /* CAS 2 : PARTENAIRE CONNECTÉ - DASHBOARD COMPLET & ACTIVITÉ */
-          <div className="space-y-8">
-            {/* 🌟 BANNIÈRE D'ACTIVATION OFFICIELLE */}
-            <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-emerald-400/40">
-              <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white shrink-0 shadow-inner">
-                  <CheckCircle2 size={28} className="text-emerald-200" />
+          /* =================================================================
+             CAS 2 : PARTENAIRE CONNECTÉ - DASHBOARD COMPLET & OUTIL DE PARTAGE
+             ================================================================= */
+          <div className="fct-partner-dashboard">
+            {/* 2.A BANNIÈRE PARTENAIRE OFFICIEL */}
+            <div className="fct-partner-banner">
+              <div className="fct-partner-banner-info">
+                <div className="fct-partner-banner-avatar">
+                  <Award size={28} />
                 </div>
                 <div>
-                  <div className="font-extrabold text-xs uppercase tracking-wider text-emerald-200">
-                    {isEn ? 'Official Partner Account Activated ✓' : 'Compte Partenaire Officiellement Activé ✓'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span
+                      style={{
+                        padding: '3px 10px',
+                        borderRadius: 'var(--radius-full)',
+                        backgroundColor: 'rgba(251, 191, 36, 0.2)',
+                        color: '#fbbf24',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      {partner.tier}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#93c5fd', fontWeight: 600 }}>
+                      {isEn ? 'Verified FCT Partner' : 'Partenaire Officiel Certifié'}
+                    </span>
                   </div>
-                  <div className="font-black text-base sm:text-lg">
-                    {isEn ? `Welcome ${partner.fullName}! Your account is active.` : `Félicitations ${partner.fullName} ! Votre compte est activé.`}
-                  </div>
-                  <div className="text-xs text-emerald-100">
+                  <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: 900, color: '#ffffff' }}>
+                    {partner.fullName}
+                  </h2>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1' }}>
                     {isEn
-                      ? 'Select a vehicle below and share it directly on your WhatsApp Status to earn commissions.'
-                      : 'Sélectionnez un véhicule ci-dessous et partagez-le sur votre statut WhatsApp pour toucher vos commissions.'}
-                  </div>
-                </div>
-              </div>
-              <div className="bg-emerald-950/60 px-4 py-2 rounded-2xl border border-emerald-400/30 text-center shrink-0">
-                <div className="text-[10px] text-emerald-300 uppercase font-bold tracking-wider">{isEn ? 'Your Code' : 'Votre Code'}</div>
-                <div className="text-xl font-mono font-black text-amber-300">{partner.partnerCode}</div>
-              </div>
-            </div>
-
-            {/* 2.A BANDEAU CODE PARTENAIRE & LIEN GÉNÉRAL */}
-            <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg border border-slate-800">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-orange-400 mb-1">
-                    <Award size={16} />
-                    <span>{isEn ? `Status: ${partner.tier} Tier` : `Niveau Partenaire : ${partner.tier}`}</span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-bold">{partner.fullName}</h2>
-                  <p className="text-xs sm:text-sm text-slate-300 mt-1">
-                    {isEn
-                      ? 'Share vehicles on your networks. Every booking or purchase with your link earns you verified commissions.'
-                      : 'Chaque personne qui réserve ou achète un véhicule grâce à votre lien vous rapporte une commission en FCFA.'}
+                      ? 'Share our showroom vehicles and track all visitor clicks and commissions in real-time.'
+                      : 'Partagez les véhicules du showroom et suivez l’ensemble de vos clics et commissions en direct.'}
                   </p>
                 </div>
+              </div>
 
-                {/* Badge Code & Copie Rapide */}
-                <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15 flex flex-col items-center sm:items-end gap-2">
-                  <div className="text-[11px] uppercase tracking-wider text-slate-300 font-semibold">
-                    {isEn ? 'Your Unique Partner Code' : 'Votre Code Partenaire'}
-                  </div>
-                  <div className="text-2xl font-mono font-black text-amber-400 tracking-wider">
-                    {partner.partnerCode}
-                  </div>
-                  <button
-                    onClick={() => {
-                      const generalUrl = `${window.location.origin}/?ref=${partner.partnerCode}`;
-                      navigator.clipboard.writeText(generalUrl);
-                      setCopiedLink(true);
-                      setTimeout(() => setCopiedLink(false), 3000);
-                      onToast(isEn ? 'General link copied!' : 'Lien catalogue général copié !');
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-lg transition-colors"
-                  >
-                    {copiedLink ? <CheckCircle2 size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                    <span>{copiedLink ? (isEn ? 'Copied!' : 'Copié !') : (isEn ? 'Copy General Link' : 'Copier mon lien général')}</span>
-                  </button>
-                </div>
+              {/* Code d'affiliation et bouton de copie */}
+              <div className="fct-partner-code-card">
+                <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', fontWeight: 800, letterSpacing: '0.04em' }}>
+                  {isEn ? 'Your Referral Code' : 'Votre Code Partenaire'}
+                </span>
+                <span className="fct-partner-code-number">{partner.partnerCode}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const generalUrl = `${window.location.origin}/?ref=${partner.partnerCode}`;
+                    navigator.clipboard.writeText(generalUrl);
+                    setCopiedLink(true);
+                    setTimeout(() => setCopiedLink(false), 3000);
+                    onToast(isEn ? 'General link copied!' : 'Lien catalogue général copié !');
+                  }}
+                  className="fct-btn fct-btn-secondary"
+                  style={{
+                    fontSize: '12px',
+                    padding: '8px 14px',
+                    backgroundColor: 'rgba(255,255,255,0.12)',
+                    color: '#ffffff',
+                    border: '1px solid rgba(255,255,255,0.25)',
+                  }}
+                >
+                  {copiedLink ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
+                  <span>{copiedLink ? (isEn ? 'Copied' : 'Lien Copié') : (isEn ? 'Copy General Link' : 'Copier Lien Général')}</span>
+                </button>
               </div>
             </div>
 
-            {/* 2.B CARTES STATISTIQUES & TAUX D'ACTIVITÉ DU JOUR */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Partages Effectués */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="flex items-center justify-between text-slate-500 mb-2">
-                  <span className="text-xs font-medium">{isEn ? 'Daily Shares' : 'Partages du jour'}</span>
-                  <div className="p-2 rounded-xl bg-orange-50 text-orange-600">
+            {/* 2.B GRILLE DES STATISTIQUES & KPIS */}
+            <div className="fct-partner-stats-grid">
+              {/* Partages du jour */}
+              <div className="fct-partner-stat-card">
+                <div className="fct-partner-stat-header">
+                  <span className="fct-partner-stat-label">{isEn ? 'Daily Shares' : 'Partages du jour'}</span>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--fct-blue-soft)', color: 'var(--fct-blue-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Share2 size={16} />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-slate-900">{sharesToday}</div>
-                <div className="text-[11px] text-slate-500 mt-1">
+                <div className="fct-partner-stat-val">{sharesToday}</div>
+                <div className="fct-partner-stat-sub">
                   {partner.stats.totalShares || 0} {isEn ? 'total shares' : 'partages au total'}
                 </div>
               </div>
 
-              {/* Clics Reçus */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="flex items-center justify-between text-slate-500 mb-2">
-                  <span className="text-xs font-medium">{isEn ? 'Visitor Clicks' : 'Clics reçus'}</span>
-                  <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+              {/* Clics reçus */}
+              <div className="fct-partner-stat-card">
+                <div className="fct-partner-stat-header">
+                  <span className="fct-partner-stat-label">{isEn ? 'Tracked Clicks' : 'Clics reçus'}</span>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--fct-blue-soft)', color: 'var(--fct-blue-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <TrendingUp size={16} />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-slate-900">{partner.stats.totalClicks || 0}</div>
-                <div className="text-[11px] text-slate-500 mt-1">
-                  {isEn ? 'Tracked visitors' : 'Visiteurs arrivés via votre lien'}
+                <div className="fct-partner-stat-val">{partner.stats.totalClicks || 0}</div>
+                <div className="fct-partner-stat-sub">
+                  {isEn ? 'Interested visitors' : 'Visiteurs arrivés sur le showroom'}
                 </div>
               </div>
 
-              {/* Prospects / Demandes Enregistrées */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="flex items-center justify-between text-slate-500 mb-2">
-                  <span className="text-xs font-medium">{isEn ? 'Leads / Bookings' : 'Réservations / Devis'}</span>
-                  <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
+              {/* Réservations / Devis */}
+              <div className="fct-partner-stat-card">
+                <div className="fct-partner-stat-header">
+                  <span className="fct-partner-stat-label">{isEn ? 'Bookings / Deals' : 'Demandes & Ventes'}</span>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#f5f3ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Users size={16} />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-slate-900">{partner.stats.totalLeads || 0}</div>
-                <div className="text-[11px] text-slate-500 mt-1">
-                  {partner.stats.totalConversions || 0} {isEn ? 'validated deals' : 'ventes/locations conclues'}
+                <div className="fct-partner-stat-val">{partner.stats.totalLeads || 0}</div>
+                <div className="fct-partner-stat-sub">
+                  {partner.stats.totalConversions || 0} {isEn ? 'conversions closed' : 'contrats conclus'}
                 </div>
               </div>
 
-              {/* Gains & Commissions */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="flex items-center justify-between text-slate-500 mb-2">
-                  <span className="text-xs font-medium">{isEn ? 'Available Balance' : 'Solde disponible'}</span>
-                  <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+              {/* Solde Disponible */}
+              <div className="fct-partner-stat-card">
+                <div className="fct-partner-stat-header">
+                  <span className="fct-partner-stat-label">{isEn ? 'Available Balance' : 'Solde disponible'}</span>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Wallet size={16} />
                   </div>
                 </div>
-                <div className="text-2xl font-black text-emerald-600">
-                  {(partner.stats.balanceAvailableXAF || 0).toLocaleString('fr-FR')} <span className="text-xs">FCFA</span>
+                <div className="fct-partner-stat-val" style={{ color: '#059669' }}>
+                  {(partner.stats.balanceAvailableXAF || 0).toLocaleString('fr-FR')}{' '}
+                  <span style={{ fontSize: '13px', fontWeight: 700 }}>FCFA</span>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1">
-                  {isEn ? 'Paid to date: ' : 'Déjà versé : '} {(partner.stats.paidOutXAF || 0).toLocaleString('fr-FR')} FCFA
+                <div className="fct-partner-stat-sub">
+                  {isEn ? 'Paid out: ' : 'Déjà encaissé : '} {(partner.stats.paidOutXAF || 0).toLocaleString('fr-FR')} FCFA
                 </div>
               </div>
             </div>
 
-            {/* 2.C OUTIL DE PARTAGE 1-CLIC SUR UN VÉHICULE EN DIRECT */}
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            {/* 2.C OUTIL DE PARTAGE 1-CLIC D'UN VÉHICULE DU SHOWROOM */}
+            <div className="fct-partner-share-panel">
+              <div className="fct-partner-share-header">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <Send className="text-orange-500" size={20} />
-                    <span>{isEn ? 'Share a vehicle in 1-Click' : 'Partager un véhicule en 1-Clic'}</span>
+                  <h3 style={{ margin: '0 0 4px 0', fontSize: '17px', fontWeight: 900, color: 'var(--fct-blue-dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Send size={18} color="var(--fct-blue-primary)" />
+                    <span>{isEn ? 'Share a Showroom Vehicle in 1-Click' : 'Partager un véhicule du showroom en 1-Clic'}</span>
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-sub)' }}>
                     {isEn
-                      ? 'Select a vehicle from our showroom, customize or share directly to your WhatsApp Status and Contacts.'
-                      : 'Choisissez un véhicule disponible et partagez-le instantanément sur votre statut WhatsApp ou vos contacts.'}
+                      ? 'Select any available vehicle to publish formatted messages and tracked photos on your WhatsApp status.'
+                      : 'Sélectionnez un véhicule pour publier une annonce calibrée avec votre lien d’affiliation sur WhatsApp.'}
                   </p>
                 </div>
 
                 {/* Sélecteur de véhicule */}
-                <div className="w-full sm:w-72">
+                <div style={{ minWidth: '260px' }}>
                   <select
                     value={selectedVehicleId}
                     onChange={(e) => setSelectedVehicleId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 bg-slate-50 focus:outline-none focus:border-orange-500"
+                    className="fct-select"
+                    style={{ fontWeight: 700 }}
                   >
                     {vehicles.map((v) => (
                       <option key={v.id} value={v.id}>
-                        {v.brand} {v.model} ({v.year}) - {v.isForRent ? `${v.rentalDailyRate.toLocaleString('fr-FR')} F/j` : `${(v.salePrice || 0).toLocaleString('fr-FR')} F`}
+                        {v.brand} {v.model} ({v.year}) • {v.isForRent ? `${v.rentalDailyRate.toLocaleString('fr-FR')} F/j` : `${(v.salePrice || 0).toLocaleString('fr-FR')} F`}
                       </option>
                     ))}
                   </select>
@@ -709,60 +794,88 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               </div>
 
               {selectedVehicle && (
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                <div className="fct-partner-share-body">
                   {/* Photo miniature */}
-                  <div className="md:col-span-4">
-                    <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
-                      {selectedVehicle.photoUrls?.[0] ? (
-                        <img
-                          src={selectedVehicle.photoUrls[0]}
-                          alt={selectedVehicle.model}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-400">
-                          <Car size={36} />
-                        </div>
-                      )}
-                      <div className="absolute top-2 left-2 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900/80 text-white backdrop-blur-sm">
-                        {selectedVehicle.isForRent ? 'Location' : 'Vente'}
+                  <div className="fct-partner-share-photo">
+                    {selectedVehicle.photoUrls?.[0] ? (
+                      <img
+                        src={selectedVehicle.photoUrls[0]}
+                        alt={selectedVehicle.model}
+                      />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        <Car size={40} />
                       </div>
-                    </div>
+                    )}
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '10px',
+                        padding: '4px 10px',
+                        borderRadius: 'var(--radius-sm)',
+                        backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                        color: '#ffffff',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      {selectedVehicle.isForRent ? (isEn ? 'For Rent' : 'Location') : (isEn ? 'For Sale' : 'Vente')}
+                    </span>
                   </div>
 
-                  {/* Actions de partage direct */}
-                  <div className="md:col-span-8 space-y-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                      {/* WhatsApp Statut / Contact */}
+                  {/* Actions & Boutons de Partage */}
+                  <div className="fct-partner-share-actions">
+                    <div className="fct-partner-share-buttons">
+                      {/* WhatsApp Statut */}
                       <button
+                        type="button"
                         onClick={() => handleTriggerShare('WHATSAPP_STATUS')}
-                        className="flex-1 min-w-[200px] px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
+                        className="fct-btn"
+                        style={{
+                          backgroundColor: '#059669',
+                          color: '#ffffff',
+                          border: 'none',
+                          flex: '1 1 200px',
+                          padding: '12px 18px',
+                        }}
                       >
-                        <MessageSquare size={18} />
+                        <MessageSquare size={17} />
                         <span>{isEn ? 'Share to WhatsApp Status' : 'Partager sur WhatsApp (Statut)'}</span>
                       </button>
 
                       {/* Facebook */}
                       <button
+                        type="button"
                         onClick={() => handleTriggerShare('FACEBOOK')}
-                        className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
+                        className="fct-btn"
+                        style={{
+                          backgroundColor: '#1877f2',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '12px 18px',
+                        }}
                       >
                         <Share2 size={16} />
                         <span>Facebook</span>
                       </button>
 
-                      {/* Copier le lien affilié */}
+                      {/* Copie de Lien */}
                       <button
+                        type="button"
                         onClick={() => handleTriggerShare('COPY_LINK')}
-                        className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2"
+                        className="fct-btn fct-btn-secondary"
+                        style={{ padding: '12px 18px' }}
                       >
-                        {copiedLink ? <CheckCircle2 size={16} className="text-emerald-600" /> : <Copy size={16} />}
+                        {copiedLink ? <Check size={16} color="#059669" /> : <Copy size={16} />}
                         <span>{copiedLink ? (isEn ? 'Copied' : 'Lien Copié') : (isEn ? 'Copy Link' : 'Copier Lien')}</span>
                       </button>
                     </div>
 
                     {/* Aperçu du texte généré */}
-                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 font-mono whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto">
+                    <div className="fct-partner-share-preview">
                       {generateShareCopyText(
                         selectedVehicle,
                         generateAffiliateUrl(selectedVehicle.id, partner.partnerCode),
@@ -774,25 +887,38 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               )}
             </div>
 
-            {/* 2.D DEMANDE DE RETRAIT & PAIEMENT */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-2xl bg-amber-50 text-amber-600">
-                  <Wallet size={24} />
+            {/* 2.D DEMANDE DE RETRAIT DES COMMISSIONS */}
+            <div className="fct-partner-payout-panel">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div
+                  style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '12px',
+                    backgroundColor: 'var(--fct-amber-soft)',
+                    color: 'var(--fct-amber-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Wallet size={22} />
                 </div>
                 <div>
-                  <div className="font-bold text-slate-900 text-sm">
-                    {isEn ? 'Withdraw your earned commissions' : 'Retirer vos commissions gagnées'}
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--fct-blue-dark)' }}>
+                    {isEn ? 'Withdraw your accumulated commissions' : 'Retirer vos commissions acquises'}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div style={{ fontSize: '12.5px', color: 'var(--text-sub)', marginTop: '2px' }}>
                     {isEn
-                      ? `Configured payout: ${partner.payoutMethod} (${partner.payoutPhone})`
-                      : `Mode configuré : ${partner.payoutMethod} (${partner.payoutPhone})`}
+                      ? `Active payout destination: ${partner.payoutMethod} (${partner.payoutPhone})`
+                      : `Canal de versement enregistré : ${partner.payoutMethod} (${partner.payoutPhone})`}
                   </div>
                 </div>
               </div>
 
               <button
+                type="button"
                 onClick={() => {
                   if ((partner.stats.balanceAvailableXAF || 0) < 10000) {
                     onToast(
@@ -808,10 +934,11 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       : 'Demande de retrait transmise à la caisse FCT avec succès.'
                   );
                 }}
-                className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow transition-colors flex items-center justify-center gap-2"
+                className="fct-btn fct-btn-primary"
+                style={{ padding: '12px 22px' }}
               >
-                <DollarSign size={15} />
-                <span>{isEn ? 'Request Payout' : 'Demander le Retrait'}</span>
+                <CircleDollarSign size={16} />
+                <span>{isEn ? 'Request Cashout' : 'Demander le Retrait'}</span>
               </button>
             </div>
           </div>

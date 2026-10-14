@@ -1107,7 +1107,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
               <div className="text-[10px] font-bold text-slate-500 uppercase">Prochaine Vidange</div>
               <div className={`text-xs font-black mt-1 ${healthData.isDueForOilChange ? 'text-rose-600 animate-pulse' : 'text-emerald-700'}`}>
-                {healthData.isDueForOilChange ? '⚠️ Vidange Due !' : `dans ${healthData.kmRemainingUntilOilChange?.toLocaleString() || 0} km`}
+                {healthData.isDueForOilChange ? 'Vidange Requise !' : `dans ${healthData.kmRemainingUntilOilChange?.toLocaleString() || 0} km`}
               </div>
               <div className="text-[9px] text-slate-400 mt-0.5">Cycle : {healthData.oilChangeIntervalKm?.toLocaleString() || 10000} km</div>
             </div>
