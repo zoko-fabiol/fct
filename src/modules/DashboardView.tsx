@@ -4,7 +4,7 @@
  * Franchise Conseils Trading - Douala, Cameroun
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { DatabaseState } from '../services/dbStore.ts';
 import { Language, translations } from '../services/i18n.ts';
 import { formatXAF } from '../../packages/business-rules/index.ts';
@@ -26,7 +26,7 @@ import {
 interface DashboardViewProps {
   state: DatabaseState;
   lang: Language;
-  onNavigate: (module: AppModule) => void;
+  onNavigate: (module: AppModule, entityId?: string) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNavigate }) => {

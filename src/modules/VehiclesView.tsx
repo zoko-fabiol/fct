@@ -538,7 +538,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                             {vehicle.brand} {vehicle.model}
                           </div>
                           <div className="text-[10px] text-slate-500">
-                            Année {vehicle.year} • {vehicle.fuelType || 'Essence'}
+                            Année {vehicle.year} • {vehicle.fuel || 'Essence'}
                           </div>
                         </div>
                       </div>
