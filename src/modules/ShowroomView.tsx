@@ -11,6 +11,9 @@ import { formatXAF, hasPermission } from '../../packages/business-rules/index.ts
 import { dbStore } from '../services/dbStore.ts';
 import { CloudinaryUploadDropzone } from '../components/ui/CloudinaryUploadDropzone.tsx';
 import { printElementById } from '../utils/printDocument.ts';
+import { isNativeMobile } from '../services/mobileFileService.ts';
+import { Share } from '@capacitor/share';
+
 import {
   Car,
   ArrowLeft,
@@ -366,18 +369,36 @@ ${vehicle.isForSale ? `*Prix de Vente :* ${formatXAF(vehicle.salePrice)}` : ''}
             </button>
 
             <button
-              onClick={() =>
+              onClick={async () => {
+                if (isNativeMobile()) {
+                  try {
+                    await Share.share({
+                      title: `Fiche ${vehicle.brand} ${vehicle.model}`,
+                      text: `Fiche Showroom FCT Automobile : ${vehicle.brand} ${vehicle.model} (${vehicle.year || ''}) - Immatriculation : ${vehicle.licensePlate}`,
+                      url: window.location.href,
+                      dialogTitle: 'Partager la fiche véhicule FCT',
+                    });
+                    return;
+                  } catch (err) {
+                    console.warn('Partage fiche véhicule annulé:', err);
+                  }
+                }
                 printElementById(
                   'fct-vehicle-showroom-printable',
                   `Fiche_${vehicle.brand}_${vehicle.model}_${vehicle.licensePlate}`
-                )
-              }
-              title="Imprimer la Fiche Showroom"
+                );
+              }}
+              title={isNativeMobile() ? 'Partager la fiche showroom' : 'Imprimer la Fiche Showroom'}
               className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5 text-slate-600" />
-              <span className="hidden md:inline">Imprimer Fiche</span>
+              {isNativeMobile() ? (
+                <Share2 className="w-3.5 h-3.5 text-blue-600" />
+              ) : (
+                <Printer className="w-3.5 h-3.5 text-slate-600" />
+              )}
+              <span className="hidden md:inline">{isNativeMobile() ? 'Partager Fiche' : 'Imprimer Fiche'}</span>
             </button>
+
           </div>
         </div>
       </div>

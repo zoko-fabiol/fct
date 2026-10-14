@@ -114,7 +114,11 @@ export async function printElementById(elementId: string, documentTitle = 'Docum
   const doc = iframe.contentDocument;
   if (!win || !doc) {
     iframe.remove();
-    window.print();
+    try {
+      window.print();
+    } catch (e) {
+      console.warn('[printElementById] window.print indisponible:', e);
+    }
     return;
   }
 
@@ -148,5 +152,10 @@ export async function printElementById(elementId: string, documentTitle = 'Docum
   setTimeout(() => iframe.isConnected && iframe.remove(), 60_000);
 
   win.focus();
-  win.print();
+  try {
+    win.print();
+  } catch (err) {
+    console.warn('[printElementById] win.print() non pris en charge ou annulé:', err);
+  }
 }
+

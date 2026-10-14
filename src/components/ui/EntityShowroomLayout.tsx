@@ -8,7 +8,10 @@ import React from 'react';
 import { ArrowLeft, Printer, Share2, LucideIcon } from 'lucide-react';
 import { EntityTabs, EntityStatusBadge } from './EntityComponents.tsx';
 import { printElementById } from '../../utils/printDocument.ts';
+import { isNativeMobile } from '../../services/mobileFileService.ts';
+import { Share } from '@capacitor/share';
 import { Language } from '../../services/i18n.ts';
+
 
 export interface ShowroomKpiItem {
   label: string;
@@ -96,13 +99,35 @@ export const EntityShowroomLayout: React.FC<EntityShowroomLayoutProps> = ({
           {actions}
           <button
             type="button"
-            onClick={() => printElementById('fct-showroom-printable-content', `Fiche_${referenceId || title || 'Showroom'}`)}
-            title={isEn ? 'Print this sheet' : 'Imprimer cette fiche'}
+            onClick={async () => {
+              if (isNativeMobile()) {
+                try {
+                  await Share.share({
+                    title: `Fiche ${referenceId || title || 'Showroom'}`,
+                    text: `Fiche Showroom FCT Automobile : ${title || 'Véhicule'} ${referenceId ? `(Réf: ${referenceId})` : ''}`,
+                    url: window.location.href,
+                    dialogTitle: isEn ? 'Share showroom sheet' : 'Partager la fiche showroom',
+                  });
+                  return;
+                } catch (err) {
+                  console.warn('Partage fiche showroom annulé:', err);
+                }
+              }
+              printElementById('fct-showroom-printable-content', `Fiche_${referenceId || title || 'Showroom'}`);
+            }}
+            title={isEn ? (isNativeMobile() ? 'Share sheet' : 'Print sheet') : (isNativeMobile() ? 'Partager la fiche' : 'Imprimer la fiche')}
             className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition cursor-pointer"
           >
-            <Printer className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden md:inline">{isEn ? 'Print Sheet' : 'Imprimer Fiche'}</span>
+            {isNativeMobile() ? (
+              <Share2 className="w-3.5 h-3.5 text-blue-600" />
+            ) : (
+              <Printer className="w-3.5 h-3.5 text-slate-600" />
+            )}
+            <span className="hidden md:inline">
+              {isEn ? (isNativeMobile() ? 'Share Sheet' : 'Print Sheet') : (isNativeMobile() ? 'Partager Fiche' : 'Imprimer Fiche')}
+            </span>
           </button>
+
         </div>
       </div>
 
