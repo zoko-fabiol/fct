@@ -83,11 +83,27 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => handleNav('partenaires')}
-              className={`fct-nav-btn ${currentPage === 'partenaires' ? 'active' : ''}`}
-              style={{ color: '#d97706', fontWeight: 700 }}
+              className={`fct-partner-cta-btn ${currentPage === 'partenaires' ? 'active' : ''}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '7px 15px',
+                borderRadius: 20,
+                background: currentPage === 'partenaires'
+                  ? 'linear-gradient(135deg, #b45309 0%, #92400e 100%)'
+                  : 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: 12.5,
+                boxShadow: '0 2px 10px rgba(217, 119, 6, 0.35)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
             >
-              <Sparkles size={15} color="#d97706" />
-              <span>{lang === 'en' ? 'Partners' : 'Partenaires'}</span>
+              <Sparkles size={15} color="#fef08a" />
+              <span>{lang === 'en' ? '★ Become a Partner' : '★ Devenir Partenaire'}</span>
             </button>
           </nav>
 
@@ -197,9 +213,28 @@ export const Navbar: React.FC<NavbarProps> = ({
               <MapPin size={16} />
               <span>{t.agency}</span>
             </button>
-            <button onClick={() => handleNav('partenaires')} className="fct-nav-btn" style={{ justifyContent: 'flex-start', color: '#d97706', fontWeight: 700 }}>
-              <Sparkles size={16} color="#d97706" />
-              <span>{lang === 'en' ? 'Partners & Affiliation' : 'Programme Partenaires & Affiliés'}</span>
+            <button
+              onClick={() => handleNav('partenaires')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: 13,
+                boxShadow: '0 2px 10px rgba(217, 119, 6, 0.3)',
+                border: 'none',
+                cursor: 'pointer',
+                margin: '6px 0',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={18} color="#fef08a" />
+                <span>{lang === 'en' ? '★ Become a Partner (Earn 5% & 100k)' : '★ Devenir Partenaire (Commissions 5% & 100k)'}</span>
+              </div>
             </button>
             <button onClick={() => handleNav('espace-client')} className="btn-primary" style={{ justifyContent: 'center', marginTop: 10 }}>
               <UserCheck size={16} />

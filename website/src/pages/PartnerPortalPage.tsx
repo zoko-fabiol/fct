@@ -54,8 +54,9 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   const [partner, setPartner] = useState<PartnerAccount | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Authentification
-  const [isRegister, setIsRegister] = useState(false);
+  // Authentification & État
+  const [isRegister, setIsRegister] = useState(true);
+  const [justActivated, setJustActivated] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -124,7 +125,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
         if (regRes.success && regRes.partner) {
           setPartner(regRes.partner);
-          onToast(isEn ? 'Partner account created successfully!' : 'Compte Partenaire FCT créé avec succès !');
+          setJustActivated(true);
+          onToast(isEn ? 'Partner account activated successfully!' : 'Compte Partenaire FCT activé avec succès !');
         }
       } else {
         const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
@@ -159,7 +161,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
     if (regRes.success && regRes.partner) {
       setPartner(regRes.partner);
-      onToast(isEn ? 'Congratulations! You are now an official FCT Partner.' : 'Félicitations ! Vous êtes désormais Partenaire officiel FCT.');
+      setJustActivated(true);
+      onToast(isEn ? 'Congratulations! Your account is now active.' : 'Félicitations ! Votre compte Partenaire est maintenant activé.');
     } else {
       onToast(regRes.error || (isEn ? 'Activation error.' : "Erreur lors de l'activation."));
     }
@@ -282,58 +285,89 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             {/* Colonne Explication & Avantages */}
             <div className="lg:col-span-7 space-y-6">
               <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <Award className="text-orange-500" size={24} />
-                  <span>{isEn ? 'Why become an FCT Partner?' : 'Pourquoi devenir Partenaire FCT ?'}</span>
-                </h2>
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-orange-100 text-orange-600">
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+                      {isEn ? 'Become an Official FCT Partner' : 'Devenir Partenaire FCT Automobile'}
+                    </h2>
+                    <p className="text-xs text-slate-500 font-medium">
+                      {isEn ? 'Monetize your network in Douala with zero capital investment' : 'Monétisez votre réseau à Douala sans aucun capital de départ'}
+                    </p>
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5">
-                    <div className="text-orange-600 font-bold text-sm flex items-center gap-1.5">
+                  <div className="p-4 rounded-2xl bg-orange-50/60 border border-orange-100 space-y-1.5">
+                    <div className="text-orange-700 font-bold text-sm flex items-center gap-1.5">
                       <Car size={16} />
-                      <span>{isEn ? 'Vehicle Rentals' : 'Location de Véhicules'}</span>
+                      <span>{isEn ? 'Rentals: 5% Direct' : 'Location : 5% Direct'}</span>
                     </div>
                     <p className="text-xs text-slate-600">
                       {isEn
-                        ? 'Earn 5% to 10% on every validated booking contract.'
-                        : 'Gagnez de 5% à 10% sur chaque contrat de location validé.'}
+                        ? 'Earn 5% on every rental contract signed through your partner link.'
+                        : 'Touchez 5% de commission brute sur chaque contrat de location validé.'}
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5">
-                    <div className="text-blue-600 font-bold text-sm flex items-center gap-1.5">
+                  <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-1.5">
+                    <div className="text-blue-700 font-bold text-sm flex items-center gap-1.5">
                       <TrendingUp size={16} />
-                      <span>{isEn ? 'Vehicle Sales' : 'Vente de Véhicules'}</span>
+                      <span>{isEn ? 'Sales: 100,000 FCFA' : 'Vente : 100 000 FCFA'}</span>
                     </div>
                     <p className="text-xs text-slate-600">
                       {isEn
-                        ? 'Flat fee from 50,000 to 150,000 FCFA for every vehicle sold.'
-                        : 'Forfait de 50 000 à 150 000 FCFA sur chaque vente de véhicule conclue.'}
+                        ? 'Fixed bonus of 100,000 FCFA guaranteed on every vehicle sale completed.'
+                        : 'Prime forfaitaire garantie de 100 000 FCFA sur chaque vente de véhicule conclue.'}
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5">
-                    <div className="text-emerald-600 font-bold text-sm flex items-center gap-1.5">
+                  <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100 space-y-1.5">
+                    <div className="text-emerald-700 font-bold text-sm flex items-center gap-1.5">
                       <Smartphone size={16} />
-                      <span>{isEn ? 'Instant Payout' : 'Paiement Mobile Money'}</span>
+                      <span>{isEn ? '24h Mobile Payout' : 'Paiement Mobile 24h'}</span>
                     </div>
                     <p className="text-xs text-slate-600">
                       {isEn
-                        ? 'Withdraw your earnings via Orange Money, MTN MoMo, or cash in agency.'
-                        : 'Retrait direct sur Orange Money, MTN MoMo ou en espèces à l\'agence FCT Douala.'}
+                        ? 'Direct transfer via Orange Money, MTN MoMo, or cash at Douala agency.'
+                        : 'Virement direct sur Orange Money, MTN MoMo ou retrait espèces à Bonamoussadi.'}
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5">
-                    <div className="text-purple-600 font-bold text-sm flex items-center gap-1.5">
-                      <BarChart3 size={16} />
-                      <span>{isEn ? 'Live Tracking' : 'Suivi en Temps Réel'}</span>
+                  <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-100 space-y-1.5">
+                    <div className="text-purple-700 font-bold text-sm flex items-center gap-1.5">
+                      <Share2 size={16} />
+                      <span>{isEn ? '1-Click WhatsApp' : 'Partage 1-Clic WhatsApp'}</span>
                     </div>
                     <p className="text-xs text-slate-600">
                       {isEn
-                        ? 'Track daily shares, visitor clicks, and validated earnings live.'
-                        : 'Suivez vos partages quotidiens, clics générés et commissions en direct.'}
+                        ? 'Fiches and photos formatted for instant WhatsApp status posting.'
+                        : 'Fiches et photos multi-angles prêtes pour publication en statut WhatsApp.'}
                     </p>
+                  </div>
+                </div>
+
+                {/* 3 Étapes Simples */}
+                <div className="pt-4 border-t border-slate-100 space-y-3">
+                  <div className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <CheckCircle2 size={16} className="text-orange-500" />
+                    <span>{isEn ? 'How it works in 3 steps:' : 'Comment ça marche en 3 étapes :'}</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs text-slate-600">
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <strong className="text-slate-900 block font-bold mb-0.5">1. Enregistrez-vous</strong>
+                      Remplissez le formulaire ci-contre en 30 secondes.
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <strong className="text-slate-900 block font-bold mb-0.5">2. Compte Activé</strong>
+                      Votre compte est activé et votre code unique généré.
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <strong className="text-slate-900 block font-bold mb-0.5">3. Partagez & Encaissez</strong>
+                      Partagez sur WhatsApp et recevez vos commissions.
+                    </div>
                   </div>
                 </div>
 
@@ -369,6 +403,19 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   <button
                     type="button"
                     onClick={() => {
+                      setIsRegister(true);
+                      setAuthError('');
+                    }}
+                    className={`font-black text-sm pb-1 transition-colors flex items-center gap-1.5 ${
+                      isRegister ? 'text-orange-600 border-b-2 border-orange-600' : 'text-slate-400 hover:text-slate-700'
+                    }`}
+                  >
+                    <Sparkles size={14} className={isRegister ? 'text-orange-600' : 'text-slate-400'} />
+                    <span>{isEn ? 'Register as Partner' : "S'enregistrer comme Partenaire"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
                       setIsRegister(false);
                       setAuthError('');
                     }}
@@ -376,19 +423,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       !isRegister ? 'text-orange-600 border-b-2 border-orange-600' : 'text-slate-400 hover:text-slate-700'
                     }`}
                   >
-                    {isEn ? 'Partner Login' : 'Connexion Partenaire'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsRegister(true);
-                      setAuthError('');
-                    }}
-                    className={`font-bold text-sm pb-1 transition-colors ${
-                      isRegister ? 'text-orange-600 border-b-2 border-orange-600' : 'text-slate-400 hover:text-slate-700'
-                    }`}
-                  >
-                    {isEn ? 'Become a Partner' : 'Créer un Compte'}
+                    {isEn ? 'Already Partner? Sign in' : 'Déjà Partenaire ? Connexion'}
                   </button>
                 </div>
 
@@ -498,12 +533,12 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     ) : isRegister ? (
                       <>
                         <Sparkles size={16} />
-                        <span>{isEn ? 'Create Partner Account' : 'Rejoindre le Programme Partenaire'}</span>
+                        <span>{isEn ? '✨ Register & Activate Partner Account' : "✨ S'enregistrer & Activer mon Compte"}</span>
                       </>
                     ) : (
                       <>
                         <ShieldCheck size={16} />
-                        <span>{isEn ? 'Log in to Dashboard' : 'Accéder à mon Espace Partenaire'}</span>
+                        <span>{isEn ? 'Log in to Partner Space' : 'Accéder à mon Espace Partenaire'}</span>
                       </>
                     )}
                   </button>
@@ -514,6 +549,32 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         ) : (
           /* CAS 2 : PARTENAIRE CONNECTÉ - DASHBOARD COMPLET & ACTIVITÉ */
           <div className="space-y-8">
+            {/* 🌟 BANNIÈRE D'ACTIVATION OFFICIELLE */}
+            <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-emerald-400/40">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white shrink-0 shadow-inner">
+                  <CheckCircle2 size={28} className="text-emerald-200" />
+                </div>
+                <div>
+                  <div className="font-extrabold text-xs uppercase tracking-wider text-emerald-200">
+                    {isEn ? 'Official Partner Account Activated ✓' : 'Compte Partenaire Officiellement Activé ✓'}
+                  </div>
+                  <div className="font-black text-base sm:text-lg">
+                    {isEn ? `Welcome ${partner.fullName}! Your account is active.` : `Félicitations ${partner.fullName} ! Votre compte est activé.`}
+                  </div>
+                  <div className="text-xs text-emerald-100">
+                    {isEn
+                      ? 'Select a vehicle below and share it directly on your WhatsApp Status to earn commissions.'
+                      : 'Sélectionnez un véhicule ci-dessous et partagez-le sur votre statut WhatsApp pour toucher vos commissions.'}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-emerald-950/60 px-4 py-2 rounded-2xl border border-emerald-400/30 text-center shrink-0">
+                <div className="text-[10px] text-emerald-300 uppercase font-bold tracking-wider">{isEn ? 'Your Code' : 'Votre Code'}</div>
+                <div className="text-xl font-mono font-black text-amber-300">{partner.partnerCode}</div>
+              </div>
+            </div>
+
             {/* 2.A BANDEAU CODE PARTENAIRE & LIEN GÉNÉRAL */}
             <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-lg border border-slate-800">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
