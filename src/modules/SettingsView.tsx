@@ -62,6 +62,7 @@ import {
 import { UsersView } from './UsersView.tsx';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNativeMobile } from '../services/mobileFileService.ts';
+import { notificationEngine } from '../services/pushNotificationService.ts';
 
 interface SettingsViewProps {
   state: DatabaseState;
@@ -177,54 +178,27 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
   const [notificationMsg, setNotificationMsg] = useState<string | null>(null);
 
   const testBrowserNotification = async () => {
-    if (isNativeMobile()) {
-      try {
-        const check = await LocalNotifications.checkPermissions();
-        if (check.display !== 'granted') {
-          const req = await LocalNotifications.requestPermissions();
-          if (req.display !== 'granted') {
-            setNotificationMsg('Autorisation de notification refusée sur l’appareil.');
-            setTimeout(() => setNotificationMsg(null), 4000);
-            return;
-          }
-        }
-        await LocalNotifications.schedule({
-          notifications: [
-            {
-              title: 'FCT Automobile — Douala',
-              body: 'Alerte sonore et notification système opérationnelles !',
-              id: Math.floor(Math.random() * 100000) + 1,
-              schedule: { at: new Date(Date.now() + 100) },
-            },
-          ],
-        });
-        setNotificationMsg('Notification système envoyée sur votre smartphone !');
-      } catch (e) {
-        console.error('Erreur notification native:', e);
-        setNotificationMsg('Erreur lors de l’envoi de la notification native.');
-      }
-      setTimeout(() => setNotificationMsg(null), 4000);
-      return;
-    }
-
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-      setNotificationMsg('Les notifications ne sont pas supportées par ce navigateur.');
-      setTimeout(() => setNotificationMsg(null), 4000);
-      return;
-    }
     try {
-      const perm = await Notification.requestPermission();
-      if (perm === 'granted') {
-        new Notification('FCT Automobile — Douala', {
-          body: 'Alerte sonore et notification système opérationnelles !',
-          icon: '/favicon.ico',
-        });
-        setNotificationMsg('Notification envoyée avec succès sur votre bureau !');
-      } else {
-        setNotificationMsg('Autorisation refusée par le navigateur.');
+      const granted = await notificationEngine.requestPermissions();
+      if (!granted) {
+        setNotificationMsg('Autorisation de notification non accordée sur l’appareil.');
+        setTimeout(() => setNotificationMsg(null), 4000);
+        return;
       }
-    } catch {
-      setNotificationMsg('Erreur lors de la demande d’autorisation.');
+
+      await notificationEngine.dispatch({
+        title: 'FCT Automobile — Douala',
+        body: 'Alerte sonore et notification système VIP opérationnelles !',
+      });
+
+      setNotificationMsg(
+        isNativeMobile()
+          ? 'Notification système VIP envoyée sur votre smartphone !'
+          : 'Notification envoyée avec succès sur votre bureau !'
+      );
+    } catch (e: any) {
+      console.error('Erreur notification :', e);
+      setNotificationMsg('Erreur lors du déclenchement de la notification.');
     }
     setTimeout(() => setNotificationMsg(null), 4000);
   };

@@ -7,8 +7,14 @@
 import React, { useState } from 'react';
 import { DatabaseState } from '../services/dbStore.ts';
 import { Language, translations } from '../services/i18n.ts';
-import { BellRing, Mail, CheckCircle2, Send, ShieldCheck, Loader2, AlertCircle, Key } from 'lucide-react';
-import { sendEmailViaEmailJS } from '../services/emailService.ts';
+import { BellRing, Mail, CheckCircle2, Send, ShieldCheck, Loader2, AlertCircle, Key, Eye, Code, Smartphone } from 'lucide-react';
+import { sendFctBrandedEmail } from '../services/emailService.ts';
+import {
+  buildReservationConfirmationEmail,
+  buildReturnReminderEmail,
+  buildCashReceiptEmail,
+  buildContactLeadEmail,
+} from '../services/emailTemplates.ts';
 
 interface NotificationsViewProps {
   state: DatabaseState;
@@ -23,186 +29,162 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ state, lan
   const [testEmail, setTestEmail] = useState('fct.cmr@gmail.com');
   const [isSending, setIsSending] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [previewTab, setPreviewTab] = useState<'RENDER' | 'SOURCE'>('RENDER');
 
-  const templates = {
-    RESERVATION: {
-      title: isEn ? 'Vehicle Booking Confirmation' : 'Confirmation de Réservation de Véhicule',
-      subjectFR: 'FCT Automobile Douala - Confirmation de votre réservation {{reservation_number}}',
-      subjectEN: 'FCT Automobile Douala - Confirmation of your booking {{reservation_number}}',
-      bodyFR: `Cher(e) {{customer_name}},
+  // Génération dynamique des e-mails stylisés FCT selon le modèle sélectionné
+  const getGeneratedEmail = () => {
+    switch (selectedTemplate) {
+      case 'RESERVATION':
+        return buildReservationConfirmationEmail({
+          customerName: isEn ? 'M. Christian Eboa Eboa' : 'M. Christian Eboa Eboa',
+          reservationNumber: 'RES-2026-0089',
+          vehicleName: 'Mercedes-Benz GLE 450 AMG (LT-1100-AB)',
+          startDate: '14/10/2026',
+          endDate: '21/10/2026',
+          advanceAmountXAF: '150 000',
+          totalDays: 7,
+          lang: isEn ? 'en' : 'fr',
+        });
 
-Nous avons le plaisir de vous confirmer la réservation de votre véhicule {{vehicle_name}} pour la période du {{start_date}} au {{end_date}}.
+      case 'RETURN_REMINDER':
+        return buildReturnReminderEmail({
+          customerName: 'SOCTRAN SA (Dr. Samuel Ewane)',
+          contractNumber: 'CTR-2026-0034',
+          vehicleName: 'Toyota Land Cruiser Prado TX-L (LT-8841-CE)',
+          endDate: '16/10/2026',
+          depositAmountXAF: '350 000',
+          lang: isEn ? 'en' : 'fr',
+        });
 
-- Numéro de dossier : {{reservation_number}}
-- Acompte consigné en caisse : {{advance_amount}} FCFA
-- Agence de retrait : Carrefour Santa Barbara, Bonamoussadi, Douala
+      case 'CASH_RECEIPT':
+        return buildCashReceiptEmail({
+          customerName: 'SOCTRAN SA',
+          receiptNumber: 'REC-2026-0245',
+          amountXAF: '595 000',
+          date: new Date().toLocaleDateString(isEn ? 'en-US' : 'fr-FR'),
+          categoryLabel: isEn ? 'Official Rental Settlement' : 'Règlement Intégral Location 7j',
+          cashierName: 'Suzanne Ndongo (Caisse Principale)',
+          lang: isEn ? 'en' : 'fr',
+        });
 
-Veuillez vous munir de votre pièce d'identité originale et de votre permis de conduire lors du retrait.
-
-L'équipe Franchise Conseils Trading (FCT)
-Tél : +237 699 45 88 12 | contact@fct-automobile.cm`,
-      bodyEN: `Dear {{customer_name}},
-
-We are pleased to confirm your vehicle booking for {{vehicle_name}} from {{start_date}} to {{end_date}}.
-
-- Booking reference: {{reservation_number}}
-- Advance deposit recorded: {{advance_amount}} XAF
-- Pickup Agency: Carrefour Santa Barbara, Bonamoussadi, Douala
-
-Please bring your original ID/passport and valid driving license upon vehicle pickup.
-
-The Franchise Conseils Trading (FCT) Team
-Tel: +237 699 45 88 12 | contact@fct-automobile.cm`,
-    },
-    RETURN_REMINDER: {
-      title: isEn ? 'Rental Return Expiry Reminder' : 'Rappel d’Échéance de Restitution de Location',
-      subjectFR: 'FCT Automobile - Rappel : Restitution de votre véhicule prévue le {{end_date}}',
-      subjectEN: 'FCT Automobile - Reminder: Vehicle return scheduled on {{end_date}}',
-      bodyFR: `Bonjour {{customer_name}},
-
-Ce message vous rappelle que le contrat de location {{contract_number}} pour le véhicule {{vehicle_name}} arrive à échéance le {{end_date}} à 17h00.
-
-Lieu de restitution : Agence FCT - Carrefour Santa Barbara, Bonamoussadi.
-Merci de veiller à ce que le véhicule soit restitué avec le plein de carburant et dans un état propre afin de permettre la restitution intégrale de votre caution de {{deposit_amount}} FCFA.
-
-En cas de prolongation souhaitée, contactez immédiatement notre service location au +237 699 45 88 12.`,
-      bodyEN: `Hello {{customer_name}},
-
-This reminder informs you that rental agreement {{contract_number}} for vehicle {{vehicle_name}} expires on {{end_date}} at 5:00 PM.
-
-Return location: FCT Agency - Carrefour Santa Barbara, Bonamoussadi.
-Please ensure the vehicle is returned with a full fuel tank and clean condition to allow full reimbursement of your security deposit of {{deposit_amount}} XAF.
-
-For lease extension requests, contact our rental desk immediately at +237 699 45 88 12.`,
-    },
-    CASH_RECEIPT: {
-      title: isEn ? 'Cash Payment Confirmation (Digital Receipt)' : 'Confirmation d’Encaissement en Espèces (Reçu Numérique)',
-      subjectFR: 'FCT Automobile - Reçu de paiement en espèces n° {{receipt_number}}',
-      subjectEN: 'FCT Automobile - Cash Payment Receipt # {{receipt_number}}',
-      bodyFR: `Bonjour {{customer_name}},
-
-Nous confirmons la bonne réception en caisse certifiée de la somme de {{amount}} FCFA en espèces le {{date}}.
-
-- Reçu n° : {{receipt_number}}
-- Objet : {{category_label}}
-- Caissier certifié : {{cashier_name}}
-
-Ce reçu tient lieu de justificatif de paiement officiel auprès de Franchise Conseils Trading Douala.`,
-      bodyEN: `Hello {{customer_name}},
-
-We confirm the proper reception at the certified cash register of {{amount}} XAF in cash on {{date}}.
-
-- Receipt #: {{receipt_number}}
-- Purpose: {{category_label}}
-- Certified Cashier: {{cashier_name}}
-
-This digital voucher serves as official payment proof for Franchise Conseils Trading Douala.`,
-    },
-    CONTACT: {
-      title: isEn ? 'Internal Alert: New Customer Quote Request' : 'Notification Interne : Nouvelle Demande de Devis Client',
-      subjectFR: 'FCT ERP - Nouvelle demande de contact web : {{prospect_name}}',
-      subjectEN: 'FCT ERP - New web contact inquiry: {{prospect_name}}',
-      bodyFR: `Alerte Commerciale FCT :
-
-Un nouveau prospect a formulé une demande de renseignements :
-- Nom : {{prospect_name}}
-- Téléphone : {{prospect_phone}}
-- Véhicule sollicité : {{requested_model}}
-- Dates souhaitées : {{dates}}
-
-Merci de prendre contact dans un délai maximum de 2 heures.`,
-      bodyEN: `FCT Commercial Alert:
-
-A new lead has submitted a vehicle inquiry:
-- Name: {{prospect_name}}
-- Phone: {{prospect_phone}}
-- Requested Model: {{requested_model}}
-- Desired Dates: {{dates}}
-
-Please reach out to the customer within a maximum of 2 hours.`,
-    },
+      case 'CONTACT':
+        return buildContactLeadEmail({
+          prospectName: 'Cabinet Avocats Associés Douala',
+          prospectPhone: '+237 699 45 88 12',
+          requestedModel: 'Toyota Land Cruiser Prado VIP',
+          dates: '20 au 27 Octobre 2026',
+          notes: 'Délégation étrangère en mission d\'affaires à Douala Bonanjo.',
+          lang: isEn ? 'en' : 'fr',
+        });
+    }
   };
 
-  const currentTpl = templates[selectedTemplate];
+  const currentEmail = getGeneratedEmail();
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-[#0f2a4a] via-[#1e3a8a] to-[#047857] rounded-xl p-6 text-white shadow-lg flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <BellRing className="w-6 h-6 text-emerald-600" />
-            <span>{t.title}</span>
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {t.subtitle}
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold mb-2 border border-emerald-400/30">
+            <BellRing className="w-3.5 h-3.5" />
+            <span>FCT Messaging Engine (EmailJS)</span>
+          </div>
+          <h2 className="text-xl font-black tracking-tight">{t.title}</h2>
+          <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+            {isEn
+              ? 'Real-time transactional email orchestration. All outgoing emails are automatically wrapped in FCT Automobile responsive HTML branding to avoid empty emails and truncated placeholders.'
+              : 'Orchestration des e-mails transactionnels en direct. Tous les courriels sont automatiquement habillés aux couleurs officielles de FCT Automobile (HTML5 responsive) sans aucun placeholder {{...}} non résolu.'}
           </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="bg-white/10 backdrop-blur-md px-3 py-2 rounded-lg border border-white/20 text-xs flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>{isEn ? 'Universal HTML5 Rendering' : 'Rendu HTML5 Universel'}</span>
+          </div>
         </div>
       </div>
 
-      {/* Grid: Template Selector & Live Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Template List */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-2">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-            {t.configuredTemplates}
-          </div>
-          {(Object.keys(templates) as (keyof typeof templates)[]).map((key) => (
-            <button
-              key={key}
-              onClick={() => setSelectedTemplate(key)}
-              className={`w-full text-left p-3 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center justify-between ${
-                selectedTemplate === key
-                  ? 'bg-blue-900 text-white shadow'
-                  : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-emerald-400" />
-                <span>{templates[key].title}</span>
-              </div>
-            </button>
-          ))}
+        {/* Left Col: Template Selector */}
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3">
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">{t.configuredTemplates}</h3>
 
-          {/* EmailJS Security Note */}
-          <div className="mt-6 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-900 flex items-start gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold block">{t.antiSpamTitle}</span>
-              <span>
-                {t.antiSpamDesc}
-              </span>
+            <div className="space-y-2">
+              {[
+                { id: 'RESERVATION', label: t.tplReservation, desc: 'Confirmation de réservation avec acompte et consignes' },
+                { id: 'RETURN_REMINDER', label: t.tplReturnReminder, desc: 'Rappel de restitution à échéance et caution' },
+                { id: 'CASH_RECEIPT', label: t.tplCashReceipt, desc: 'Reçu d\'encaissement numérique officiel BEAC' },
+                { id: 'CONTACT', label: t.tplContact, desc: 'Alerte commerciale interne pour nouveau prospect' },
+              ].map((tpl) => (
+                <button
+                  key={tpl.id}
+                  onClick={() => {
+                    setSelectedTemplate(tpl.id as any);
+                    setStatusMessage(null);
+                  }}
+                  className={`w-full text-left p-3 rounded-xl border text-xs transition cursor-pointer flex flex-col justify-between ${
+                    selectedTemplate === tpl.id
+                      ? 'bg-blue-50/70 border-blue-900/30 text-blue-950 font-bold shadow-xs'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold">{tpl.label}</span>
+                    {selectedTemplate === tpl.id && <CheckCircle2 className="w-3.5 h-3.5 text-blue-900" />}
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-normal mt-1">{tpl.desc}</span>
+                </button>
+              ))}
             </div>
           </div>
+
           {/* EmailJS Configuration Active Badge */}
-          <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 space-y-2">
-            <div className="flex items-center gap-1.5 font-bold text-xs text-blue-900">
-              <Key className="w-4 h-4 text-emerald-600" />
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-2.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+              <Key className="w-4 h-4 text-amber-600" />
               <span>{t.activeEmailJsParams}</span>
             </div>
-            <div className="grid grid-cols-1 gap-1 text-[11px] text-slate-600">
-              <div>{isEn ? 'Service:' : 'Service :'} <code className="px-1 py-0.5 rounded bg-white border border-slate-200 font-mono text-emerald-800">service_b31sdja</code> (Gmail)</div>
-              <div>{isEn ? 'Account:' : 'Compte :'} <strong>fct.cmr@gmail.com</strong></div>
-              <div>{isEn ? 'Default Template:' : 'Modèle par défaut :'} <code className="px-1 py-0.5 rounded bg-white border border-slate-200 font-mono text-emerald-800">template_6gxkx2n</code></div>
-              <div>{isEn ? 'Public Key:' : 'Clé publique :'} <code className="px-1 py-0.5 rounded bg-white border border-slate-200 font-mono text-slate-700">CCuR3Tr...</code></div>
+            <div className="space-y-1.5 text-[11px] font-mono text-slate-600">
+              <div className="flex justify-between border-b border-slate-100 pb-1">
+                <span className="text-slate-400">Service :</span>
+                <span className="font-bold text-slate-800">service_b31sdja</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-1">
+                <span className="text-slate-400">Template ID :</span>
+                <span className="font-bold text-slate-800">template_6gxkx2n</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-1">
+                <span className="text-slate-400">Expéditeur :</span>
+                <span className="font-bold text-emerald-700">fct.cmr@gmail.com</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Sécurité :</span>
+                <span className="text-emerald-600 font-bold">API REST HTTPS</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Right 2 cols: Template Preview & Real Sending */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.templatePreview}</span>
-              <h3 className="text-base font-black text-slate-900">{currentTpl.title}</h3>
+              <h3 className="text-base font-black text-slate-900">{currentEmail.subject}</h3>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Test Email & Send Button */}
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 type="email"
                 value={testEmail}
                 onChange={(e) => setTestEmail(e.target.value)}
                 placeholder={t.recipientPlaceholder}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs w-48 text-slate-800"
-                title="Adresse e-mail destinataire pour le test"
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs w-44 sm:w-52 text-slate-800 font-medium"
+                title="Adresse e-mail destinataire pour le test en direct"
               />
               <button
                 type="button"
@@ -211,28 +193,29 @@ Please reach out to the customer within a maximum of 2 hours.`,
                   setIsSending(true);
                   setStatusMessage(null);
                   try {
-                    const res = await sendEmailViaEmailJS({
-                      to_email: testEmail,
-                      reply_to: testEmail,
-                      customer_name: isEn ? 'FCT Test Client' : 'Client Test FCT',
-                      reservation_number: 'RES-2026-TEST',
-                      vehicle_name: 'Toyota Prado TX 2024',
-                      start_date: '10/10/2026',
-                      end_date: '15/10/2026',
-                      advance_amount: '150 000',
-                      contract_number: 'CTR-2026-TEST',
-                      deposit_amount: '250 000',
-                      receipt_number: 'REC-2026-TEST',
-                      amount: '100 000',
-                      date: new Date().toLocaleDateString(isEn ? 'en-GB' : 'fr-FR'),
-                      category_label: isEn ? 'Booking Deposit' : 'Acompte Réservation',
-                      cashier_name: isEn ? 'FCT Cash Desk Manager' : 'Responsable Caisse FCT',
-                      prospect_name: isEn ? 'FCT Test Client' : 'Client Test FCT',
-                      prospect_phone: '+237 699 45 88 12',
-                      requested_model: 'Toyota Prado TX',
-                      dates: isEn ? 'October 10 to 15' : '10 au 15 Octobre',
-                      message: isEn ? currentTpl.bodyEN : currentTpl.bodyFR,
-                      subject: isEn ? currentTpl.subjectEN : currentTpl.subjectFR,
+                    const res = await sendFctBrandedEmail({
+                      type: selectedTemplate,
+                      toEmail: testEmail,
+                      data: {
+                        customerName: isEn ? 'M. Christian Eboa Eboa' : 'M. Christian Eboa Eboa',
+                        reservationNumber: 'RES-2026-0089',
+                        vehicleName: 'Mercedes-Benz GLE 450 AMG',
+                        startDate: '14/10/2026',
+                        endDate: '21/10/2026',
+                        advanceAmountXAF: '150 000',
+                        totalDays: 7,
+                        contractNumber: 'CTR-2026-0034',
+                        depositAmountXAF: '350 000',
+                        receiptNumber: 'REC-2026-0245',
+                        amountXAF: '595 000',
+                        categoryLabel: 'Règlement Intégral Location 7j',
+                        cashierName: 'Suzanne Ndongo',
+                        prospectName: 'Cabinet Avocats Associés Douala',
+                        prospectPhone: '+237 699 45 88 12',
+                        requestedModel: 'Toyota Land Cruiser Prado VIP',
+                        dates: '20 au 27 Octobre 2026',
+                      },
+                      lang: isEn ? 'en' : 'fr',
                     });
 
                     if (res.success) {
@@ -249,13 +232,13 @@ Please reach out to the customer within a maximum of 2 hours.`,
                   } catch (err: any) {
                     setStatusMessage({
                       type: 'error',
-                      message: `Error: ${err?.message || 'Send error'}`,
+                      message: `Erreur: ${err?.message || 'Erreur inconnue'}`,
                     });
                   } finally {
                     setIsSending(false);
                   }
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white text-xs font-bold cursor-pointer transition shadow"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white text-xs font-bold cursor-pointer transition shadow-xs"
               >
                 {isSending ? (
                   <>
@@ -289,28 +272,67 @@ Please reach out to the customer within a maximum of 2 hours.`,
             </div>
           )}
 
-          <div className="space-y-3 text-xs">
-            <div>
-              <span className="font-bold text-slate-700 block mb-1">{t.subjectFr}</span>
-              <div className="p-2.5 rounded bg-slate-50 border border-slate-200 font-mono text-slate-900">
-                {currentTpl.subjectFR}
-              </div>
+          {/* Toggle Rendu Visuel HTML vs Code Source */}
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPreviewTab('RENDER')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                  previewTab === 'RENDER'
+                    ? 'bg-blue-900 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Branded Email View' : 'Aperçu E-mail Stylisé'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewTab('SOURCE')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                  previewTab === 'SOURCE'
+                    ? 'bg-blue-900 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Code className="w-3.5 h-3.5" />
+                <span>{isEn ? 'HTML Source' : 'Code Source HTML'}</span>
+              </button>
             </div>
 
-            <div>
-              <span className="font-bold text-slate-700 block mb-1">{t.subjectEn}</span>
-              <div className="p-2.5 rounded bg-slate-50 border border-slate-200 font-mono text-slate-900">
-                {currentTpl.subjectEN}
-              </div>
-            </div>
-
-            <div>
-              <span className="font-bold text-slate-700 block mb-1">{t.dynamicVarsBody} ({isEn ? 'English' : 'Français'})</span>
-              <pre className="p-4 rounded bg-slate-900 text-slate-100 font-mono text-xs whitespace-pre-wrap leading-relaxed overflow-x-auto">
-                {isEn ? currentTpl.bodyEN : currentTpl.bodyFR}
-              </pre>
-            </div>
+            <span className="text-[11px] text-slate-400 flex items-center gap-1">
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Responsive Mobile & Desktop' : '100% Responsive Mobile'}</span>
+            </span>
           </div>
+
+          {/* Preview Container */}
+          {previewTab === 'RENDER' ? (
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-100 p-2 sm:p-4">
+              <div
+                className="bg-white rounded-xl shadow-xs overflow-hidden max-w-[600px] mx-auto"
+                dangerouslySetInnerHTML={{ __html: currentEmail.html }}
+              />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <span className="font-bold text-slate-700 block mb-1 text-xs">Objet résolu :</span>
+                <div className="p-2.5 rounded bg-slate-50 border border-slate-200 font-mono text-xs text-slate-900 font-bold">
+                  {currentEmail.subject}
+                </div>
+              </div>
+
+              <div>
+                <span className="font-bold text-slate-700 block mb-1 text-xs">Code HTML complet (expédié à EmailJS) :</span>
+                <pre className="p-4 rounded-xl bg-slate-900 text-slate-100 font-mono text-[11px] whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto">
+                  {currentEmail.html}
+                </pre>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
