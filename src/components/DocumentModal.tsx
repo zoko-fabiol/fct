@@ -24,6 +24,7 @@ import {
   ZoomOut,
   Maximize2,
   Minimize2,
+  Share2,
 } from 'lucide-react';
 import { printElementById } from '../utils/printDocument.ts';
 import {
@@ -168,10 +169,22 @@ export const DocumentModal: React.FC<DocumentModalProps> = ({ data, onClose, lan
               type="button"
               onClick={handlePrint}
               className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-xs transition cursor-pointer"
-              title={lang === 'en' ? 'Print document' : 'Imprimer ou partager pour impression'}
+              title={
+                isNativeMobile()
+                  ? (lang === 'en' ? 'Share PDF' : 'Partager le PDF')
+                  : (lang === 'en' ? 'Print document' : 'Imprimer le document')
+              }
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{lang === 'en' ? 'Print' : 'Imprimer'}</span>
+              {isNativeMobile() ? (
+                <Share2 className="w-3.5 h-3.5" />
+              ) : (
+                <Printer className="w-3.5 h-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {isNativeMobile()
+                  ? (lang === 'en' ? 'Share' : 'Partager')
+                  : (lang === 'en' ? 'Print' : 'Imprimer')}
+              </span>
             </button>
 
             <button
