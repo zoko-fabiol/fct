@@ -31,6 +31,7 @@ interface DashboardViewProps {
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNavigate }) => {
   const t = translations[lang];
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
 
   // Calculs statistiques
   const totalVehicles = state.vehicles.length;
@@ -184,60 +185,116 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Fleet Status Breakdown & Active Rentals */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Active Rentals Table */}
+          {/* Active Rentals Table or Cards */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
                 <KeyRound className="w-4 h-4 text-emerald-600" />
                 <span>Locations &amp; Missions en Cours</span>
               </div>
-              <button
-                onClick={() => onNavigate('rentals')}
-                className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 cursor-pointer"
-              >
-                <span>Voir tout</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Switch Cartes vs Tableau */}
+                <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('cards')}
+                    className={`px-2 py-0.5 text-xs font-bold rounded-md transition cursor-pointer ${
+                      viewMode === 'cards' ? 'bg-white text-[#0f2a4a] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {lang === 'en' ? 'Cards' : 'Cartes'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('table')}
+                    className={`px-2 py-0.5 text-xs font-bold rounded-md transition cursor-pointer ${
+                      viewMode === 'table' ? 'bg-white text-[#0f2a4a] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {lang === 'en' ? 'Table' : 'Tableau'}
+                  </button>
+                </div>
+                <button
+                  onClick={() => onNavigate('rentals')}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Voir tout</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-[10px]">
-                  <tr>
-                    <th className="py-2.5 px-4">Contrat</th>
-                    <th className="py-2.5 px-4">Véhicule</th>
-                    <th className="py-2.5 px-4">Client</th>
-                    <th className="py-2.5 px-4">Période</th>
-                    <th className="py-2.5 px-4 text-right">Montant</th>
-                    <th className="py-2.5 px-4 text-center">Statut</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {state.contracts.map((ctr) => (
-                    <tr key={ctr.id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-4 font-bold text-blue-900">{ctr.contractNumber}</td>
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-800">{ctr.vehicleName}</div>
-                        <div className="text-[10px] text-slate-400">{ctr.licensePlate}</div>
-                      </td>
-                      <td className="py-3 px-4 text-slate-700">{ctr.customerName}</td>
-                      <td className="py-3 px-4 text-slate-600">
-                        <div>{ctr.startDate} au {ctr.endDate}</div>
-                        <div className="text-[10px] text-slate-400">{ctr.totalDays} jours</div>
-                      </td>
-                      <td className="py-3 px-4 text-right font-bold text-slate-900">
-                        {formatXAF(ctr.totalAmountXAF)}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                          {t.rentalStatus[ctr.status]}
-                        </span>
-                      </td>
+            {viewMode === 'cards' ? (
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {state.contracts.map((ctr) => (
+                  <div
+                    key={ctr.id}
+                    onClick={() => onNavigate('rentals', ctr.id)}
+                    className="p-3.5 rounded-xl border border-slate-200 hover:border-emerald-500/50 hover:shadow-xs transition bg-slate-50/50 space-y-2.5 cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-200/80 pb-2">
+                      <div>
+                        <span className="font-mono font-bold text-xs text-blue-900">{ctr.contractNumber}</span>
+                        <div className="font-bold text-slate-800 text-xs">{ctr.customerName}</div>
+                      </div>
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0">
+                        {t.rentalStatus[ctr.status]}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-600 space-y-1">
+                      <div className="font-semibold text-slate-800">{ctr.vehicleName}</div>
+                      <div className="text-[11px] text-slate-500 font-mono">{ctr.licensePlate}</div>
+                      <div className="text-[11px] text-slate-500">
+                        {ctr.startDate} au {ctr.endDate} ({ctr.totalDays} jours)
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                      <span className="text-[10px] text-slate-400 font-medium">Total Contrat</span>
+                      <span className="font-bold text-slate-900">{formatXAF(ctr.totalAmountXAF)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-[10px]">
+                    <tr>
+                      <th className="py-2.5 px-4">Contrat</th>
+                      <th className="py-2.5 px-4">Véhicule</th>
+                      <th className="py-2.5 px-4">Client</th>
+                      <th className="py-2.5 px-4">Période</th>
+                      <th className="py-2.5 px-4 text-right">Montant</th>
+                      <th className="py-2.5 px-4 text-center">Statut</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {state.contracts.map((ctr) => (
+                      <tr key={ctr.id} className="hover:bg-slate-50/80 transition">
+                        <td className="py-3 px-4 font-bold text-blue-900">{ctr.contractNumber}</td>
+                        <td className="py-3 px-4">
+                          <div className="font-semibold text-slate-800">{ctr.vehicleName}</div>
+                          <div className="text-[10px] text-slate-400">{ctr.licensePlate}</div>
+                        </td>
+                        <td className="py-3 px-4 text-slate-700">{ctr.customerName}</td>
+                        <td className="py-3 px-4 text-slate-600">
+                          <div>{ctr.startDate} au {ctr.endDate}</div>
+                          <div className="text-[10px] text-slate-400">{ctr.totalDays} jours</div>
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold text-slate-900">
+                          {formatXAF(ctr.totalAmountXAF)}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            {t.rentalStatus[ctr.status]}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Quick Fleet Availability Summary */}

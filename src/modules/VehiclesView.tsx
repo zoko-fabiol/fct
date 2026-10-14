@@ -64,6 +64,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [vehicleDetailTab, setVehicleDetailTab] = useState<'SPECS' | 'HEALTH' | 'RENTALS' | 'SALES'>('SPECS');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -311,6 +312,28 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
           <option value="RESERVED">{t.vehicleStatus.RESERVED}</option>
           <option value="SOLD">{t.vehicleStatus.SOLD}</option>
         </select>
+
+        {/* Toggle Cartes / Tableau */}
+        <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 ml-auto">
+          <button
+            type="button"
+            onClick={() => setViewMode('cards')}
+            className={`px-2.5 py-1 text-xs font-bold rounded-md transition cursor-pointer ${
+              viewMode === 'cards' ? 'bg-white text-[#0f2a4a] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {lang === 'en' ? 'Cards' : 'Cartes'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('table')}
+            className={`px-2.5 py-1 text-xs font-bold rounded-md transition cursor-pointer ${
+              viewMode === 'table' ? 'bg-white text-[#0f2a4a] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {lang === 'en' ? 'Table' : 'Tableau'}
+          </button>
+        </div>
       </div>
 
       {/* Vehicles Grid Cards */}
@@ -320,7 +343,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
           <h3 className="font-bold text-slate-800 text-sm">{t.vehiclesPage.emptyVehiclesTitle}</h3>
           <p className="text-xs text-slate-500 mt-1">{t.vehiclesPage.emptyVehiclesDesc}</p>
         </div>
-      ) : (
+      ) : viewMode === 'cards' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredVehicles.map((vehicle) => (
             <div
@@ -473,6 +496,119 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
             </div>
           </div>
           ))}
+        </div>
+      ) : (
+        /* TABLE VIEW POUR LE PARC AUTOMOBILE */
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[750px] text-xs text-left">
+              <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
+                <tr>
+                  <th className="py-3 px-4">{lang === 'en' ? 'Vehicle' : 'Véhicule'}</th>
+                  <th className="py-3 px-4">{lang === 'en' ? 'Plate' : 'Immatriculation'}</th>
+                  <th className="py-3 px-4">{lang === 'en' ? 'Category' : 'Catégorie'}</th>
+                  <th className="py-3 px-4">{lang === 'en' ? 'Mileage' : 'Kilométrage'}</th>
+                  <th className="py-3 px-4 text-right">{lang === 'en' ? 'Daily Rate' : 'Tarif / Jour'}</th>
+                  <th className="py-3 px-4 text-center">{t.status}</th>
+                  <th className="py-3 px-4 text-right">{t.actions}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredVehicles.map((vehicle) => (
+                  <tr
+                    key={vehicle.id}
+                    onClick={() => onOpenShowroom(vehicle)}
+                    className="hover:bg-slate-50 transition cursor-pointer"
+                  >
+                    <td className="py-2.5 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-slate-900 overflow-hidden shrink-0 flex items-center justify-center">
+                          {vehicle.photoUrls && vehicle.photoUrls[0] ? (
+                            <img
+                              src={vehicle.photoUrls[0]}
+                              alt={`${vehicle.brand} ${vehicle.model}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Car className="w-5 h-5 text-slate-400" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-900">
+                            {vehicle.brand} {vehicle.model}
+                          </div>
+                          <div className="text-[10px] text-slate-500">
+                            Année {vehicle.year} • {vehicle.fuelType || 'Essence'}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-4 font-mono font-bold text-slate-800 whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
+                        {vehicle.licensePlate}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-4">
+                      <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-900 border border-blue-200 font-bold text-[10px]">
+                        {vehicle.category}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-4 font-mono text-slate-700 whitespace-nowrap">
+                      {vehicle.mileage.toLocaleString()} km
+                    </td>
+                    <td className="py-2.5 px-4 text-right font-black text-emerald-700 whitespace-nowrap">
+                      {formatXAF(vehicle.rentalDailyRate)}
+                    </td>
+                    <td className="py-2.5 px-4 text-center whitespace-nowrap">
+                      <span
+                        className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          vehicle.status === 'AVAILABLE'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : vehicle.status === 'RENTED'
+                            ? 'bg-blue-100 text-blue-800'
+                            : vehicle.status === 'MAINTENANCE'
+                            ? 'bg-amber-100 text-amber-900'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {t.vehicleStatus[vehicle.status]}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-4 text-right space-x-1 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => onOpenShowroom(vehicle)}
+                        title="Ouvrir Fiche Showroom"
+                        className="p-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex items-center transition cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      {canEditVehicle && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(vehicle)}
+                          title={t.vehiclesPage.editVehicle}
+                          className="p-1.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 inline-flex items-center transition cursor-pointer"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {canDeleteVehicle && (
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmVehicle(vehicle)}
+                          title={t.vehiclesPage.deleteVehicle}
+                          className="p-1.5 rounded bg-rose-50 hover:bg-rose-100 text-rose-600 inline-flex items-center transition cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

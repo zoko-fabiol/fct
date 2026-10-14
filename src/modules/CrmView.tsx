@@ -66,6 +66,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [leadStageFilter, setLeadStageFilter] = useState<string>('ALL');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -1206,86 +1207,221 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 </button>
               ))}
             </div>
-          </div>
 
-          {/* Customers Table */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
-                  <tr>
-                    <th className="py-3 px-4">{lang === 'en' ? 'Type' : 'Type'}</th>
-                    <th className="py-3 px-4">{lang === 'en' ? 'Client / Company Name' : 'Nom / Raison Sociale'}</th>
-                    <th className="py-3 px-4">{lang === 'en' ? 'Phone' : 'Téléphone'}</th>
-                    <th className="py-3 px-4">{lang === 'en' ? 'Email' : 'Email'}</th>
-                    <th className="py-3 px-4">{lang === 'en' ? 'Address' : 'Adresse'}</th>
-                    <th className="py-3 px-4 text-center">{lang === 'en' ? 'Rentals' : 'Locations'}</th>
-                    <th className="py-3 px-4 text-right">{lang === 'en' ? 'Total Spent (XAF)' : 'Dépenses Totales (XAF)'}</th>
-                    <th className="py-3 px-4 text-right">{t.actions}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredCustomers.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="py-8 text-center text-slate-400 font-semibold">
-                        {t.crmPage.emptyClientsDesc}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredCustomers.map((cust) => {
-                      const isCompany = cust.type === 'COMPANY';
-                      return (
-                        <tr
-                          key={cust.id}
-                          onClick={() => setSelectedCustomer(cust)}
-                          className="hover:bg-blue-50/50 cursor-pointer transition"
-                        >
-                          <td className="py-3 px-4">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                isCompany ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                              }`}
-                            >
-                              {isCompany ? (lang === 'en' ? 'Corporate' : 'Entreprise') : (lang === 'en' ? 'Individual' : 'Particulier')}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 font-bold text-slate-900">
-                            <div>{cust.companyName || cust.fullName}</div>
-                            {isCompany && <div className="text-[10px] text-slate-500 font-normal">Contact : {cust.fullName}</div>}
-                          </td>
-                          <td className="py-3 px-4 font-semibold text-slate-700 whitespace-nowrap">{cust.phone}</td>
-                          <td className="py-3 px-4 text-slate-600">{cust.email}</td>
-                          <td className="py-3 px-4 text-slate-600 truncate max-w-xs">{cust.address}</td>
-                          <td className="py-3 px-4 text-center font-bold text-slate-800">
-                            {state.contracts.filter((c) => c.customerId === cust.id).length}
-                          </td>
-                          <td className="py-3 px-4 text-right font-black text-emerald-800 whitespace-nowrap">
-                            {formatXAF(cust.totalSpentXAF)}
-                          </td>
-                          <td className="py-3 px-4 text-right space-x-1 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={() => handleOpenEdit(cust)}
-                              title="Modifier"
-                              className="p-1.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 cursor-pointer inline-flex items-center transition"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirmCustomer(cust)}
-                              title="Supprimer"
-                              className="p-1.5 rounded bg-rose-50 hover:bg-rose-100 text-rose-600 cursor-pointer inline-flex items-center transition"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+            {/* Switch Cartes vs Tableau */}
+            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 ml-auto">
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition cursor-pointer ${
+                  viewMode === 'cards' ? 'bg-white text-[#0f2a4a] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {lang === 'en' ? 'Cards' : 'Cartes'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition cursor-pointer ${
+                  viewMode === 'table' ? 'bg-white text-[#0f2a4a] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {lang === 'en' ? 'Table' : 'Tableau'}
+              </button>
             </div>
           </div>
+
+          {/* Content: Cards or Table */}
+          {filteredCustomers.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400 font-semibold text-xs">
+              {t.crmPage.emptyClientsDesc}
+            </div>
+          ) : viewMode === 'cards' ? (
+            /* VUE CARTES CLIENTS */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredCustomers.map((cust) => {
+                const isCompany = cust.type === 'COMPANY';
+                const rentalsCount = state.contracts.filter((c) => c.customerId === cust.id).length;
+
+                return (
+                  <div
+                    key={cust.id}
+                    onClick={() => setSelectedCustomer(cust)}
+                    className="bg-white rounded-xl shadow-xs border border-slate-200 p-4 flex flex-col justify-between hover:shadow-md hover:border-blue-500/50 transition cursor-pointer space-y-3"
+                  >
+                    {/* En-tête Carte */}
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 ${
+                            isCompany
+                              ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                              : 'bg-blue-100 text-blue-800 border border-blue-200'
+                          }`}
+                        >
+                          {(cust.companyName || cust.fullName).substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-slate-900 text-sm truncate">
+                            {cust.companyName || cust.fullName}
+                          </h4>
+                          {isCompany && (
+                            <p className="text-[10px] text-slate-500 truncate">
+                              Contact : {cust.fullName}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                          isCompany ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                        }`}
+                      >
+                        {isCompany ? (lang === 'en' ? 'Corporate' : 'Entreprise') : (lang === 'en' ? 'Individual' : 'Particulier')}
+                      </span>
+                    </div>
+
+                    {/* Coordonnées */}
+                    <div className="space-y-1.5 text-xs text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-800 font-mono text-[11px]">{cust.phone}</span>
+                      </div>
+                      {cust.email && (
+                        <div className="text-[11px] text-slate-500 truncate">
+                          {cust.email}
+                        </div>
+                      )}
+                      {cust.address && (
+                        <div className="text-[10px] text-slate-400 truncate">
+                          {cust.address}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Statistiques Client & Actions */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-slate-400 block font-medium">Locations</span>
+                        <span className="font-bold text-slate-900 text-xs">{rentalsCount} contrat(s)</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-400 block font-medium">Dépenses totales</span>
+                        <span className="font-black text-emerald-700 text-xs">{formatXAF(cust.totalSpentXAF)}</span>
+                      </div>
+                    </div>
+
+                    {/* Boutons d'Action */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCustomer(cust)}
+                        title="Ouvrir Fiche Showroom Client"
+                        className="p-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(cust)}
+                        title="Modifier le client"
+                        className="p-1.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 transition cursor-pointer"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmCustomer(cust)}
+                        title="Supprimer le client"
+                        className="p-1.5 rounded bg-rose-50 hover:bg-rose-100 text-rose-600 transition cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* Customers Table */
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
+                    <tr>
+                      <th className="py-3 px-4">{lang === 'en' ? 'Type' : 'Type'}</th>
+                      <th className="py-3 px-4">{lang === 'en' ? 'Client / Company Name' : 'Nom / Raison Sociale'}</th>
+                      <th className="py-3 px-4">{lang === 'en' ? 'Phone' : 'Téléphone'}</th>
+                      <th className="py-3 px-4">{lang === 'en' ? 'Email' : 'Email'}</th>
+                      <th className="py-3 px-4">{lang === 'en' ? 'Address' : 'Adresse'}</th>
+                      <th className="py-3 px-4 text-center">{lang === 'en' ? 'Rentals' : 'Locations'}</th>
+                      <th className="py-3 px-4 text-right">{lang === 'en' ? 'Total Spent (XAF)' : 'Dépenses Totales (XAF)'}</th>
+                      <th className="py-3 px-4 text-right">{t.actions}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredCustomers.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-8 text-center text-slate-400 font-semibold">
+                          {t.crmPage.emptyClientsDesc}
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredCustomers.map((cust) => {
+                        const isCompany = cust.type === 'COMPANY';
+                        return (
+                          <tr
+                            key={cust.id}
+                            onClick={() => setSelectedCustomer(cust)}
+                            className="hover:bg-blue-50/50 cursor-pointer transition"
+                          >
+                            <td className="py-3 px-4">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  isCompany ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                                }`}
+                              >
+                                {isCompany ? (lang === 'en' ? 'Corporate' : 'Entreprise') : (lang === 'en' ? 'Individual' : 'Particulier')}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-bold text-slate-900">
+                              <div>{cust.companyName || cust.fullName}</div>
+                              {isCompany && <div className="text-[10px] text-slate-500 font-normal">Contact : {cust.fullName}</div>}
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-slate-700 whitespace-nowrap">{cust.phone}</td>
+                            <td className="py-3 px-4 text-slate-600">{cust.email}</td>
+                            <td className="py-3 px-4 text-slate-600 truncate max-w-xs">{cust.address}</td>
+                            <td className="py-3 px-4 text-center font-bold text-slate-800">
+                              {state.contracts.filter((c) => c.customerId === cust.id).length}
+                            </td>
+                            <td className="py-3 px-4 text-right font-black text-emerald-800 whitespace-nowrap">
+                              {formatXAF(cust.totalSpentXAF)}
+                            </td>
+                            <td className="py-3 px-4 text-right space-x-1 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => handleOpenEdit(cust)}
+                                title="Modifier"
+                                className="p-1.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 cursor-pointer inline-flex items-center transition"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirmCustomer(cust)}
+                                title="Supprimer"
+                                className="p-1.5 rounded bg-rose-50 hover:bg-rose-100 text-rose-600 cursor-pointer inline-flex items-center transition"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

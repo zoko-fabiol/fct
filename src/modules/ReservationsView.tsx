@@ -50,6 +50,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
   const t = translations[lang];
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -312,11 +313,161 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
             </button>
           ))}
         </div>
+
+        {/* Switch Cartes vs Tableau */}
+        <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 ml-auto">
+          <button
+            type="button"
+            onClick={() => setViewMode('cards')}
+            className={`px-2.5 py-1 text-xs font-bold rounded-md transition cursor-pointer ${
+              viewMode === 'cards' ? 'bg-white text-[#0f2a4a] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {lang === 'en' ? 'Cards' : 'Cartes'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('table')}
+            className={`px-2.5 py-1 text-xs font-bold rounded-md transition cursor-pointer ${
+              viewMode === 'table' ? 'bg-white text-[#0f2a4a] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {lang === 'en' ? 'Table' : 'Tableau'}
+          </button>
+        </div>
       </div>
 
-      {/* Reservations Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Content: Cards or Table */}
+      {filteredReservations.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400 font-semibold text-xs">
+          {t.reservationsPage.emptyReservationsDesc}
+        </div>
+      ) : viewMode === 'cards' ? (
+        /* VUE CARTES RÉSERVATIONS */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredReservations.map((res) => {
+            const isConverted = res.status === 'CONVERTED';
+            const isCancelled = res.status === 'CANCELLED';
+            const days = calculateRentalDays(res.startDate, res.endDate);
+
+            return (
+              <div
+                key={res.id}
+                className="bg-white rounded-xl shadow-xs border border-slate-200 p-4 flex flex-col justify-between hover:shadow-md transition space-y-3"
+              >
+                {/* En-tête Carte */}
+                <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                  <div>
+                    <span className="font-mono font-bold text-blue-900 text-xs block">
+                      {res.reservationNumber}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      Canal : {res.source}
+                    </span>
+                  </div>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      isConverted
+                        ? 'bg-purple-100 text-purple-800'
+                        : res.status === 'CONFIRMED'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : isCancelled
+                        ? 'bg-rose-100 text-rose-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {isConverted ? (
+                      <CheckCircle2 className="w-3 h-3" />
+                    ) : isCancelled ? (
+                      <X className="w-3 h-3" />
+                    ) : (
+                      <Clock className="w-3 h-3" />
+                    )}
+                    {isConverted ? 'Convertie' : res.status}
+                  </span>
+                </div>
+
+                {/* Corps Carte */}
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-bold text-slate-900 truncate">{res.customerName}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">{res.customerPhone}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Car className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span className="font-semibold text-slate-800 truncate">{res.vehicleName}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="text-[11px]">
+                      {res.startDate} au {res.endDate} <strong className="text-slate-800">({days} j)</strong>
+                    </span>
+                  </div>
+
+                  {/* Montants */}
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block font-medium">Acompte consigné</span>
+                      <span className="font-black text-emerald-700 text-xs">{formatXAF(res.advanceDepositXAF)}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-400 block font-medium">Total estimé</span>
+                      <span className="font-bold text-slate-900 text-xs">{formatXAF(res.estimatedTotalXAF)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pied de Carte & Actions */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-1.5">
+                  {!isConverted && !isCancelled && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenConvert(res)}
+                      title="Convertir directement en contrat de location"
+                      className="px-2.5 py-1.5 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs cursor-pointer inline-flex items-center gap-1 shadow-xs transition"
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>Convertir</span>
+                    </button>
+                  )}
+
+                  {isConverted && res.convertedContractId && onNavigate && (
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('rentals', res.convertedContractId)}
+                      title="Ouvrir le contrat généré"
+                      className="px-2.5 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs cursor-pointer inline-flex items-center gap-1 transition"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Voir Contrat</span>
+                    </button>
+                  )}
+
+                  {!isConverted && !isCancelled && (
+                    <button
+                      type="button"
+                      onClick={() => setCancelConfirmRes(res)}
+                      title="Annuler la réservation"
+                      className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs cursor-pointer inline-flex items-center gap-1 transition"
+                    >
+                      <Ban className="w-3.5 h-3.5" />
+                      <span>Annuler</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* VUE TABLEAU RÉSERVATIONS */
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full min-w-[750px] text-xs text-left">
             <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
               <tr>
@@ -434,6 +585,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
           </table>
         </div>
       </div>
+      )}
 
       {/* Convert to Contract Modal */}
       {isConvertModalOpen && convertingRes && (
