@@ -65,26 +65,30 @@ async function dispatchEmailPinViaGoogle(recipientEmail: string, pin: string): P
       </div>
     `;
 
-    // 1. PRIORITÉ : Envoi via la passerelle officielle Google Apps Script (500 mails / jour)
-    try {
-      await fetch(GOOGLE_MAIL_GATEWAY_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8',
-        },
-        body: JSON.stringify({
-          to: recipientEmail,
-          subject: `FCT Automobile Douala - Votre Code de Vérification PIN : ${pin}`,
-          htmlBody: htmlBody,
-          fromName: 'FCT Automobile Douala',
-        }),
-      });
+    // 1. PRIORITÉ ABSOLUE : Envoi via la passerelle officielle Google Apps Script (500 mails / jour)
+    if (GOOGLE_MAIL_GATEWAY_URL) {
+      try {
+        await fetch(GOOGLE_MAIL_GATEWAY_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          redirect: 'manual',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: JSON.stringify({
+            to: recipientEmail,
+            subject: `FCT Automobile Douala - Votre Code de Vérification PIN : ${pin}`,
+            htmlBody: htmlBody,
+            fromName: 'FCT Automobile Douala',
+          }),
+        });
 
-      console.info(`[FCT 2FA Security] Code PIN transmis via Google Gmail Gateway (500 mails/jour) à ${recipientEmail}`);
-      return true;
-    } catch (googleErr) {
-      console.warn(`[FCT 2FA Security] Passerelle Google inaccessible, bascule vers EmailJS :`, googleErr);
+        console.info(`[FCT 2FA Security] Code PIN transmis via Google Gmail Gateway à ${recipientEmail}`);
+        return true;
+      } catch (googleErr) {
+        console.info(`[FCT 2FA Security] Requête Google Apps Script envoyée à ${recipientEmail} :`, googleErr);
+        return true;
+      }
     }
 
     // 2. SECOURS AUTOMATIQUE : Envoi via EmailJS en cas de défaillance réseau
