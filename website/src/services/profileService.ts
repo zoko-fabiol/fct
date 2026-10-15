@@ -84,14 +84,38 @@ export function validateCameroonPhone(phoneInput: string): {
   };
 }
 
+const PROFILE_CACHE_KEY = 'fct_cached_unified_profile';
 let cachedUnifiedProfile: UnifiedUserProfile | null = null;
 
 export function getCachedUserProfile(): UnifiedUserProfile | null {
-  return cachedUnifiedProfile;
+  if (cachedUnifiedProfile) return cachedUnifiedProfile;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = localStorage.getItem(PROFILE_CACHE_KEY);
+      if (raw) {
+        cachedUnifiedProfile = JSON.parse(raw);
+        return cachedUnifiedProfile;
+      }
+    } catch {
+      // ignore JSON errors
+    }
+  }
+  return null;
 }
 
 export function setCachedUserProfile(profile: UnifiedUserProfile | null) {
   cachedUnifiedProfile = profile;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      if (profile) {
+        localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
+      } else {
+        localStorage.removeItem(PROFILE_CACHE_KEY);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }
 }
 
 /**

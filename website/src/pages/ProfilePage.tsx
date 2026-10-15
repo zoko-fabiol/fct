@@ -55,30 +55,40 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 }) => {
   const isEn = lang === 'en';
   const cachedProf = initialProfile || getCachedUserProfile();
-  const [profile, setProfile] = useState<UnifiedUserProfile | null>(cachedProf);
-  const [loadingProfile, setLoadingProfile] = useState(!cachedProf && Boolean(auth.currentUser));
+  const [profile, setProfile] = useState<UnifiedUserProfile | null>(() => {
+    if (cachedProf) return cachedProf;
+    if (auth.currentUser) {
+      return {
+        id: auth.currentUser.uid,
+        accountType: 'CLIENT',
+        fullName: auth.currentUser.displayName || auth.currentUser.email?.split('@')[0] || 'Adhérent FCT',
+        email: auth.currentUser.email || '',
+        phone: auth.currentUser.phoneNumber || '',
+        whatsappPhone: auth.currentUser.phoneNumber || '',
+        city: 'Douala',
+        payoutMethod: 'ORANGE_MONEY',
+        payoutPhone: auth.currentUser.phoneNumber || '',
+        payoutAccountName: auth.currentUser.displayName || '',
+      };
+    }
+    return null;
+  });
   const [saving, setSaving] = useState(false);
   const [phoneOperator, setPhoneOperator] = useState<'ORANGE' | 'MTN' | 'AUTRE'>('AUTRE');
   const [payoutOperator, setPayoutOperator] = useState<'ORANGE' | 'MTN' | 'AUTRE'>('AUTRE');
 
-  // Chargement automatique si non fourni (priorité cache local & timeout de sécurité)
+  // Synchronisation silencieuse en arrière-plan sans bloquer l'affichage
   useEffect(() => {
     if (cachedProf) {
       setProfile(cachedProf);
-      setLoadingProfile(false);
     }
 
     let isMounted = true;
-    const safetyTimer = setTimeout(() => {
-      if (isMounted) setLoadingProfile(false);
-    }, 1200);
-
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (!isMounted) return;
       if (!u) {
         setProfile(null);
         setCachedUserProfile(null);
-        setLoadingProfile(false);
         return;
       }
 
@@ -94,14 +104,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         if (partnerData) {
           setProfile(partnerData);
           setCachedUserProfile(partnerData);
-          setLoadingProfile(false);
           return;
         }
 
         if (clientData) {
           setProfile(clientData);
           setCachedUserProfile(clientData);
-          setLoadingProfile(false);
           return;
         }
 
@@ -118,21 +126,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           payoutPhone: u.phoneNumber || '',
           payoutAccountName: u.displayName || '',
         };
-        setProfile(defaultProf);
+        setProfile((prev) => prev || defaultProf);
         setCachedUserProfile(defaultProf);
       } catch (err) {
         console.warn('[FCT Profile] Erreur hydratation profil :', err);
-      } finally {
-        if (isMounted) setLoadingProfile(false);
       }
     });
 
     return () => {
       isMounted = false;
-      clearTimeout(safetyTimer);
       unsub();
     };
-  }, [cachedProf]);
+  }, []);
 
   // Détection automatique opérateur
   useEffect(() => {
@@ -177,28 +182,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       onToast(res.error || (isEn ? 'Update error.' : 'Erreur de mise à jour.'));
     }
   };
-
-
-  if (loadingProfile) {
-    return (
-      <div style={{ padding: '90px 20px', textAlign: 'center' }}>
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            border: '4px solid #e2e8f0',
-            borderTopColor: '#1e3a8a',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px',
-          }}
-        />
-        <p style={{ color: '#475569', fontSize: 15, fontWeight: 700 }}>
-          {isEn ? 'Loading your FCT profile...' : 'Chargement de votre profil FCT Automobile...'}
-        </p>
-      </div>
-    );
-  }
 
   if (!profile) {
     return (
@@ -262,78 +245,38 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const isPartner = profile.accountType === 'PARTNER';
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px 14px', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}>
-      {/* 1. Header Profil & Identité FCT */}
-      <div
-        style={{
-          backgroundColor: '#ffffff',
-          borderRadius: 20,
-          padding: '20px 20px',
-          border: '1px solid var(--border-subtle)',
-          boxShadow: 'var(--shadow-sm)',
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          marginBottom: 24,
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
-          <div
-            style={{
-              width: 54,
-              height: 54,
-              borderRadius: 16,
-              background: 'linear-gradient(135deg, var(--fct-blue-primary), var(--fct-blue-dark))',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 20,
-              fontWeight: 900,
-              boxShadow: '0 4px 14px rgba(30, 58, 138, 0.25)',
-              flexShrink: 0,
-            }}
-          >
+    <div className="fct-profile-wrapper">
+      {/* 1. Header Profil & Identité FCT (Ultra-Responsive) */}
+      <div className="fct-profile-header-card">
+        <div className="fct-profile-identity-group">
+          <div className="fct-profile-avatar">
             {profile.fullName.charAt(0).toUpperCase() || 'F'}
           </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--fct-blue-dark)', margin: 0, wordBreak: 'break-word' }}>
+          <div className="fct-profile-names-wrap">
+            <div className="fct-profile-title-row">
+              <h1 className="fct-profile-fullname">
                 {profile.fullName || (isEn ? 'My FCT Account' : 'Mon Compte FCT')}
               </h1>
-              <span
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: 20,
-                  fontSize: 11,
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  backgroundColor: isPartner ? '#fffbeb' : '#eff6ff',
-                  color: isPartner ? '#b45309' : '#1e3a8a',
-                  border: isPartner ? '1px solid #fde68a' : '1px solid #bfdbfe',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {isPartner
-                  ? (isEn ? 'Certified Partner' : 'Partenaire Apporteur Agréé')
-                  : (isEn ? 'Verified Member' : 'Adhérent Client FCT')}
+              <span className={`fct-profile-badge ${isPartner ? 'partner' : 'client'}`}>
+                {isPartner ? <Award size={13} /> : <Shield size={13} />}
+                <span>
+                  {isPartner
+                    ? (isEn ? 'Certified Partner' : 'Partenaire Apporteur Agréé')
+                    : (isEn ? 'Verified Member' : 'Adhérent Client FCT')}
+                </span>
               </span>
             </div>
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-sub)', wordBreak: 'break-all' }}>
+            <p className="fct-profile-email">
               {profile.email} {profile.partnerCode ? `• Code Affilié : ${profile.partnerCode}` : ''}
             </p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="fct-profile-actions">
           <button
             type="button"
             onClick={onBack}
-            className="fct-btn fct-btn-secondary"
-            style={{ padding: '9px 18px', fontSize: 12.5 }}
+            className="fct-btn fct-btn-secondary fct-profile-btn"
           >
             <ArrowLeft size={15} />
             <span>{isEn ? 'Back' : 'Retour'}</span>
@@ -344,19 +287,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               setCachedUserProfile(null);
               onLogout();
             }}
-            style={{
-              padding: '9px 18px',
-              borderRadius: 12,
-              fontSize: 12.5,
-              fontWeight: 700,
-              backgroundColor: '#fee2e2',
-              color: '#b91c1c',
-              border: '1px solid #fca5a5',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
+            className="fct-profile-logout-btn fct-profile-btn"
           >
             <LogOut size={15} />
             <span>{isEn ? 'Log Out' : 'Se Déconnecter'}</span>
@@ -365,22 +296,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       </div>
 
       <form onSubmit={handleSubmitProfile}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 290px), 1fr))', gap: 20 }}>
+        <div className="fct-profile-grid">
           {/* CARTE 1 : Coordonnées Personnelles */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: 18,
-              padding: 24,
-              border: '1px solid var(--border-subtle)',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#eff6ff', color: '#1e3a8a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="fct-profile-card">
+            <div className="fct-profile-card-header">
+              <div className="fct-profile-card-icon" style={{ backgroundColor: '#eff6ff', color: '#1e3a8a' }}>
                 <User size={18} />
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--fct-blue-dark)', margin: 0 }}>
+              <h3 className="fct-profile-card-title">
                 {isEn ? 'Personal Information' : 'Coordonnées & Identité'}
               </h3>
             </div>
@@ -489,20 +412,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </div>
 
           {/* CARTE 2 : Coordonnées Financières & Mobile Money */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: 18,
-              padding: 24,
-              border: '1px solid var(--border-subtle)',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: '#fef3c7', color: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="fct-profile-card">
+            <div className="fct-profile-card-header">
+              <div className="fct-profile-card-icon" style={{ backgroundColor: '#fef3c7', color: '#b45309' }}>
                 <CreditCard size={18} />
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--fct-blue-dark)', margin: 0 }}>
+              <h3 className="fct-profile-card-title">
                 {isEn ? 'Payout & Mobile Money Settings' : 'Paiements & Mobile Money (OM / MoMo)'}
               </h3>
             </div>
@@ -651,19 +566,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
 
         {/* 2. Barre d'action inférieure : Sauvegarder */}
-        <div
-          style={{
-            marginTop: 24,
-            backgroundColor: '#ffffff',
-            borderRadius: 18,
-            padding: '18px 24px',
-            border: '1px solid var(--border-subtle)',
-            boxShadow: 'var(--shadow-sm)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-          }}
-        >
+        <div className="fct-profile-submit-bar">
           <button
             type="submit"
             disabled={saving}

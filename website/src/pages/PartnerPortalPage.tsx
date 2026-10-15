@@ -67,10 +67,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   lang = 'fr',
 }) => {
   const isEn = lang === 'en';
-  const cachedPartner = getCachedPartnerAccount();
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(auth.currentUser);
-  const [partner, setPartner] = useState<PartnerAccount | null>(cachedPartner);
-  const [isLoading, setIsLoading] = useState<boolean>(!cachedPartner && Boolean(auth.currentUser));
+  const [partner, setPartner] = useState<PartnerAccount | null>(() => getCachedPartnerAccount());
 
   // Authentification & Formulaire
   const [isRegister, setIsRegister] = useState(true);
@@ -93,17 +91,9 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>(vehicles[0]?.id || '');
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Synchronisation avec l'authentification Firebase (cache local d'abord & timeout de sécurité)
+  // Synchronisation silencieuse en arrière-plan sans bloquer l'affichage
   useEffect(() => {
     let isMounted = true;
-    const safetyTimer = setTimeout(() => {
-      if (isMounted) setIsLoading(false);
-    }, 1000);
-
-    // Si on a déjà les données en cache, affichage instantané sans blocage
-    if (cachedPartner && isMounted) {
-      setIsLoading(false);
-    }
 
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!isMounted) return;
@@ -111,27 +101,23 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       if (user) {
         try {
           const profile = await fetchCurrentPartnerProfile(user.uid, user.email || '');
-          if (isMounted) {
+          if (isMounted && profile) {
             setPartner(profile);
             setCachedPartnerAccount(profile);
           }
         } catch (e) {
           console.warn('[FCT Partner] Erreur profil :', e);
-        } finally {
-          if (isMounted) setIsLoading(false);
         }
       } else {
         if (isMounted) {
           setPartner(null);
           setCachedPartnerAccount(null);
-          setIsLoading(false);
         }
       }
     });
 
     return () => {
       isMounted = false;
-      clearTimeout(safetyTimer);
       unsub();
     };
   }, []);
@@ -465,12 +451,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
       {/* 2. CORPS PRINCIPAL DE LA PAGE */}
       <div className="fct-container" style={{ marginTop: '36px' }}>
-        {isLoading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
-            <Clock size={32} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px auto', color: 'var(--fct-blue-primary)' }} />
-            <p style={{ fontWeight: 600 }}>{isEn ? 'Loading partner space...' : 'Chargement de votre espace partenaire...'}</p>
-          </div>
-        ) : !partner ? (
+        {!partner ? (
           /* =================================================================
              CAS 1 : NON CONNECTÉ OU NON ACTIVÉ EN TANT QUE PARTENAIRE
              ================================================================= */

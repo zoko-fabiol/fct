@@ -95,14 +95,38 @@ export async function trackPartnerLandingRef(refCode: string | null) {
   }
 }
 
+const PARTNER_CACHE_KEY = 'fct_cached_partner_account';
 let cachedPartnerAccount: PartnerAccount | null = null;
 
 export function getCachedPartnerAccount(): PartnerAccount | null {
-  return cachedPartnerAccount;
+  if (cachedPartnerAccount) return cachedPartnerAccount;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = localStorage.getItem(PARTNER_CACHE_KEY);
+      if (raw) {
+        cachedPartnerAccount = JSON.parse(raw);
+        return cachedPartnerAccount;
+      }
+    } catch {
+      // ignore JSON errors
+    }
+  }
+  return null;
 }
 
 export function setCachedPartnerAccount(acc: PartnerAccount | null) {
   cachedPartnerAccount = acc;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      if (acc) {
+        localStorage.setItem(PARTNER_CACHE_KEY, JSON.stringify(acc));
+      } else {
+        localStorage.removeItem(PARTNER_CACHE_KEY);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }
 }
 
 /**
