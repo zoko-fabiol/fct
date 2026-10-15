@@ -2144,5 +2144,112 @@ img {
   }
 }
 
+/* SÉLECTEUR D'OPÉRATEUR DE PAIEMENT OFFICIEL (ORANGE MONEY / MTN MOMO / CAISSE FCT) */
+.fct-operator-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.fct-operator-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border-medium);
+  border-radius: 14px;
+  padding: 14px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  outline: none;
+}
+
+.fct-operator-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--fct-blue-light);
+  box-shadow: 0 6px 16px rgba(15, 42, 74, 0.08);
+}
+
+.fct-operator-card.active-orange {
+  border-color: #ff7900;
+  background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%);
+  box-shadow: 0 4px 14px rgba(255, 121, 0, 0.16);
+}
+
+.fct-operator-card.active-mtn {
+  border-color: #ca8a04;
+  background: linear-gradient(180deg, #fefce8 0%, #ffffff 100%);
+  box-shadow: 0 4px 14px rgba(202, 138, 4, 0.16);
+}
+
+.fct-operator-card.active-cash {
+  border-color: #059669;
+  background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%);
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.16);
+}
+
+.fct-operator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fct-operator-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fct-operator-check.orange {
+  color: #c2410c;
+}
+
+.fct-operator-check.mtn {
+  color: #854d0e;
+}
+
+.fct-operator-check.cash {
+  color: #065f46;
+}
+
+.fct-operator-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fct-operator-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--fct-blue-dark);
+}
+
+.fct-operator-sub {
+  font-size: 11px;
+  color: var(--text-sub);
+  font-weight: 600;
+}
+
+@media (max-width: 540px) {
+  .fct-operator-selector-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .fct-operator-card {
+    flex-direction: row;
+    align-items: center;
+    padding: 12px 14px;
+    gap: 12px;
+  }
+  .fct-operator-header {
+    justify-content: flex-start;
+  }
+  .fct-operator-info {
+    flex: 1;
+  }
+}
+
 
 

@@ -4,9 +4,9 @@
  * Franchise Conseils Trading - Douala, Cameroun (Carrefour Santa Barbara, Bonamoussadi)
  *
  * Ce composant réunit dans l'ERP les fonctionnalités :
- * 1. 📝 Éditeur universel de textes CMS (bilingue FR / EN) pour chaque élément du site web
- * 2. 📊 Tableau de bord analytique en temps réel (visiteurs, revisites, appareils, sessions)
- * 3. 🎨 Personnalisation de la palette de couleurs FCT (application en direct sans toucher aux tuiles)
+ * 1. Éditeur universel de textes CMS (bilingue FR / EN) pour chaque élément du site web
+ * 2. Tableau de bord analytique en temps réel (visiteurs, revisites, appareils, sessions)
+ * 3. Personnalisation de la palette de couleurs FCT (application en direct sans toucher aux tuiles)
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -425,7 +425,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  🇫🇷 Français (Officiel)
+                  FR · Français (Officiel)
                 </button>
                 <button
                   type="button"
@@ -436,7 +436,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  🇬🇧 English (International)
+                  EN · English (International)
                 </button>
               </div>
             </div>
@@ -1040,17 +1040,17 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
 
               <div className="space-y-3 pt-2 text-xs">
                 {[
-                  { region: 'Douala (Akwa, Bonamoussadi, Bonapriso)', count: Math.ceil(visitors.length * 0.65), flag: '🇨🇲' },
-                  { region: 'Yaoundé & Autres Régions Cameroun', count: Math.ceil(visitors.length * 0.18), flag: '🇨🇲' },
-                  { region: 'France & Europe (Diaspora Camerounaise)', count: Math.ceil(visitors.length * 0.10), flag: '🇫🇷' },
-                  { region: 'Afrique Centrale (Gabon, Tchad, Guinée)', count: Math.ceil(visitors.length * 0.05), flag: '🇬🇦' },
-                  { region: 'Canada & USA', count: Math.ceil(visitors.length * 0.02), flag: '🇨🇦' },
+                  { region: 'Douala (Akwa, Bonamoussadi, Bonapriso)', count: Math.ceil(visitors.length * 0.65), code: 'CM' },
+                  { region: 'Yaoundé & Autres Régions Cameroun', count: Math.ceil(visitors.length * 0.18), code: 'CM' },
+                  { region: 'France & Europe (Diaspora Camerounaise)', count: Math.ceil(visitors.length * 0.10), code: 'FR' },
+                  { region: 'Afrique Centrale (Gabon, Tchad, Guinée)', count: Math.ceil(visitors.length * 0.05), code: 'GA' },
+                  { region: 'Canada & USA', count: Math.ceil(visitors.length * 0.02), code: 'CA' },
                 ].map((geo, idx) => {
                   const pct = visitors.length > 0 ? Math.round((geo.count / visitors.length) * 100) : 0;
                   return (
                     <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-base">{geo.flag}</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-blue-100 text-blue-800">{geo.code}</span>
                         <span className="font-bold text-slate-800">{geo.region}</span>
                       </div>
                       <span className="font-black text-emerald-700">{geo.count} visites</span>

@@ -35,6 +35,7 @@ import {
 import { auth, onAuthStateChanged } from '../services/firebase.ts';
 import { WebsiteLanguage } from '../services/i18n.ts';
 import { WhatsAppIcon } from '../components/WhatsAppIcon.tsx';
+import { OrangeMoneyLogo, MtnMomoLogo, CashDeskLogo } from '../components/PaymentLogos.tsx';
 
 interface ProfilePageProps {
   initialProfile?: UnifiedUserProfile | null;
@@ -352,17 +353,31 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     <span
                       style={{
                         position: 'absolute',
-                        right: 12,
-                        top: 9,
-                        fontSize: 10,
+                        right: 10,
+                        top: 7,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: 11,
                         fontWeight: 800,
                         padding: '3px 8px',
-                        borderRadius: 6,
-                        backgroundColor: phoneOperator === 'ORANGE' ? '#ffedd5' : '#fef9c3',
+                        borderRadius: 8,
+                        backgroundColor: phoneOperator === 'ORANGE' ? '#fff7ed' : '#fefce8',
                         color: phoneOperator === 'ORANGE' ? '#c2410c' : '#854d0e',
+                        border: phoneOperator === 'ORANGE' ? '1px solid #ffedd5' : '1px solid #fef08a',
                       }}
                     >
-                      {phoneOperator === 'ORANGE' ? 'Orange' : 'MTN'}
+                      {phoneOperator === 'ORANGE' ? (
+                        <>
+                          <OrangeMoneyLogo size={16} />
+                          <span>Orange</span>
+                        </>
+                      ) : (
+                        <>
+                          <MtnMomoLogo size={16} />
+                          <span>MTN</span>
+                        </>
+                      )}
                     </span>
                   )}
                 </div>
@@ -445,60 +460,65 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 6 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 8 }}>
                   {isEn ? 'Preferred Payment Channel' : 'Opérateur de Paiement'}
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                <div className="fct-operator-selector-grid">
                   <button
                     type="button"
                     onClick={() => setProfile({ ...profile, payoutMethod: 'ORANGE_MONEY' })}
-                    style={{
-                      padding: '10px 8px',
-                      borderRadius: 10,
-                      border: profile.payoutMethod === 'ORANGE_MONEY' ? '2px solid #ea580c' : '1px solid var(--border-medium)',
-                      backgroundColor: profile.payoutMethod === 'ORANGE_MONEY' ? '#fff7ed' : '#ffffff',
-                      color: profile.payoutMethod === 'ORANGE_MONEY' ? '#c2410c' : 'var(--text-body)',
-                      fontWeight: 700,
-                      fontSize: 11.5,
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                    }}
+                    className={`fct-operator-card ${profile.payoutMethod === 'ORANGE_MONEY' ? 'active-orange' : ''}`}
                   >
-                    🟠 Orange Money
+                    <div className="fct-operator-header">
+                      <OrangeMoneyLogo size={26} />
+                      {profile.payoutMethod === 'ORANGE_MONEY' && (
+                        <div className="fct-operator-check orange">
+                          <CheckCircle2 size={15} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="fct-operator-info">
+                      <div className="fct-operator-name">Orange Money</div>
+                      <div className="fct-operator-sub">{isEn ? 'Instant · 0 fees' : 'Instantané · 0 frais'}</div>
+                    </div>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setProfile({ ...profile, payoutMethod: 'MTN_MOMO' })}
-                    style={{
-                      padding: '10px 8px',
-                      borderRadius: 10,
-                      border: profile.payoutMethod === 'MTN_MOMO' ? '2px solid #ca8a04' : '1px solid var(--border-medium)',
-                      backgroundColor: profile.payoutMethod === 'MTN_MOMO' ? '#fefce8' : '#ffffff',
-                      color: profile.payoutMethod === 'MTN_MOMO' ? '#854d0e' : 'var(--text-body)',
-                      fontWeight: 700,
-                      fontSize: 11.5,
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                    }}
+                    className={`fct-operator-card ${profile.payoutMethod === 'MTN_MOMO' ? 'active-mtn' : ''}`}
                   >
-                    🟡 MTN MoMo
+                    <div className="fct-operator-header">
+                      <MtnMomoLogo size={26} />
+                      {profile.payoutMethod === 'MTN_MOMO' && (
+                        <div className="fct-operator-check mtn">
+                          <CheckCircle2 size={15} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="fct-operator-info">
+                      <div className="fct-operator-name">MTN MoMo</div>
+                      <div className="fct-operator-sub">{isEn ? 'Mobile Money 24/7' : 'Mobile Money 24/7'}</div>
+                    </div>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setProfile({ ...profile, payoutMethod: 'CASH' })}
-                    style={{
-                      padding: '10px 8px',
-                      borderRadius: 10,
-                      border: profile.payoutMethod === 'CASH' ? '2px solid #059669' : '1px solid var(--border-medium)',
-                      backgroundColor: profile.payoutMethod === 'CASH' ? '#ecfdf5' : '#ffffff',
-                      color: profile.payoutMethod === 'CASH' ? '#065f46' : 'var(--text-body)',
-                      fontWeight: 700,
-                      fontSize: 11.5,
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                    }}
+                    className={`fct-operator-card ${profile.payoutMethod === 'CASH' ? 'active-cash' : ''}`}
                   >
-                    💵 Guichet Caisse
+                    <div className="fct-operator-header">
+                      <CashDeskLogo size={26} />
+                      {profile.payoutMethod === 'CASH' && (
+                        <div className="fct-operator-check cash">
+                          <CheckCircle2 size={15} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="fct-operator-info">
+                      <div className="fct-operator-name">{isEn ? 'Agency Cash Desk' : 'Guichet Caisse'}</div>
+                      <div className="fct-operator-sub">{isEn ? 'Douala Agency' : 'Agence Douala'}</div>
+                    </div>
                   </button>
                 </div>
               </div>
@@ -526,17 +546,31 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     <span
                       style={{
                         position: 'absolute',
-                        right: 12,
-                        top: 9,
-                        fontSize: 10,
+                        right: 10,
+                        top: 7,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: 11,
                         fontWeight: 800,
                         padding: '3px 8px',
-                        borderRadius: 6,
-                        backgroundColor: payoutOperator === 'ORANGE' ? '#ffedd5' : '#fef9c3',
+                        borderRadius: 8,
+                        backgroundColor: payoutOperator === 'ORANGE' ? '#fff7ed' : '#fefce8',
                         color: payoutOperator === 'ORANGE' ? '#c2410c' : '#854d0e',
+                        border: payoutOperator === 'ORANGE' ? '1px solid #ffedd5' : '1px solid #fef08a',
                       }}
                     >
-                      {payoutOperator === 'ORANGE' ? 'Orange Money' : 'MTN MoMo'}
+                      {payoutOperator === 'ORANGE' ? (
+                        <>
+                          <OrangeMoneyLogo size={16} />
+                          <span>Orange Money</span>
+                        </>
+                      ) : (
+                        <>
+                          <MtnMomoLogo size={16} />
+                          <span>MTN MoMo</span>
+                        </>
+                      )}
                     </span>
                   )}
                 </div>

@@ -49,7 +49,7 @@ async function dispatchEmailPinViaGoogle(recipientEmail: string, pin: string): P
             </div>
           </div>
           <p style="font-size: 12.5px; color: #64748b; line-height: 1.5; margin: 0 0 16px;">
-            ⏱ Ce code PIN est valable pendant <strong>10 minutes</strong>. Ne le partagez avec personne. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail.
+            Ce code PIN est valable pendant <strong>10 minutes</strong>. Ne le partagez avec personne. Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail.
           </p>
         </div>
         <div style="background-color: #f8fafc; padding: 18px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
