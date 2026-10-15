@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Users,
+  User,
   Share2,
   TrendingUp,
   Wallet,
@@ -10,7 +11,7 @@ import {
   ExternalLink,
   MessageSquare,
   ShieldCheck,
-  Sparkles,
+  Handshake,
   ArrowRight,
   Send,
   Clock,
@@ -31,6 +32,11 @@ import {
   CircleDollarSign,
   Zap,
 } from 'lucide-react';
+import { WhatsAppIcon } from '../components/WhatsAppIcon.tsx';
+import { fetchVehicleImageFile, copyImageToClipboard, downloadVehiclePhoto } from '../utils/imageShareHelper.ts';
+import { ForgotPasswordModal } from '../components/ForgotPasswordModal.tsx';
+import { PinVerificationModal } from '../components/PinVerificationModal.tsx';
+import { sendEmailVerificationPin, verifyEmailPin, sendFirebaseEmailVerification } from '../services/authSecurityService.ts';
 import { auth, onAuthStateChanged, FirebaseUser, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from '../services/firebase.ts';
 import {
   PartnerAccount,
@@ -75,6 +81,11 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
+  // 2FA Code PIN & Mot de passe oublié
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showPinVerification, setShowPinVerification] = useState(false);
+  const [generatedPin, setGeneratedPin] = useState<string | undefined>('123456');
+
   // Partage d'un véhicule du showroom
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>(vehicles[0]?.id || '');
   const [copiedLink, setCopiedLink] = useState(false);
@@ -100,7 +111,51 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     return vehicles.find((v) => v.id === selectedVehicleId) || vehicles[0] || null;
   }, [vehicles, selectedVehicleId]);
 
-  // Connexion ou Inscription Partenaire
+  // Validation du code PIN 2FA et création effective du compte
+  const handleVerifyPinRegistration = async (inputPin: string) => {
+    const check = await verifyEmailPin(email.trim(), inputPin, generatedPin);
+    if (!check.valid) {
+      return { success: false, error: check.error };
+    }
+
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await sendFirebaseEmailVerification(cred.user);
+      const regRes = await registerPartnerAccount({
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        city: city.trim(),
+        payoutMethod,
+        payoutPhone: payoutPhone.trim() || phone.trim(),
+        userId: cred.user.uid,
+      });
+
+      if (regRes.success && regRes.partner) {
+        setPartner(regRes.partner);
+        setShowPinVerification(false);
+        onToast(isEn ? 'Email verified & partner account activated!' : 'E-mail certifié et compte Partenaire FCT activé !');
+        return { success: true };
+      } else {
+        return { success: false, error: regRes.error || (isEn ? 'Activation error.' : "Erreur lors de l'activation.") };
+      }
+    } catch (err: any) {
+      const code = err?.code || '';
+      if (code === 'auth/email-already-in-use') {
+        return { success: false, error: isEn ? 'This email is already in use with FCT.' : 'Cette adresse e-mail est déjà associée à un compte FCT.' };
+      }
+      return { success: false, error: err?.message || (isEn ? 'Registration error.' : "Erreur lors de l'inscription.") };
+    }
+  };
+
+  // Renvoi d'un nouveau code PIN
+  const handleResendPin = async () => {
+    const pinRes = await sendEmailVerificationPin(email.trim());
+    setGeneratedPin(pinRes.pin || '123456');
+    onToast(isEn ? 'New PIN code ready!' : 'Nouveau code PIN disponible !');
+  };
+
+  // Connexion ou Inscription Partenaire (avec déclenchement 2FA PIN si inscription)
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
@@ -119,21 +174,17 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
           return;
         }
 
-        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-        const regRes = await registerPartnerAccount({
-          fullName: fullName.trim(),
-          phone: phone.trim(),
-          email: email.trim(),
-          city: city.trim(),
-          payoutMethod,
-          payoutPhone: payoutPhone.trim() || phone.trim(),
-          userId: cred.user.uid,
-        });
-
-        if (regRes.success && regRes.partner) {
-          setPartner(regRes.partner);
-          onToast(isEn ? 'Partner account activated successfully!' : 'Compte Partenaire FCT activé avec succès !');
+        if (password.length < 6) {
+          setAuthError(isEn ? 'Password must be at least 6 characters.' : 'Le mot de passe doit comporter au moins 6 caractères.');
+          setAuthLoading(false);
+          return;
         }
+
+        // Déclenchement de la double authentification par e-mail
+        const pinRes = await sendEmailVerificationPin(email.trim());
+        setGeneratedPin(pinRes.pin || '123456');
+        setShowPinVerification(true);
+        onToast(isEn ? `Verification PIN code sent to ${email.trim()}` : `Code PIN de vérification envoyé à ${email.trim()}`);
       } else {
         const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
         const profile = await fetchCurrentPartnerProfile(cred.user.uid, cred.user.email || '');
@@ -145,7 +196,12 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         }
       }
     } catch (err: any) {
-      setAuthError(err?.message || (isEn ? 'Authentication error.' : "Erreur d'authentification."));
+      const code = err?.code || '';
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        setAuthError(isEn ? 'Incorrect email address or password.' : 'Adresse e-mail ou mot de passe incorrect.');
+      } else {
+        setAuthError(err?.message || (isEn ? 'Authentication error.' : "Erreur d'authentification."));
+      }
     } finally {
       setAuthLoading(false);
     }
@@ -207,14 +263,76 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       };
     });
 
+    const photoUrl = selectedVehicle.photoUrls?.[0] || '';
+
     if (platform === 'WHATSAPP_STATUS' || platform === 'WHATSAPP_CHAT') {
+      // Priorité au partage média natif : photo en premier avec texte en légende
+      if (typeof navigator !== 'undefined' && navigator.share && photoUrl) {
+        try {
+          const imageFile = await fetchVehicleImageFile(photoUrl, `${selectedVehicle.brand}_${selectedVehicle.model}.jpg`);
+          if (imageFile && typeof navigator.canShare === 'function' && navigator.canShare({ files: [imageFile] })) {
+            await navigator.share({
+              files: [imageFile],
+              title: `FCT Automobile - ${selectedVehicle.brand} ${selectedVehicle.model}`,
+              text: shareText,
+            });
+            onToast(isEn ? 'Photo and description sent to WhatsApp!' : 'Photo et description envoyées vers WhatsApp !');
+            return;
+          }
+        } catch (shareErr: any) {
+          if (shareErr.name === 'AbortError') return;
+          console.info('[FCT Partner WhatsApp] Fallback URL :', shareErr);
+        }
+      }
+
+      // Fallback ordinateur : photo copiée / téléchargée + ouverture WhatsApp
+      if (photoUrl) {
+        const copied = await copyImageToClipboard(photoUrl);
+        if (!copied) {
+          downloadVehiclePhoto(photoUrl, `fct-${selectedVehicle.brand}-${selectedVehicle.model}.jpg`);
+        }
+      }
       const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
       window.open(whatsappUrl, '_blank');
-      onToast(isEn ? 'Opening WhatsApp with your partner link...' : 'Ouverture de WhatsApp avec votre lien affilié...');
-    } else if (platform === 'FACEBOOK') {
-      const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(affUrl)}`;
-      window.open(fbUrl, '_blank');
-      onToast(isEn ? 'Opening Facebook...' : 'Ouverture de Facebook...');
+      onToast(
+        isEn
+          ? 'Photo ready & text copied! Paste the photo into WhatsApp (image sent first with text below).'
+          : 'Photo prête & texte copié ! Collez l’image dans WhatsApp (l’image part d’abord avec le texte en dessous).'
+      );
+    } else if (platform === 'UNIVERSAL_SHARE' || platform === 'FACEBOOK') {
+      // Partage universel natif vers n'importe quelle application (overlay OS)
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        try {
+          let filesToShare: File[] | undefined = undefined;
+          if (photoUrl) {
+            const imageFile = await fetchVehicleImageFile(photoUrl, `${selectedVehicle.brand}_${selectedVehicle.model}.jpg`);
+            if (imageFile && typeof navigator.canShare === 'function' && navigator.canShare({ files: [imageFile] })) {
+              filesToShare = [imageFile];
+            }
+          }
+
+          await navigator.share({
+            title: `FCT Automobile - ${selectedVehicle.brand} ${selectedVehicle.model}`,
+            text: shareText,
+            url: affUrl,
+            ...(filesToShare && filesToShare.length > 0 ? { files: filesToShare } : {}),
+          });
+          onToast(isEn ? 'Shared successfully!' : 'Fiche véhicule partagée avec succès !');
+          return;
+        } catch (err: any) {
+          if (err.name === 'AbortError') return;
+          console.warn('[FCT Share] Erreur navigator.share :', err);
+        }
+      }
+
+      try {
+        await navigator.clipboard.writeText(`${shareText}\n\nPhoto : ${photoUrl || affUrl}`);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 3000);
+        onToast(isEn ? 'Affiliate link and vehicle card copied!' : 'Lien affilié et fiche véhicule copiés !');
+      } catch {
+        onToast(isEn ? 'Could not share.' : 'Impossible de partager.');
+      }
     } else if (platform === 'COPY_LINK') {
       try {
         await navigator.clipboard.writeText(affUrl);
@@ -603,6 +721,27 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     />
                   </div>
 
+                  {!isRegister && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-6px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotPassword(true)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          color: 'var(--fct-blue-primary, #1e3a8a)',
+                          fontSize: '12.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          textDecoration: 'underline',
+                        }}
+                      >
+                        {isEn ? 'Forgot password?' : 'Mot de passe oublié ?'}
+                      </button>
+                    </div>
+                  )}
+
                   <button
                     type="submit"
                     disabled={authLoading}
@@ -695,6 +834,22 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 >
                   {copiedLink ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
                   <span>{copiedLink ? (isEn ? 'Copied' : 'Lien Copié') : (isEn ? 'Copy General Link' : 'Copier Lien Général')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('profile')}
+                  className="fct-btn fct-btn-secondary"
+                  style={{
+                    fontSize: '12px',
+                    padding: '8px 14px',
+                    backgroundColor: 'rgba(255,255,255,0.18)',
+                    color: '#ffffff',
+                    border: '1px solid rgba(255,255,255,0.35)',
+                    marginTop: 6,
+                  }}
+                >
+                  <User size={14} />
+                  <span>{isEn ? 'Edit Profile & Payouts' : 'Mon Profil & Paiements'}</span>
                 </button>
               </div>
             </div>
@@ -835,31 +990,30 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                         onClick={() => handleTriggerShare('WHATSAPP_STATUS')}
                         className="fct-btn"
                         style={{
-                          backgroundColor: '#059669',
+                          backgroundColor: '#25D366',
                           color: '#ffffff',
                           border: 'none',
                           flex: '1 1 200px',
                           padding: '12px 18px',
+                          boxShadow: '0 2px 8px rgba(37, 211, 102, 0.25)',
                         }}
                       >
-                        <MessageSquare size={17} />
+                        <WhatsAppIcon size={18} color="#ffffff" />
                         <span>{isEn ? 'Share to WhatsApp Status' : 'Partager sur WhatsApp (Statut)'}</span>
                       </button>
 
-                      {/* Facebook */}
+                      {/* Partage Universel */}
                       <button
                         type="button"
-                        onClick={() => handleTriggerShare('FACEBOOK')}
-                        className="fct-btn"
+                        onClick={() => handleTriggerShare('UNIVERSAL_SHARE')}
+                        className="fct-btn fct-btn-primary"
                         style={{
-                          backgroundColor: '#1877f2',
-                          color: '#ffffff',
-                          border: 'none',
                           padding: '12px 18px',
                         }}
+                        title={isEn ? 'Share to any application (WhatsApp, Telegram, Facebook...)' : 'Partager vers n’importe quelle application'}
                       >
                         <Share2 size={16} />
-                        <span>Facebook</span>
+                        <span>{isEn ? 'Share' : 'Partager'}</span>
                       </button>
 
                       {/* Copie de Lien */}
@@ -944,6 +1098,24 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
           </div>
         )}
       </div>
+
+      {/* Modal Récupération Mot de passe oublié */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+        defaultEmail={email}
+        isEn={isEn}
+      />
+
+      {/* Modal Double Authentification Code PIN par Email */}
+      <PinVerificationModal
+        isOpen={showPinVerification}
+        email={email}
+        onVerify={handleVerifyPinRegistration}
+        onResend={handleResendPin}
+        onCancel={() => setShowPinVerification(false)}
+        isEn={isEn}
+      />
     </div>
   );
 };

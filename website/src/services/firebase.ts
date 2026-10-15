@@ -56,6 +56,7 @@ function initWebsiteFirestore(): Firestore {
 }
 
 export const firestore: Firestore = initWebsiteFirestore();
+export const db: Firestore = firestore;
 export const auth = getAuth(app);
 export { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword };
 export type { FirebaseUser };

@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { Vehicle } from '../types/index.ts';
 
-export type SharePlatform = 'WHATSAPP_STATUS' | 'WHATSAPP_CHAT' | 'FACEBOOK' | 'INSTAGRAM' | 'COPY_LINK' | 'OTHER';
+export type SharePlatform = 'WHATSAPP_STATUS' | 'WHATSAPP_CHAT' | 'FACEBOOK' | 'INSTAGRAM' | 'UNIVERSAL_SHARE' | 'COPY_LINK' | 'OTHER';
 
 export interface PartnerStats {
   totalShares: number;

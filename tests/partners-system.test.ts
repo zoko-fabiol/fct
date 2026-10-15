@@ -10,14 +10,14 @@ import {
   generateShareCopyText,
   calculatePartnerCommission,
 } from '../website/src/services/partnerService.ts';
-import { Vehicle } from '../packages/shared-types/index.ts';
+import { Vehicle } from '../website/src/types/index.ts';
 
 const mockVehicle: Vehicle = {
   id: 'v_toyota_prado_2024',
   brand: 'Toyota',
   model: 'Land Cruiser Prado TX-L',
   year: 2024,
-  category: 'SUV_4X4',
+  category: 'SUV',
   fuel: 'DIESEL',
   transmission: 'AUTOMATIQUE',
   seats: 7,
@@ -25,14 +25,15 @@ const mockVehicle: Vehicle = {
   licensePlate: 'LT-8841-CE',
   mileage: 18500,
   rentalDailyRate: 85000,
-  sellingPrice: 42000000,
+  salePrice: 42000000,
   securityDepositRate: 200000,
   isForRent: true,
   isForSale: true,
-  status: 'DISPONIBLE',
+  status: 'AVAILABLE',
+  currentLocation: 'Douala (Akwa)',
+  description: 'Toyota Land Cruiser Prado TX-L état neuf',
+  features: ['Climatisation', '4x4 Permanent', 'GPS'],
   photoUrls: ['https://example.com/prado.jpg'],
-  createdAt: '2026-01-01T00:00:00Z',
-  updatedAt: '2026-01-01T00:00:00Z',
 };
 
 describe('Système Partenaires & Affiliation FCT Automobile', () => {

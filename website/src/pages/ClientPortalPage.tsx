@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   UserCheck,
+  User,
   ShieldCheck,
   KeyRound,
   LogOut,
@@ -28,6 +29,9 @@ import {
   syncCustomerProfile,
   getBookingStatusInfo,
 } from '../services/clientPortalService.ts';
+import { ForgotPasswordModal } from '../components/ForgotPasswordModal.tsx';
+import { PinVerificationModal } from '../components/PinVerificationModal.tsx';
+import { sendEmailVerificationPin, verifyEmailPin, sendFirebaseEmailVerification } from '../services/authSecurityService.ts';
 import { AppPage } from '../types/router.ts';
 import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
 import { WebsiteLanguage, websiteI18n } from '../services/i18n.ts';
@@ -54,6 +58,11 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
+  // 2FA Code PIN & Mot de passe oublié
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showPinVerification, setShowPinVerification] = useState(false);
+  const [generatedPin, setGeneratedPin] = useState<string | undefined>(undefined);
+
   // 1. Écoute de la session Firebase Auth
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (user) => {
@@ -78,7 +87,41 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
     return () => unsubBookings();
   }, [currentUser]);
 
-  // Connexion / Inscription Authentique (Zéro Mock)
+  // Validation 2FA PIN et création effective du compte client
+  const handleVerifyPinRegistration = async (inputPin: string) => {
+    const check = await verifyEmailPin(email.trim(), inputPin, generatedPin);
+    if (!check.valid) {
+      return { success: false, error: check.error };
+    }
+
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await sendFirebaseEmailVerification(cred.user);
+      await syncCustomerProfile(cred.user, { fullName: fullName.trim(), phone: phone.trim() });
+      setCurrentUser(cred.user);
+      setShowPinVerification(false);
+      onToast(
+        isEn
+          ? `Welcome ${fullName.trim()}! Your FCT client account is active.`
+          : `Bienvenue ${fullName.trim()} ! Votre compte client FCT est actif.`
+      );
+      return { success: true };
+    } catch (err: any) {
+      const code = err?.code || '';
+      if (code === 'auth/email-already-in-use') {
+        return { success: false, error: isEn ? 'This email is already in use.' : 'Cette adresse email est déjà enregistrée.' };
+      }
+      return { success: false, error: err?.message || 'Erreur lors de la création du compte.' };
+    }
+  };
+
+  const handleResendPin = async () => {
+    const pinRes = await sendEmailVerificationPin(email.trim());
+    setGeneratedPin(pinRes.pin || '123456');
+    onToast(isEn ? 'New PIN code ready!' : 'Nouveau code PIN disponible !');
+  };
+
+  // Connexion / Inscription Authentique (avec déclenchement 2FA PIN si inscription)
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
@@ -96,14 +139,18 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
           setAuthLoading(false);
           return;
         }
-        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-        await syncCustomerProfile(cred.user, { fullName: fullName.trim(), phone: phone.trim() });
-        setCurrentUser(cred.user);
-        onToast(
-          isEn
-            ? `Welcome ${fullName.trim()}! Your FCT client account is active.`
-            : `Bienvenue ${fullName.trim()} ! Votre compte client FCT est actif.`
-        );
+
+        if (password.length < 6) {
+          setAuthError(isEn ? 'Password must be at least 6 characters.' : 'Le mot de passe doit contenir au moins 6 caractères.');
+          setAuthLoading(false);
+          return;
+        }
+
+        // Déclenchement de la double authentification par e-mail
+        const pinRes = await sendEmailVerificationPin(email.trim());
+        setGeneratedPin(pinRes.pin || '123456');
+        setShowPinVerification(true);
+        onToast(isEn ? `Verification PIN sent to ${email.trim()}` : `Code PIN de vérification envoyé à ${email.trim()}`);
       } else {
         const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
         setCurrentUser(cred.user);
@@ -215,14 +262,26 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                 </div>
               </div>
 
-              <button
-                onClick={handleLogout}
-                className="btn-secondary"
-                style={{ color: '#ef4444', borderColor: '#fca5a5', fontSize: 13, padding: '8px 14px' }}
-              >
-                <LogOut size={15} />
-                <span>{isEn ? 'Log Out' : 'Déconnexion'}</span>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {onNavigate && (
+                  <button
+                    onClick={() => onNavigate('profile')}
+                    className="btn-secondary"
+                    style={{ fontSize: 13, padding: '8px 14px' }}
+                  >
+                    <User size={15} />
+                    <span>{isEn ? 'Edit Profile' : 'Mon Profil & Paiements'}</span>
+                  </button>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="btn-secondary"
+                  style={{ color: '#ef4444', borderColor: '#fca5a5', fontSize: 13, padding: '8px 14px' }}
+                >
+                  <LogOut size={15} />
+                  <span>{isEn ? 'Log Out' : 'Déconnexion'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Suivi des Réservations Réelles en Direct */}
@@ -542,6 +601,27 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                 />
               </div>
 
+              {!isRegister && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -4 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      color: 'var(--fct-blue-primary, #1e3a8a)',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    {isEn ? 'Forgot password?' : 'Mot de passe oublié ?'}
+                  </button>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={authLoading}
@@ -575,6 +655,24 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
           </div>
         )}
       </div>
+
+      {/* Modal Récupération Mot de passe oublié */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+        defaultEmail={email}
+        isEn={isEn}
+      />
+
+      {/* Modal Double Authentification Code PIN par Email */}
+      <PinVerificationModal
+        isOpen={showPinVerification}
+        email={email}
+        onVerify={handleVerifyPinRegistration}
+        onResend={handleResendPin}
+        onCancel={() => setShowPinVerification(false)}
+        isEn={isEn}
+      />
     </div>
   );
 };

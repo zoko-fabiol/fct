@@ -162,7 +162,7 @@ export const websiteTranslations = {
       title: 'Espace Adhérent & Suivi des Dossiers',
       subtitle: 'Consultez vos locations actives, téléchargez vos factures certifiées et gérez vos cautions consignées.',
       phoneOrEmail: 'Téléphone ou E-mail client :',
-      pinPlaceholder: 'Code PIN personnel (4 chiffres) :',
+      passwordPlaceholder: 'Mot de passe secret :',
       loginBtn: 'Accéder à mon Espace',
       welcome: 'Bienvenue dans votre espace,',
       activeContracts: 'Contrats de Location en Cours',
@@ -350,7 +350,7 @@ export const websiteTranslations = {
       title: 'Client Member Portal & Rental Tracking',
       subtitle: 'Review active rentals, download certified invoices and monitor your security deposits.',
       phoneOrEmail: 'Client Phone or Email:',
-      pinPlaceholder: 'Personal PIN code (4 digits):',
+      passwordPlaceholder: 'Secret password:',
       loginBtn: 'Log In to My Account',
       welcome: 'Welcome to your portal,',
       activeContracts: 'Active Rental Agreements',
@@ -385,3 +385,23 @@ export const websiteTranslations = {
 };
 
 export const websiteI18n = websiteTranslations;
+
+/**
+ * Fusionne en direct les textes personnalisés depuis Firestore (site_content)
+ */
+export function mergeLiveWebsiteTranslations(lang: WebsiteLanguage, remoteContent: Record<string, any> | null): void {
+  if (!remoteContent) return;
+  const target = websiteTranslations[lang];
+  for (const sectionKey of Object.keys(remoteContent)) {
+    const sectionVal = remoteContent[sectionKey];
+    if (sectionVal && typeof sectionVal === 'object' && !Array.isArray(sectionVal)) {
+      if (!target[sectionKey as keyof typeof target]) {
+        (target as any)[sectionKey] = {};
+      }
+      Object.assign((target as any)[sectionKey], sectionVal);
+    } else if (sectionVal !== undefined) {
+      (target as any)[sectionKey] = sectionVal;
+    }
+  }
+}
+

@@ -9,11 +9,14 @@ import { HealthPassportPage } from './pages/HealthPassportPage.tsx';
 import { ClientPortalPage } from './pages/ClientPortalPage.tsx';
 import { PartnerPortalPage } from './pages/PartnerPortalPage.tsx';
 import { AgencyPage } from './pages/AgencyPage.tsx';
+import { ProfilePage } from './pages/ProfilePage.tsx';
 import { Vehicle } from './types/index.ts';
 import { AppPage, RouteState } from './types/router.ts';
 import { subscribePublicVehicles } from './services/firebase.ts';
 import { trackPartnerLandingRef } from './services/partnerService.ts';
-import { WebsiteLanguage, websiteTranslations } from './services/i18n.ts';
+import { WebsiteLanguage, websiteTranslations, mergeLiveWebsiteTranslations } from './services/i18n.ts';
+import { subscribeWebsiteTheme, subscribeWebsiteContent } from './services/websiteCmsService.ts';
+import { logWebsiteVisit } from './services/websiteAnalyticsService.ts';
 import { CheckCircle2 } from 'lucide-react';
 
 export default function App() {
@@ -21,6 +24,50 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [route, setRoute] = useState<RouteState>({ page: 'home' });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [cmsVersion, setCmsVersion] = useState(0);
+
+  // Synchronisation en temps réel du thème graphique (couleurs CSS) et des textes CMS
+  useEffect(() => {
+    const unsubTheme = subscribeWebsiteTheme(() => {
+      // CSS variables sont injectées directement dans document.documentElement
+    });
+
+    const unsubContentFr = subscribeWebsiteContent('fr', (content) => {
+      if (content) {
+        mergeLiveWebsiteTranslations('fr', content);
+        setCmsVersion((v) => v + 1);
+      }
+    });
+
+    const unsubContentEn = subscribeWebsiteContent('en', (content) => {
+      if (content) {
+        mergeLiveWebsiteTranslations('en', content);
+        setCmsVersion((v) => v + 1);
+      }
+    });
+
+    return () => {
+      unsubTheme();
+      unsubContentFr();
+      unsubContentEn();
+    };
+  }, []);
+
+  // Enregistrement anonyme de la visite dans Firestore Analytics
+  useEffect(() => {
+    const pageLabels: Record<string, string> = {
+      home: 'Accueil Vitrine',
+      location: 'Location SUV & Berlines',
+      vente: 'Vente Véhicules Certifiés',
+      showroom: 'Showroom Détail Véhicule',
+      'carnet-sante': 'Carnet de Santé Numérique',
+      'espace-client': 'Espace Adhérent Client',
+      partenaires: 'Portail Partenaires & Apporteurs',
+      agence: 'Agence Bonamoussadi Douala',
+      profile: 'Mon Profil & Espace Compte',
+    };
+    logWebsiteVisit(pageLabels[route.page] || 'Page FCT');
+  }, [route.page]);
 
   // État de la langue (mémorisé dans le navigateur)
   const [lang, setLang] = useState<WebsiteLanguage>(() => {
@@ -90,6 +137,8 @@ export default function App() {
         setRoute({ page: 'partenaires' });
       } else if (hash === 'agence') {
         setRoute({ page: 'agence' });
+      } else if (hash === 'profile' || hash === 'mon-profil') {
+        setRoute({ page: 'profile' });
       }
     };
 
@@ -126,6 +175,7 @@ export default function App() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-page)' }}>
       {/* Barre de Navigation Multi-Pages FCT avec sélecteur FR / EN */}
       <Navbar
+        key={`nav-${lang}-${cmsVersion}`}
         currentPage={route.page}
         onNavigate={(p) => navigate(p)}
         lang={lang}
@@ -133,7 +183,7 @@ export default function App() {
       />
 
       {/* Rendu de la Page Dédiée Active */}
-      <main style={{ flex: 1 }}>
+      <main key={`page-${lang}-${cmsVersion}-${route.page}`} style={{ flex: 1 }}>
         {route.page === 'home' && (
           <HomePage
             vehicles={vehicles}
@@ -208,10 +258,23 @@ export default function App() {
         )}
 
         {route.page === 'agence' && <AgencyPage lang={lang} />}
+
+        {route.page === 'profile' && (
+          <ProfilePage
+            lang={lang}
+            onLogout={() => {
+              navigate('home');
+              showToast(lang === 'en' ? 'Logged out successfully' : 'Déconnexion effectuée avec succès.');
+            }}
+            onBack={() => navigate('home')}
+            onToast={(msg) => showToast(msg)}
+            onNavigateToAuth={(type) => navigate(type === 'client' ? 'espace-client' : 'partenaires')}
+          />
+        )}
       </main>
 
       {/* Pied de Page Multi-Pages FCT */}
-      <Footer onNavigate={(p) => navigate(p)} lang={lang} />
+      <Footer key={`foot-${lang}-${cmsVersion}`} onNavigate={(p) => navigate(p)} lang={lang} />
 
       {/* Toast Notification Visuel */}
       {toastMessage && (

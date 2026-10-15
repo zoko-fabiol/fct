@@ -217,6 +217,52 @@ img {
   transform: translateY(-2px);
 }
 
+/* Boutons FCT Utilitaires & Partenaires */
+.fct-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 22px;
+  font-size: 13.5px;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  font-family: inherit;
+  text-decoration: none;
+}
+
+.fct-btn-primary {
+  background: linear-gradient(135deg, var(--fct-blue-primary) 0%, var(--fct-blue-dark) 100%);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 14px rgba(15, 42, 74, 0.25);
+}
+
+.fct-btn-primary:hover {
+  background: linear-gradient(135deg, var(--fct-blue-dark) 0%, #0a1b2f 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(15, 42, 74, 0.35);
+  color: #ffffff;
+}
+
+.fct-btn-secondary {
+  background: #ffffff;
+  color: var(--fct-blue-dark);
+  border: 1.5px solid var(--border-medium);
+  box-shadow: var(--shadow-sm);
+}
+
+.fct-btn-secondary:hover {
+  background: var(--bg-surface-alt);
+  border-color: var(--fct-blue-primary);
+  color: var(--fct-blue-primary);
+  transform: translateY(-2px);
+}
+
 /* ==========================================================================
    NAVIGATION PRINCIPALE MULTI-PAGES
    ========================================================================== */

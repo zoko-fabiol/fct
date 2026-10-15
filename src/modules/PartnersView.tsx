@@ -183,21 +183,18 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
         });
       }
 
-      // 3. Enregistrement de la sortie de caisse dans l'ERP
-      await dbStore.addCashMovement({
-        receiptNumber,
-        sessionId: state.cashSession?.id || 'session_default',
-        type: 'OUTFLOW',
-        category: 'OTHER',
-        amountXAF,
-        receivedFromOrPaidTo: `${partnerToPay.fullName} (${partnerToPay.partnerCode})`,
-        paymentMethod: 'CASH',
-        performedById: state.currentUser?.id || 'admin',
-        performedByName: state.currentUser?.fullName || 'Direction FCT',
-        createdAt: new Date().toISOString(),
-        isReversal: false,
-        reason: `Paiement commission apporteur d'affaires ${partnerToPay.partnerCode} - ${partnerToPay.payoutMethod}`,
-      });
+      // 3. Enregistrement de la sortie de caisse dans l'ERP si session active
+      const activeSession = dbStore.getActiveCashSession();
+      if (activeSession) {
+        dbStore.recordCashMovement({
+          sessionId: activeSession.id,
+          type: 'OUTFLOW',
+          category: 'OTHER',
+          amountXAF,
+          receivedFromOrPaidTo: `${partnerToPay.fullName} (${partnerToPay.partnerCode})`,
+          reason: `Paiement commission apporteur d'affaires ${partnerToPay.partnerCode} - ${partnerToPay.payoutMethod}`,
+        });
+      }
 
       alert(
         isEn
@@ -475,7 +472,7 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
                     </div>
                     <div>
                       <div className="text-xs font-bold text-slate-900">
-                        {log.partnerName} <span className="font-mono text-orange-600 font-semibold">({log.partnerCode})</span>
+                        {partners.find((p) => p.id === log.partnerId || p.partnerCode === log.partnerCode)?.fullName || log.partnerCode} <span className="font-mono text-orange-600 font-semibold">({log.partnerCode})</span>
                       </div>
                       <div className="text-[11px] text-slate-500 mt-0.5">
                         A partagé : <strong className="text-slate-800">{log.vehicleName}</strong>

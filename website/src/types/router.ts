@@ -6,7 +6,8 @@ export type AppPage =
   | 'carnet-sante'
   | 'espace-client'
   | 'partenaires'
-  | 'agence';
+  | 'agence'
+  | 'profile';
 
 export interface RouteState {
   page: AppPage;

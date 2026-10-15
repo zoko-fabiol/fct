@@ -62,6 +62,7 @@ import {
 } from 'lucide-react';
 import { UsersView } from './UsersView.tsx';
 import { PartnersView } from './PartnersView.tsx';
+import { WebsiteAdminTab } from '../components/settings/WebsiteAdminTab.tsx';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNativeMobile } from '../services/mobileFileService.ts';
 import { notificationEngine } from '../services/pushNotificationService.ts';
@@ -84,7 +85,8 @@ export type SettingsTab =
   | 'rentals'
   | 'modules'
   | 'users'
-  | 'partners';
+  | 'partners'
+  | 'website-admin';
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavigate, onLanguageChange, initialTab }) => {
   const { settings } = state;
@@ -545,6 +547,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
       colorText: 'text-amber-700',
       badgeValue: 'Gestion des Partenaires',
       keywords: ['partenaires', 'affiliation', 'apporteurs', 'statistiques', 'commissions', 'retrait', 'orange money', 'mtn momo'],
+    },
+    {
+      id: 'website-admin',
+      rank: 11,
+      priorityLabel: '11 • Vitrine & CMS',
+      label: lang === 'en' ? 'Website Administration & CMS' : 'Administration du Site Web & CMS',
+      shortLabel: lang === 'en' ? 'Website' : 'Site Web',
+      desc: lang === 'en'
+        ? 'Public website text editor (FR/EN), real-time visitor analytics, device breakdown and FCT brand theme customizer.'
+        : 'Modification de chaque texte du site vitrine (FR/EN), statistiques des visiteurs en direct et palette de couleurs.',
+      icon: <Globe className="w-5 h-5" />,
+      colorBg: 'bg-blue-50 border-blue-200 text-blue-700',
+      colorText: 'text-blue-700',
+      badgeValue: 'CMS & Analytics Live',
+      keywords: ['site web', 'vitrine', 'cms', 'texte', 'visiteurs', 'statistiques', 'couleurs', 'thème', 'analytics'],
     },
   ];
 
@@ -1922,6 +1939,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
       {activeTab === 'partners' && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-2 sm:p-4 lg:p-6 overflow-hidden">
           <PartnersView state={state} lang={lang} onNavigate={onNavigate} />
+        </div>
+      )}
+
+      {/* TAB K: ADMINISTRATION DU SITE WEB & CMS */}
+      {activeTab === 'website-admin' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-2 sm:p-4 lg:p-6 overflow-hidden">
+          <WebsiteAdminTab onNotify={(msg: string) => setSaveSuccessMsg(msg)} />
         </div>
       )}
 

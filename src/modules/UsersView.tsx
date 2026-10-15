@@ -233,6 +233,14 @@ const MODULE_REGISTRY: Record<AppModule, ModuleInfo> = {
     description: 'Historique immuable append-only des opérations et accès sensibles',
     icon: History,
   },
+  partners: {
+    id: 'partners',
+    labelFr: 'Partenaires & Apporteurs',
+    labelEn: 'Partners & Affiliates',
+    category: 'COMMERCIAL',
+    description: 'Réseau de partenaires, suivi des affiliations, commissions et retraits',
+    icon: Users,
+  },
   help: {
     id: 'help',
     labelFr: 'Assistance & Aide',
