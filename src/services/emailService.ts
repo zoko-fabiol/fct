@@ -20,6 +20,10 @@ export interface EmailSendResult {
   message: string;
 }
 
+const GOOGLE_MAIL_GATEWAY_URL =
+  import.meta.env.VITE_GOOGLE_MAIL_WEBHOOK_URL ||
+  'https://script.google.com/macros/s/AKfycby9FGtr4OCIsGrjI6a8Zv8sdYKwbMAFnwEWvB6IdFhmSb-uLUbjsAhpmuoB_k9e1t62/exec';
+
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_b31sdja';
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_6gxkx2n';
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'CCuR3TrZatt_47zpp';
@@ -35,7 +39,8 @@ function interpolateString(str: string, params: Record<string, any>): string {
 }
 
 /**
- * Envoie un email transactionnel via l'API REST officielle d'EmailJS avec tolérance totale de templates.
+ * Envoie un email transactionnel via la passerelle Google Gmail officielle (500 e-mails / jour)
+ * avec basculement automatique de secours vers l'API EmailJS.
  */
 export async function sendEmailViaEmailJS(
   templateParams: Record<string, any>,
@@ -44,14 +49,6 @@ export async function sendEmailViaEmailJS(
   const serviceId = EMAILJS_SERVICE_ID;
   const templateId = customTemplateId || EMAILJS_TEMPLATE_ID;
   const publicKey = EMAILJS_PUBLIC_KEY;
-
-  if (!publicKey || !serviceId || !templateId) {
-    return {
-      success: false,
-      status: 400,
-      message: 'Configuration EmailJS incomplète dans les variables d\'environnement.',
-    };
-  }
 
   // Résoudre le sujet et le message en remplaçant les éventuels tags {{...}}
   const rawSubject = templateParams.subject || 'FCT Automobile Douala - Notification';
@@ -63,11 +60,50 @@ export async function sendEmailViaEmailJS(
   const rawText = templateParams.message_text || templateParams.textContent || templateParams.text || resolvedSubject;
   const resolvedText = interpolateString(rawText, templateParams);
 
+  const targetEmail =
+    templateParams.to_email || templateParams.recipient_email || templateParams.email || '';
+
+  // 1. PRIORITÉ : Envoi direct via la passerelle Google Apps Script (Quota 500 mails / jour)
+  if (GOOGLE_MAIL_GATEWAY_URL && targetEmail) {
+    try {
+      await fetch(GOOGLE_MAIL_GATEWAY_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+          to: targetEmail,
+          subject: resolvedSubject,
+          htmlBody: resolvedHtml || resolvedText,
+          fromName: 'FCT Automobile Douala',
+        }),
+      });
+
+      return {
+        success: true,
+        status: 200,
+        message: 'E-mail transmis avec succès via la passerelle Google Gmail (500 mails/jour).',
+      };
+    } catch (gErr) {
+      console.warn('[FCT Mail Engine] Échec passerelle Google, bascule vers EmailJS :', gErr);
+    }
+  }
+
+  // 2. SECOURS : Passerelle EmailJS
+  if (!publicKey || !serviceId || !templateId) {
+    return {
+      success: false,
+      status: 400,
+      message: 'Configuration EmailJS incomplète dans les variables d\'environnement.',
+    };
+  }
+
   // Payload exhaustif pour EmailJS : garantit qu'aucune balise ne soit ignorée
   const exhaustiveParams: Record<string, any> = {
     ...templateParams,
     // Coordonnées expéditeur & destinataire
-    to_email: templateParams.to_email || templateParams.recipient_email || templateParams.email || '',
+    to_email: targetEmail,
     to_name: templateParams.to_name || templateParams.customer_name || templateParams.client_name || 'Client FCT',
     from_name: 'FCT Automobile Douala',
     reply_to: templateParams.reply_to || 'fct.cmr@gmail.com',

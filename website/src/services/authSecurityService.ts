@@ -17,12 +17,17 @@ export interface OtpGenerationResult {
   error?: string;
 }
 
+const GOOGLE_MAIL_GATEWAY_URL =
+  (import.meta as any).env?.VITE_GOOGLE_MAIL_WEBHOOK_URL ||
+  'https://script.google.com/macros/s/AKfycby9FGtr4OCIsGrjI6a8Zv8sdYKwbMAFnwEWvB6IdFhmSb-uLUbjsAhpmuoB_k9e1t62/exec';
+
 const EMAILJS_SERVICE_ID = 'service_b31sdja';
 const EMAILJS_TEMPLATE_ID = 'template_6gxkx2n';
 const EMAILJS_PUBLIC_KEY = 'CCuR3TrZatt_47zpp';
 
 /**
- * Envoie le code PIN par e-mail via le service de messagerie Google (fct.cmr@gmail.com / EmailJS)
+ * Envoie le code PIN par e-mail via la passerelle Google Gmail (500 e-mails / jour)
+ * avec basculement automatique de secours vers EmailJS.
  */
 async function dispatchEmailPinViaGoogle(recipientEmail: string, pin: string): Promise<boolean> {
   const g = globalThis as { process?: { env?: Record<string, string> } };
@@ -60,6 +65,29 @@ async function dispatchEmailPinViaGoogle(recipientEmail: string, pin: string): P
       </div>
     `;
 
+    // 1. PRIORITÉ : Envoi via la passerelle officielle Google Apps Script (500 mails / jour)
+    try {
+      await fetch(GOOGLE_MAIL_GATEWAY_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+          to: recipientEmail,
+          subject: `FCT Automobile Douala - Votre Code de Vérification PIN : ${pin}`,
+          htmlBody: htmlBody,
+          fromName: 'FCT Automobile Douala',
+        }),
+      });
+
+      console.info(`[FCT 2FA Security] Code PIN transmis via Google Gmail Gateway (500 mails/jour) à ${recipientEmail}`);
+      return true;
+    } catch (googleErr) {
+      console.warn(`[FCT 2FA Security] Passerelle Google inaccessible, bascule vers EmailJS :`, googleErr);
+    }
+
+    // 2. SECOURS AUTOMATIQUE : Envoi via EmailJS en cas de défaillance réseau
     const payload = {
       service_id: EMAILJS_SERVICE_ID,
       template_id: EMAILJS_TEMPLATE_ID,
@@ -89,7 +117,7 @@ async function dispatchEmailPinViaGoogle(recipientEmail: string, pin: string): P
     });
 
     if (res.ok) {
-      console.info(`[FCT 2FA Security] E-mail avec code PIN envoyé à ${recipientEmail}`);
+      console.info(`[FCT 2FA Security] E-mail PIN délivré via passerelle EmailJS de secours à ${recipientEmail}`);
       return true;
     } else {
       const err = await res.text();
@@ -97,7 +125,7 @@ async function dispatchEmailPinViaGoogle(recipientEmail: string, pin: string): P
       return false;
     }
   } catch (err) {
-    console.warn(`[FCT 2FA Security] Erreur réseau transmission e-mail :`, err);
+    console.warn(`[FCT 2FA Security] Erreur transmission e-mail :`, err);
     return false;
   }
 }
