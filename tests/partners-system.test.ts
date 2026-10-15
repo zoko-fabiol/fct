@@ -10,6 +10,11 @@ import {
   generateShareCopyText,
   calculatePartnerCommission,
 } from '../website/src/services/partnerService.ts';
+import {
+  getSharesInLast30Days,
+  evaluatePartnerTier,
+  PARTNER_TIER_CONFIG,
+} from '../packages/business-rules/index.ts';
 import { Vehicle } from '../website/src/types/index.ts';
 
 const mockVehicle: Vehicle = {
@@ -81,3 +86,81 @@ describe('Système Partenaires & Affiliation FCT Automobile', () => {
     expect(commission).toBe(150000);
   });
 });
+
+describe('FCT Système Partenaires - Quotas 30 jours et Maintien / Chute de Rang', () => {
+  const refDate = new Date('2026-10-15T12:00:00Z');
+
+  it('devrait calculer correctement le nombre de partages sur les 30 derniers jours', () => {
+    const dailyShares: Record<string, number> = {
+      '2026-10-15': 3, // aujourd'hui
+      '2026-10-05': 5, // 10 jours avant
+      '2026-09-20': 4, // 25 jours avant (inclus dans 30j)
+      '2026-09-01': 10, // 44 jours avant (exclu du rolling 30j)
+      '2026-08-01': 20, // exclu
+    };
+
+    const count30d = getSharesInLast30Days(dailyShares, refDate);
+    expect(count30d).toBe(3 + 5 + 4); // 12 partages dans la fenêtre
+  });
+
+  it('devrait retourner 0 partages si aucun historique récent', () => {
+    expect(getSharesInLast30Days(undefined, refDate)).toBe(0);
+    expect(getSharesInLast30Days({}, refDate)).toBe(0);
+  });
+
+  it('devrait maintenir GOLD si le quota minimum de 25 partages/30j est atteint', () => {
+    const dailyShares = { '2026-10-10': 25 };
+    const res = evaluatePartnerTier('GOLD', dailyShares, refDate);
+    expect(res.newTier).toBe('GOLD');
+    expect(res.status).toBe('MAINTAINED');
+    expect(res.quotaMet).toBe(true);
+    expect(res.sharesLast30Days).toBe(25);
+  });
+
+  it('devrait rétrograder GOLD vers SILVER (chute progressive d\'1 niveau) si partages < 25', () => {
+    const dailyShares = { '2026-10-10': 24 };
+    const res = evaluatePartnerTier('GOLD', dailyShares, refDate);
+    expect(res.newTier).toBe('SILVER');
+    expect(res.status).toBe('DEMOTED');
+    expect(res.quotaMet).toBe(false);
+  });
+
+  it('devrait maintenir SILVER si le quota minimum de 10 partages/30j est atteint', () => {
+    const dailyShares = { '2026-10-10': 15 };
+    const res = evaluatePartnerTier('SILVER', dailyShares, refDate);
+    expect(res.newTier).toBe('SILVER');
+    expect(res.status).toBe('MAINTAINED');
+    expect(res.quotaMet).toBe(true);
+  });
+
+  it('devrait rétrograder SILVER vers BRONZE si partages < 10', () => {
+    const dailyShares = { '2026-10-10': 8 };
+    const res = evaluatePartnerTier('SILVER', dailyShares, refDate);
+    expect(res.newTier).toBe('BRONZE');
+    expect(res.status).toBe('DEMOTED');
+    expect(res.quotaMet).toBe(false);
+  });
+
+  it('ne devrait jamais faire chuter en-dessous de BRONZE (palier de base)', () => {
+    const dailyShares = {};
+    const res = evaluatePartnerTier('BRONZE', dailyShares, refDate);
+    expect(res.newTier).toBe('BRONZE');
+    expect(res.status).toBe('MAINTAINED');
+    expect(res.quotaMet).toBe(true);
+  });
+
+  it('devrait promouvoir automatiquement BRONZE vers SILVER à 10 partages', () => {
+    const dailyShares = { '2026-10-12': 10 };
+    const res = evaluatePartnerTier('BRONZE', dailyShares, refDate);
+    expect(res.newTier).toBe('SILVER');
+    expect(res.status).toBe('PROMOTED');
+  });
+
+  it('devrait promouvoir automatiquement vers GOLD à 25 partages', () => {
+    const dailyShares = { '2026-10-12': 28 };
+    const res = evaluatePartnerTier('BRONZE', dailyShares, refDate);
+    expect(res.newTier).toBe('GOLD');
+    expect(res.status).toBe('PROMOTED');
+  });
+});
+

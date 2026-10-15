@@ -13,6 +13,7 @@ import {
   Reservation,
   UserProfile,
   RoleDefinition,
+  PartnerTier,
 } from '../shared-types/index.ts';
 
 /**
@@ -568,4 +569,110 @@ export function generateDocumentNumber(
     return `${prefix}-${year}-${padded}`;
   }
   return `${prefix}-${padded}`;
+}
+
+// ==========================================
+// RÈGLES DE QUOTAS & GESTION DES TIERS PARTENAIRES
+// ==========================================
+
+export const PARTNER_TIER_CONFIG = {
+  BRONZE: {
+    tier: 'BRONZE' as PartnerTier,
+    label: 'Bronze',
+    minMonthlyShares: 0,
+    requiredToPromote: 10,
+    badgeColor: '#c2410c',
+    badgeBg: '#ffedd5',
+    description: 'Niveau initial (accès libre, 0 quota requis)',
+  },
+  SILVER: {
+    tier: 'SILVER' as PartnerTier,
+    label: 'Silver (Argent)',
+    minMonthlyShares: 10,
+    requiredToPromote: 25,
+    badgeColor: '#475569',
+    badgeBg: '#f1f5f9',
+    description: 'Niveau régulier (minimum 10 partages sur 30 jours pour conserver le rang)',
+  },
+  GOLD: {
+    tier: 'GOLD' as PartnerTier,
+    label: 'Gold (Or)',
+    minMonthlyShares: 25,
+    requiredToPromote: 50,
+    badgeColor: '#b45309',
+    badgeBg: '#fef3c7',
+    description: 'Niveau VIP (minimum 25 partages sur 30 jours pour conserver le rang)',
+  },
+} as const;
+
+/**
+ * Calcule le nombre total de partages effectués sur les 30 derniers jours glissants
+ */
+export function getSharesInLast30Days(
+  dailySharesCount?: Record<string, number>,
+  referenceDate: Date = new Date()
+): number {
+  if (!dailySharesCount) return 0;
+  const thirtyDaysAgo = new Date(referenceDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const cutoffStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+  let sum = 0;
+  for (const [dateStr, count] of Object.entries(dailySharesCount)) {
+    if (dateStr >= cutoffStr) {
+      sum += Number(count) || 0;
+    }
+  }
+  return sum;
+}
+
+/**
+ * Évalue le rang d'un partenaire avec gestion stricte des quotas 30 jours :
+ * - Quota mensuel (30 jours glissants) :
+ *   - GOLD : minimum 25 partages/30j. Si non atteint -> rétrograde en SILVER.
+ *   - SILVER : minimum 10 partages/30j. Si non atteint -> rétrograde en BRONZE.
+ *   - BRONZE : palier initial (0 quota minimum).
+ * - Promotion :
+ *   - Si >= 25 partages/30j -> Promu GOLD.
+ *   - Si >= 10 partages/30j -> Promu SILVER.
+ */
+export function evaluatePartnerTier(
+  currentTier: PartnerTier,
+  dailySharesCount?: Record<string, number>,
+  referenceDate: Date = new Date()
+): {
+  newTier: PartnerTier;
+  sharesLast30Days: number;
+  quotaRequired: number;
+  quotaMet: boolean;
+  status: 'PROMOTED' | 'MAINTAINED' | 'DEMOTED';
+} {
+  const sharesLast30Days = getSharesInLast30Days(dailySharesCount, referenceDate);
+
+  if (currentTier === 'GOLD') {
+    if (sharesLast30Days >= 25) {
+      return { newTier: 'GOLD', sharesLast30Days, quotaRequired: 25, quotaMet: true, status: 'MAINTAINED' };
+    }
+    // Rétrogradation progressive d'un seul niveau : Gold -> Silver
+    return { newTier: 'SILVER', sharesLast30Days, quotaRequired: 25, quotaMet: false, status: 'DEMOTED' };
+  }
+
+  if (currentTier === 'SILVER') {
+    if (sharesLast30Days >= 25) {
+      return { newTier: 'GOLD', sharesLast30Days, quotaRequired: 10, quotaMet: true, status: 'PROMOTED' };
+    }
+    if (sharesLast30Days >= 10) {
+      return { newTier: 'SILVER', sharesLast30Days, quotaRequired: 10, quotaMet: true, status: 'MAINTAINED' };
+    }
+    // Rétrogradation progressive d'un seul niveau : Silver -> Bronze
+    return { newTier: 'BRONZE', sharesLast30Days, quotaRequired: 10, quotaMet: false, status: 'DEMOTED' };
+  }
+
+  // BRONZE (Progression)
+  if (sharesLast30Days >= 25) {
+    return { newTier: 'GOLD', sharesLast30Days, quotaRequired: 0, quotaMet: true, status: 'PROMOTED' };
+  }
+  if (sharesLast30Days >= 10) {
+    return { newTier: 'SILVER', sharesLast30Days, quotaRequired: 0, quotaMet: true, status: 'PROMOTED' };
+  }
+  return { newTier: 'BRONZE', sharesLast30Days, quotaRequired: 0, quotaMet: true, status: 'MAINTAINED' };
 }

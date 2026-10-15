@@ -15,7 +15,12 @@ import {
   PartnerStatus,
   PartnerTier,
 } from '../../packages/shared-types/index.ts';
-import { formatXAF } from '../../packages/business-rules/index.ts';
+import {
+  formatXAF,
+  getSharesInLast30Days,
+  evaluatePartnerTier,
+  PARTNER_TIER_CONFIG,
+} from '../../packages/business-rules/index.ts';
 import {
   Users,
   Award,
@@ -362,8 +367,8 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
                   <tr>
                     <th className="py-3 px-4">Partenaire</th>
                     <th className="py-3 px-4">Code Affilié</th>
-                    <th className="py-3 px-4">Niveau / Tier</th>
-                    <th className="py-3 px-4">Partages (Jour / Total)</th>
+                    <th className="py-3 px-4">{isEn ? 'Tier & 30d Quota' : 'Niveau & Quota 30j'}</th>
+                    <th className="py-3 px-4">{isEn ? 'Shares (Today / 30d / Total)' : 'Partages (Jour / 30j / Total)'}</th>
                     <th className="py-3 px-4">Clics / Leads</th>
                     <th className="py-3 px-4">Solde Disponible</th>
                     <th className="py-3 px-4">Mode de Retrait</th>
@@ -380,6 +385,9 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
                   ) : (
                     filteredPartners.map((p) => {
                       const sharesTodayP = p.stats?.dailySharesCount?.[todayStr] || 0;
+                      const shares30dP = getSharesInLast30Days(p.stats?.dailySharesCount);
+                      const quotaMin = p.tier === 'GOLD' ? 25 : p.tier === 'SILVER' ? 10 : 0;
+                      const isQuotaSafe = quotaMin === 0 || shares30dP >= quotaMin;
                       return (
                         <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
                           <td className="py-3 px-4">
@@ -392,20 +400,35 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
                           <td className="py-3 px-4 font-mono font-bold text-orange-600">{p.partnerCode}</td>
                           <td className="py-3 px-4">
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase inline-block ${
                                 p.tier === 'GOLD'
                                   ? 'bg-amber-100 text-amber-800 border border-amber-300'
                                   : p.tier === 'SILVER'
-                                  ? 'bg-slate-200 text-slate-800'
-                                  : 'bg-orange-50 text-orange-700'
+                                  ? 'bg-slate-200 text-slate-800 border border-slate-300'
+                                  : 'bg-orange-50 text-orange-700 border border-orange-200'
                               }`}
                             >
                               {p.tier}
                             </span>
+                            <div className="text-[10px] mt-1">
+                              {p.tier === 'GOLD' ? (
+                                <span className={isQuotaSafe ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-bold'}>
+                                  {shares30dP}/25 ce mois {isQuotaSafe ? '✓' : '(Risque)'}
+                                </span>
+                              ) : p.tier === 'SILVER' ? (
+                                <span className={isQuotaSafe ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-bold'}>
+                                  {shares30dP}/10 ce mois {isQuotaSafe ? '✓' : '(Risque)'}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400">
+                                  {shares30dP}/10 pour Silver
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 px-4">
                             <div className="font-bold text-slate-800">
-                              <span className="text-blue-600">{sharesTodayP}</span> / {p.stats?.totalShares || 0}
+                              <span className="text-blue-600">{sharesTodayP}</span> j · <span className="text-purple-600 font-bold">{shares30dP}</span> 30j · {p.stats?.totalShares || 0} tot
                             </div>
                             <div className="text-[10px] text-slate-400">
                               {sharesTodayP > 0 ? (isEn ? 'Active today' : 'Actif aujourd\'hui') : (isEn ? 'No share today' : 'Aucun partage ce jour')}

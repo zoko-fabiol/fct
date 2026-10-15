@@ -50,6 +50,112 @@ export interface PartnerAccount {
   updatedAt: string;
 }
 
+// ==========================================
+// RÈGLES DE QUOTAS & GESTION DES TIERS PARTENAIRES
+// ==========================================
+
+export const PARTNER_TIER_CONFIG = {
+  BRONZE: {
+    tier: 'BRONZE' as const,
+    label: 'Bronze',
+    minMonthlyShares: 0,
+    requiredToPromote: 10,
+    badgeColor: '#c2410c',
+    badgeBg: '#ffedd5',
+    description: 'Niveau initial (accès libre, 0 quota requis)',
+  },
+  SILVER: {
+    tier: 'SILVER' as const,
+    label: 'Silver (Argent)',
+    minMonthlyShares: 10,
+    requiredToPromote: 25,
+    badgeColor: '#475569',
+    badgeBg: '#f1f5f9',
+    description: 'Niveau régulier (minimum 10 partages sur 30 jours pour conserver le rang)',
+  },
+  GOLD: {
+    tier: 'GOLD' as const,
+    label: 'Gold (Or)',
+    minMonthlyShares: 25,
+    requiredToPromote: 50,
+    badgeColor: '#b45309',
+    badgeBg: '#fef3c7',
+    description: 'Niveau VIP (minimum 25 partages sur 30 jours pour conserver le rang)',
+  },
+} as const;
+
+/**
+ * Calcule le nombre total de partages effectués sur les 30 derniers jours glissants
+ */
+export function getSharesInLast30Days(
+  dailySharesCount?: Record<string, number>,
+  referenceDate: Date = new Date()
+): number {
+  if (!dailySharesCount) return 0;
+  const thirtyDaysAgo = new Date(referenceDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const cutoffStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+  let sum = 0;
+  for (const [dateStr, count] of Object.entries(dailySharesCount)) {
+    if (dateStr >= cutoffStr) {
+      sum += Number(count) || 0;
+    }
+  }
+  return sum;
+}
+
+/**
+ * Évalue le rang d'un partenaire avec gestion stricte des quotas 30 jours :
+ * - Quota mensuel (30 jours glissants) :
+ *   - GOLD : minimum 25 partages/30j. Si non atteint -> rétrograde en SILVER.
+ *   - SILVER : minimum 10 partages/30j. Si non atteint -> rétrograde en BRONZE.
+ *   - BRONZE : palier initial (0 quota minimum).
+ * - Promotion :
+ *   - Si >= 25 partages/30j -> Promu GOLD.
+ *   - Si >= 10 partages/30j -> Promu SILVER.
+ */
+export function evaluatePartnerTier(
+  currentTier: 'BRONZE' | 'SILVER' | 'GOLD',
+  dailySharesCount?: Record<string, number>,
+  referenceDate: Date = new Date()
+): {
+  newTier: 'BRONZE' | 'SILVER' | 'GOLD';
+  sharesLast30Days: number;
+  quotaRequired: number;
+  quotaMet: boolean;
+  status: 'PROMOTED' | 'MAINTAINED' | 'DEMOTED';
+} {
+  const sharesLast30Days = getSharesInLast30Days(dailySharesCount, referenceDate);
+
+  if (currentTier === 'GOLD') {
+    if (sharesLast30Days >= 25) {
+      return { newTier: 'GOLD', sharesLast30Days, quotaRequired: 25, quotaMet: true, status: 'MAINTAINED' };
+    }
+    // Rétrogradation progressive d'un seul niveau : Gold -> Silver
+    return { newTier: 'SILVER', sharesLast30Days, quotaRequired: 25, quotaMet: false, status: 'DEMOTED' };
+  }
+
+  if (currentTier === 'SILVER') {
+    if (sharesLast30Days >= 25) {
+      return { newTier: 'GOLD', sharesLast30Days, quotaRequired: 10, quotaMet: true, status: 'PROMOTED' };
+    }
+    if (sharesLast30Days >= 10) {
+      return { newTier: 'SILVER', sharesLast30Days, quotaRequired: 10, quotaMet: true, status: 'MAINTAINED' };
+    }
+    // Rétrogradation progressive d'un seul niveau : Silver -> Bronze
+    return { newTier: 'BRONZE', sharesLast30Days, quotaRequired: 10, quotaMet: false, status: 'DEMOTED' };
+  }
+
+  // BRONZE (Progression)
+  if (sharesLast30Days >= 25) {
+    return { newTier: 'GOLD', sharesLast30Days, quotaRequired: 0, quotaMet: true, status: 'PROMOTED' };
+  }
+  if (sharesLast30Days >= 10) {
+    return { newTier: 'SILVER', sharesLast30Days, quotaRequired: 0, quotaMet: true, status: 'PROMOTED' };
+  }
+  return { newTier: 'BRONZE', sharesLast30Days, quotaRequired: 0, quotaMet: true, status: 'MAINTAINED' };
+}
+
 const PARTNER_STORAGE_KEY = 'fct_affiliate_partner_ref';
 
 /**
@@ -145,6 +251,12 @@ export async function fetchCurrentPartnerProfile(userId?: string, userEmail?: st
       const snap = await getDocLocalFirst(docRef);
       if (snap && snap.exists()) {
         const data = snap.data() as PartnerAccount;
+        // Vérification et synchronisation du quota de maintien 30 jours
+        const evaluation = evaluatePartnerTier(data.tier, data.stats?.dailySharesCount);
+        if (evaluation.newTier !== data.tier) {
+          data.tier = evaluation.newTier;
+          updateDoc(docRef, { tier: evaluation.newTier, updatedAt: new Date().toISOString() }).catch(() => {});
+        }
         setCachedPartnerAccount(data);
         return data;
       }
@@ -156,6 +268,11 @@ export async function fetchCurrentPartnerProfile(userId?: string, userEmail?: st
       const snap = await getDocsLocalFirst(q);
       if (snap && !snap.empty) {
         const data = snap.docs[0].data() as PartnerAccount;
+        const evaluation = evaluatePartnerTier(data.tier, data.stats?.dailySharesCount);
+        if (evaluation.newTier !== data.tier) {
+          data.tier = evaluation.newTier;
+          updateDoc(doc(firestore, 'partners', snap.docs[0].id), { tier: evaluation.newTier, updatedAt: new Date().toISOString() }).catch(() => {});
+        }
         setCachedPartnerAccount(data);
         return data;
       }
@@ -250,12 +367,14 @@ export async function logPartnerShare(
     // 2. Mise à jour des stats agrégées du partenaire
     const currentDaily = partner.stats.dailySharesCount || {};
     const updatedDailyCount = (currentDaily[todayStr] || 0) + 1;
+    const updatedDailyMap = {
+      ...currentDaily,
+      [todayStr]: updatedDailyCount,
+    };
 
-    // Évaluation du niveau de tier (Bronze -> Silver -> Gold)
-    const newTotalShares = (partner.stats.totalShares || 0) + 1;
-    let newTier = partner.tier;
-    if (newTotalShares >= 50) newTier = 'GOLD';
-    else if (newTotalShares >= 15) newTier = 'SILVER';
+    // Évaluation du niveau de tier selon quota 30 jours (Bronze / Silver / Gold)
+    const evaluation = evaluatePartnerTier(partner.tier, updatedDailyMap);
+    const newTier = evaluation.newTier;
 
     await updateDoc(doc(firestore, 'partners', partner.id), {
       'stats.totalShares': increment(1),

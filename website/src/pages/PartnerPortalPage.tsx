@@ -48,6 +48,7 @@ import {
   SharePlatform,
   getCachedPartnerAccount,
   setCachedPartnerAccount,
+  getSharesInLast30Days,
 } from '../services/partnerService.ts';
 import { Vehicle } from '../types/index.ts';
 import { AppPage } from '../types/router.ts';
@@ -802,11 +803,65 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: 900, color: '#ffffff' }}>
                     {partner.fullName}
                   </h2>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1' }}>
+                  <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#cbd5e1' }}>
                     {isEn
                       ? 'Share our showroom vehicles and track all visitor clicks and commissions in real-time.'
                       : 'Partagez les véhicules du showroom et suivez l’ensemble de vos clics et commissions en direct.'}
                   </p>
+
+                  {/* Jauge Quota Mensuel de Maintien de Rang (30 jours glissants) */}
+                  {(() => {
+                    const shares30d = getSharesInLast30Days(partner.stats?.dailySharesCount);
+                    const quotaMin = partner.tier === 'GOLD' ? 25 : partner.tier === 'SILVER' ? 10 : 0;
+                    const isSafe = quotaMin === 0 || shares30d >= quotaMin;
+                    const targetMax = quotaMin > 0 ? quotaMin : 10;
+                    const progressPercent = Math.min(100, Math.round((shares30d / targetMax) * 100));
+
+                    return (
+                      <div
+                        style={{
+                          background: 'rgba(15, 23, 42, 0.45)',
+                          padding: '8px 12px',
+                          borderRadius: '10px',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          maxWidth: 380,
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, marginBottom: 5 }}>
+                          <span style={{ color: '#e2e8f0', fontWeight: 600 }}>
+                            {partner.tier === 'GOLD'
+                              ? isEn
+                                ? `Gold 30-Day Quota: ${shares30d}/25 shares`
+                                : `Quota Maintien Gold : ${shares30d}/25 partages (30j)`
+                              : partner.tier === 'SILVER'
+                              ? isEn
+                                ? `Silver 30-Day Quota: ${shares30d}/10 shares`
+                                : `Quota Maintien Silver : ${shares30d}/10 partages (30j)`
+                              : isEn
+                              ? `Progress toward Silver: ${shares30d}/10 shares`
+                              : `Objectif Rang Silver : ${shares30d}/10 partages (30j)`}
+                          </span>
+                          <span style={{ fontWeight: 800, color: isSafe ? '#34d399' : '#f87171' }}>
+                            {quotaMin > 0
+                              ? isSafe
+                                ? isEn ? 'Rank Secured ✓' : 'Rang Garanti ✓'
+                                : isEn ? 'Demotion Risk' : 'Risque de Chute'
+                              : `${progressPercent}%`}
+                          </span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, backgroundColor: 'rgba(255, 255, 255, 0.2)', overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              width: `${progressPercent}%`,
+                              height: '100%',
+                              backgroundColor: isSafe ? '#10b981' : '#f59e0b',
+                              transition: 'width 0.3s ease',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
