@@ -137,7 +137,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
     try {
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      await sendFirebaseEmailVerification(cred.user);
+      // Le code PIN a déjà vérifié l'e-mail du partenaire
       const regRes = await registerPartnerAccount({
         fullName: fullName.trim(),
         phone: phone.trim(),

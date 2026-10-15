@@ -215,7 +215,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
 
     try {
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      await sendFirebaseEmailVerification(cred.user);
+      // Le code PIN a déjà validé l'adresse e-mail : pas besoin du mail générique Firebase en doublon
       await syncCustomerProfile(cred.user, { fullName: fullName.trim(), phone: phone.trim() });
       setCurrentUser(cred.user);
       setShowPinVerification(false);
