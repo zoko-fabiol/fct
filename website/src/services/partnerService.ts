@@ -95,6 +95,16 @@ export async function trackPartnerLandingRef(refCode: string | null) {
   }
 }
 
+let cachedPartnerAccount: PartnerAccount | null = null;
+
+export function getCachedPartnerAccount(): PartnerAccount | null {
+  return cachedPartnerAccount;
+}
+
+export function setCachedPartnerAccount(acc: PartnerAccount | null) {
+  cachedPartnerAccount = acc;
+}
+
 /**
  * Récupère le profil partenaire associé à l'utilisateur connecté
  */
@@ -110,7 +120,9 @@ export async function fetchCurrentPartnerProfile(userId?: string, userEmail?: st
       const docRef = doc(firestore, 'partners', uid);
       const snap = await getDocLocalFirst(docRef);
       if (snap && snap.exists()) {
-        return snap.data() as PartnerAccount;
+        const data = snap.data() as PartnerAccount;
+        setCachedPartnerAccount(data);
+        return data;
       }
     }
 
@@ -119,7 +131,9 @@ export async function fetchCurrentPartnerProfile(userId?: string, userEmail?: st
       const q = query(collection(firestore, 'partners'), where('email', '==', email));
       const snap = await getDocsLocalFirst(q);
       if (snap && !snap.empty) {
-        return snap.docs[0].data() as PartnerAccount;
+        const data = snap.docs[0].data() as PartnerAccount;
+        setCachedPartnerAccount(data);
+        return data;
       }
     }
 

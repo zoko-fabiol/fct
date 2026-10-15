@@ -224,15 +224,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Voile d'arrière-plan Mobile avec fermeture au clic */}
-        {mobileMenuOpen && (
-          <div
-            className="fct-mobile-backdrop"
-            onClick={() => setMobileMenuOpen(false)}
-            aria-hidden="true"
-          />
-        )}
+      {/* Voile d'arrière-plan Mobile avec fermeture au clic */}
+      {mobileMenuOpen && (
+        <div
+          className="fct-mobile-backdrop"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
         {/* Menu Déroulant Mobile avec fond 100% opaque, ergonomique et unifié */}
         {mobileMenuOpen && (
@@ -343,7 +344,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
         )}
-      </div>
     </header>
   );
 };

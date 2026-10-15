@@ -65,6 +65,9 @@
 html {
   scroll-behavior: smooth;
   color-scheme: light;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -75,6 +78,16 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
   min-height: 100vh;
 }
@@ -675,7 +688,7 @@ img {
 
 .fct-showroom-title-wrap {
   flex: 1;
-  min-width: 280px;
+  min-width: 0;
 }
 
 .fct-showroom-title {
@@ -1822,40 +1835,72 @@ img {
   gap: 16px;
 }
 
-/* RESPONSIVE ESPACE PARTENAIRE */
+.fct-partner-intro-card {
+  padding: 32px;
+}
+
+/* RESPONSIVE ESPACE PARTENAIRE & ANTI-OVERFLOW MOBILE */
 @media (max-width: 900px) {
+  .fct-catalog-layout {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
   .fct-partner-intro-grid {
-    grid-template-columns: 1fr;
-    gap: 32px;
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
   }
   .fct-partner-auth-card {
-    position: static;
+    position: static !important;
+    max-width: 100% !important;
   }
   .fct-partner-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr) !important;
   }
   .fct-partner-share-body {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .fct-container {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    max-width: 100% !important;
+  }
+  .fct-partner-intro-card {
+    padding: 24px 16px !important;
+  }
+  .fct-partner-auth-card {
+    padding: 24px 16px !important;
+  }
+  .fct-partner-share-panel {
+    padding: 20px 14px !important;
+  }
+  .fct-partner-payout-panel {
+    padding: 20px 14px !important;
   }
 }
 
 @media (max-width: 540px) {
+  .fct-partner-intro-card {
+    padding: 18px 12px !important;
+  }
   .fct-partner-benefits-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
   .fct-partner-stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
   .fct-partner-banner {
-    padding: 20px;
+    padding: 16px !important;
     flex-direction: column;
     align-items: flex-start;
   }
   .fct-partner-code-card {
-    width: 100%;
+    width: 100% !important;
   }
   .fct-partner-share-panel {
-    padding: 20px 16px;
+    padding: 18px 12px !important;
   }
 }
 

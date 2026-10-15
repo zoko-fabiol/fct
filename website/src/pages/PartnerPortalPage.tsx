@@ -46,6 +46,8 @@ import {
   generateAffiliateUrl,
   generateShareCopyText,
   SharePlatform,
+  getCachedPartnerAccount,
+  setCachedPartnerAccount,
 } from '../services/partnerService.ts';
 import { Vehicle } from '../types/index.ts';
 import { AppPage } from '../types/router.ts';
@@ -65,9 +67,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   lang = 'fr',
 }) => {
   const isEn = lang === 'en';
+  const cachedPartner = getCachedPartnerAccount();
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(auth.currentUser);
-  const [partner, setPartner] = useState<PartnerAccount | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(Boolean(auth.currentUser));
+  const [partner, setPartner] = useState<PartnerAccount | null>(cachedPartner);
+  const [isLoading, setIsLoading] = useState<boolean>(!cachedPartner && Boolean(auth.currentUser));
 
   // Authentification & Formulaire
   const [isRegister, setIsRegister] = useState(true);
@@ -95,7 +98,12 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     let isMounted = true;
     const safetyTimer = setTimeout(() => {
       if (isMounted) setIsLoading(false);
-    }, 1200);
+    }, 1000);
+
+    // Si on a déjà les données en cache, affichage instantané sans blocage
+    if (cachedPartner && isMounted) {
+      setIsLoading(false);
+    }
 
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (!isMounted) return;
@@ -103,7 +111,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       if (user) {
         try {
           const profile = await fetchCurrentPartnerProfile(user.uid, user.email || '');
-          if (isMounted) setPartner(profile);
+          if (isMounted) {
+            setPartner(profile);
+            setCachedPartnerAccount(profile);
+          }
         } catch (e) {
           console.warn('[FCT Partner] Erreur profil :', e);
         } finally {
@@ -112,6 +123,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       } else {
         if (isMounted) {
           setPartner(null);
+          setCachedPartnerAccount(null);
           setIsLoading(false);
         }
       }
@@ -250,6 +262,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   const handleLogout = async () => {
     await signOut(auth);
     setPartner(null);
+    setCachedPartnerAccount(null);
     onToast(isEn ? 'Logged out.' : 'Déconnecté avec succès.');
   };
 
@@ -465,11 +478,11 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             {/* Colonne Gauche : Présentation du Programme & Avantages */}
             <div>
               <div
+                className="fct-partner-intro-card"
                 style={{
                   backgroundColor: '#ffffff',
                   border: '1px solid var(--border-subtle)',
                   borderRadius: 'var(--radius-xl)',
-                  padding: '32px',
                   boxShadow: 'var(--shadow-sm)',
                 }}
               >
@@ -949,7 +962,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 </div>
 
                 {/* Sélecteur de véhicule */}
-                <div style={{ minWidth: '260px' }}>
+                <div style={{ minWidth: 0, width: '100%', maxWidth: '360px' }}>
                   <select
                     value={selectedVehicleId}
                     onChange={(e) => setSelectedVehicleId(e.target.value)}

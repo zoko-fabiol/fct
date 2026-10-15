@@ -84,6 +84,16 @@ export function validateCameroonPhone(phoneInput: string): {
   };
 }
 
+let cachedUnifiedProfile: UnifiedUserProfile | null = null;
+
+export function getCachedUserProfile(): UnifiedUserProfile | null {
+  return cachedUnifiedProfile;
+}
+
+export function setCachedUserProfile(profile: UnifiedUserProfile | null) {
+  cachedUnifiedProfile = profile;
+}
+
 /**
  * Récupère le profil unifié depuis Firestore
  */
@@ -109,7 +119,7 @@ export async function getUserProfile(
     }
 
     const data = snap.data();
-    return {
+    const result: UnifiedUserProfile = {
       id: snap.id,
       accountType,
       fullName: data.fullName || '',
@@ -125,6 +135,8 @@ export async function getUserProfile(
       partnerCode: data.partnerCode || '',
       stats: data.stats || {},
     };
+    setCachedUserProfile(result);
+    return result;
   } catch (err) {
     console.error('[FCT Profile] Erreur récupération profil :', err);
     return null;

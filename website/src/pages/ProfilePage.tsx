@@ -29,6 +29,8 @@ import {
   validateCameroonPhone,
   saveUserProfile,
   getUserProfile,
+  getCachedUserProfile,
+  setCachedUserProfile,
 } from '../services/profileService.ts';
 import { auth, onAuthStateChanged } from '../services/firebase.ts';
 import { WebsiteLanguage } from '../services/i18n.ts';
@@ -52,18 +54,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onNavigateToAuth,
 }) => {
   const isEn = lang === 'en';
-  const [profile, setProfile] = useState<UnifiedUserProfile | null>(initialProfile || null);
-  const [loadingProfile, setLoadingProfile] = useState(!initialProfile && Boolean(auth.currentUser));
+  const cachedProf = initialProfile || getCachedUserProfile();
+  const [profile, setProfile] = useState<UnifiedUserProfile | null>(cachedProf);
+  const [loadingProfile, setLoadingProfile] = useState(!cachedProf && Boolean(auth.currentUser));
   const [saving, setSaving] = useState(false);
   const [phoneOperator, setPhoneOperator] = useState<'ORANGE' | 'MTN' | 'AUTRE'>('AUTRE');
   const [payoutOperator, setPayoutOperator] = useState<'ORANGE' | 'MTN' | 'AUTRE'>('AUTRE');
 
   // Chargement automatique si non fourni (priorité cache local & timeout de sécurité)
   useEffect(() => {
-    if (initialProfile) {
-      setProfile(initialProfile);
+    if (cachedProf) {
+      setProfile(cachedProf);
       setLoadingProfile(false);
-      return;
     }
 
     let isMounted = true;
@@ -75,6 +77,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       if (!isMounted) return;
       if (!u) {
         setProfile(null);
+        setCachedUserProfile(null);
         setLoadingProfile(false);
         return;
       }
@@ -90,18 +93,20 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
         if (partnerData) {
           setProfile(partnerData);
+          setCachedUserProfile(partnerData);
           setLoadingProfile(false);
           return;
         }
 
         if (clientData) {
           setProfile(clientData);
+          setCachedUserProfile(clientData);
           setLoadingProfile(false);
           return;
         }
 
         // Profil par défaut rattaché à Firebase Auth
-        setProfile({
+        const defaultProf: UnifiedUserProfile = {
           id: u.uid,
           accountType: 'CLIENT',
           fullName: u.displayName || u.email?.split('@')[0] || 'Adhérent FCT',
@@ -112,7 +117,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           payoutMethod: 'ORANGE_MONEY',
           payoutPhone: u.phoneNumber || '',
           payoutAccountName: u.displayName || '',
-        });
+        };
+        setProfile(defaultProf);
+        setCachedUserProfile(defaultProf);
       } catch (err) {
         console.warn('[FCT Profile] Erreur hydratation profil :', err);
       } finally {
@@ -125,7 +132,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       clearTimeout(safetyTimer);
       unsub();
     };
-  }, [initialProfile]);
+  }, [cachedProf]);
 
   // Détection automatique opérateur
   useEffect(() => {
@@ -164,6 +171,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     setSaving(false);
 
     if (res.success) {
+      setCachedUserProfile(profile);
       onToast(isEn ? 'Profile updated successfully!' : 'Profil mis à jour avec succès dans FCT !');
     } else {
       onToast(res.error || (isEn ? 'Update error.' : 'Erreur de mise à jour.'));
@@ -254,44 +262,46 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const isPartner = profile.accountType === 'PARTNER';
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 20px', fontFamily: 'inherit' }}>
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px 14px', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }}>
       {/* 1. Header Profil & Identité FCT */}
       <div
         style={{
           backgroundColor: '#ffffff',
           borderRadius: 20,
-          padding: '24px 28px',
+          padding: '20px 20px',
           border: '1px solid var(--border-subtle)',
           boxShadow: 'var(--shadow-sm)',
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 20,
-          marginBottom: 28,
+          gap: 16,
+          marginBottom: 24,
+          overflow: 'hidden',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
           <div
             style={{
-              width: 60,
-              height: 60,
-              borderRadius: 18,
+              width: 54,
+              height: 54,
+              borderRadius: 16,
               background: 'linear-gradient(135deg, var(--fct-blue-primary), var(--fct-blue-dark))',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: 900,
               boxShadow: '0 4px 14px rgba(30, 58, 138, 0.25)',
+              flexShrink: 0,
             }}
           >
             {profile.fullName.charAt(0).toUpperCase() || 'F'}
           </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 900, color: 'var(--fct-blue-dark)', margin: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--fct-blue-dark)', margin: 0, wordBreak: 'break-word' }}>
                 {profile.fullName || (isEn ? 'My FCT Account' : 'Mon Compte FCT')}
               </h1>
               <span
@@ -304,6 +314,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   backgroundColor: isPartner ? '#fffbeb' : '#eff6ff',
                   color: isPartner ? '#b45309' : '#1e3a8a',
                   border: isPartner ? '1px solid #fde68a' : '1px solid #bfdbfe',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {isPartner
@@ -311,7 +322,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   : (isEn ? 'Verified Member' : 'Adhérent Client FCT')}
               </span>
             </div>
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-sub)' }}>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-sub)', wordBreak: 'break-all' }}>
               {profile.email} {profile.partnerCode ? `• Code Affilié : ${profile.partnerCode}` : ''}
             </p>
           </div>
@@ -329,7 +340,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </button>
           <button
             type="button"
-            onClick={onLogout}
+            onClick={() => {
+              setCachedUserProfile(null);
+              onLogout();
+            }}
             style={{
               padding: '9px 18px',
               borderRadius: 12,
@@ -351,7 +365,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       </div>
 
       <form onSubmit={handleSubmitProfile}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 290px), 1fr))', gap: 20 }}>
           {/* CARTE 1 : Coordonnées Personnelles */}
           <div
             style={{
