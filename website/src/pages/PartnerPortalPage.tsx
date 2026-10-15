@@ -31,6 +31,9 @@ import {
   BadgePercent,
   CircleDollarSign,
   Zap,
+  Search,
+  Eye,
+  Sparkles,
 } from 'lucide-react';
 import { WhatsAppIcon } from '../components/WhatsAppIcon.tsx';
 import { fetchVehicleImageFile, copyImageToClipboard, downloadVehiclePhoto } from '../utils/imageShareHelper.ts';
@@ -96,8 +99,11 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   const [showPinVerification, setShowPinVerification] = useState(false);
   const [generatedPin, setGeneratedPin] = useState<string | undefined>('123456');
 
-  // Partage d'un véhicule du showroom
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string>(vehicles[0]?.id || '');
+  // Partage et catalogue multi-véhicules du showroom
+  const [shareFilter, setShareFilter] = useState<'ALL' | 'RENT' | 'SALE'>('ALL');
+  const [shareSearch, setShareSearch] = useState<string>('');
+  const [copiedVehicleId, setCopiedVehicleId] = useState<string | null>(null);
+  const [expandedPreviewVehicleId, setExpandedPreviewVehicleId] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
   // Synchronisation silencieuse en arrière-plan sans bloquer l'affichage
@@ -131,9 +137,30 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     };
   }, []);
 
-  const selectedVehicle = useMemo(() => {
-    return vehicles.find((v) => v.id === selectedVehicleId) || vehicles[0] || null;
-  }, [vehicles, selectedVehicleId]);
+  // Décompte pour les onglets de filtrage
+  const shareCounts = useMemo(() => {
+    const valid = vehicles.filter((v) => v.status !== 'MAINTENANCE');
+    return {
+      all: valid.length,
+      rent: valid.filter((v) => v.isForRent).length,
+      sale: valid.filter((v) => v.isForSale).length,
+    };
+  }, [vehicles]);
+
+  // Véhicules filtrés pour la visualisation complète
+  const displayedShareVehicles = useMemo(() => {
+    return vehicles.filter((v) => {
+      if (v.status === 'MAINTENANCE') return false;
+      if (shareFilter === 'RENT' && !v.isForRent) return false;
+      if (shareFilter === 'SALE' && !v.isForSale) return false;
+      if (shareSearch.trim()) {
+        const q = shareSearch.toLowerCase();
+        const match = `${v.brand} ${v.model} ${v.year} ${v.category} ${v.fuel}`.toLowerCase();
+        if (!match.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [vehicles, shareFilter, shareSearch]);
 
   // Validation du code PIN 2FA et création effective du compte
   const handleVerifyPinRegistration = async (inputPin: string) => {
@@ -261,15 +288,15 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     onToast(isEn ? 'Logged out.' : 'Déconnecté avec succès.');
   };
 
-  // Déclencher le partage traqué
-  const handleTriggerShare = async (platform: SharePlatform) => {
-    if (!partner || !selectedVehicle) return;
+  // Déclencher le partage traqué pour un véhicule ciblé
+  const handleTriggerShare = async (targetVehicle: Vehicle, platform: SharePlatform) => {
+    if (!partner || !targetVehicle) return;
 
-    const affUrl = generateAffiliateUrl(selectedVehicle.id, partner.partnerCode);
-    const isRent = selectedVehicle.isForRent;
-    const shareText = generateShareCopyText(selectedVehicle, affUrl, isRent);
+    const affUrl = generateAffiliateUrl(targetVehicle.id, partner.partnerCode);
+    const isRent = targetVehicle.isForRent;
+    const shareText = generateShareCopyText(targetVehicle, affUrl, isRent);
 
-    const shareRes = await logPartnerShare(partner, selectedVehicle, platform);
+    const shareRes = await logPartnerShare(partner, targetVehicle, platform);
 
     if (shareRes.logged) {
       setPartner((prev) => {
@@ -287,30 +314,31 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             },
             vehicleLastSharedAt: {
               ...(prev.stats.vehicleLastSharedAt || {}),
-              [selectedVehicle.id]: new Date().toISOString(),
+              [targetVehicle.id]: new Date().toISOString(),
             },
           },
         };
       });
+      onToast(isEn ? 'Share counted! +1 to your impact.' : 'Partage validé ! +1 ajouté à votre score d’impact.');
     } else if (shareRes.reason === 'COOLDOWN_ACTIVE') {
       onToast(
         isEn
-          ? `Anti-spam: Vehicle already counted today (1 max/car/24h). Next counted share in ~${shareRes.remainingHours}h.`
-          : `Anti-spam : Véhicule déjà comptabilisé aujourd'hui (1 max/véhicule/24h). Prochain comptage dans ~${shareRes.remainingHours}h.`
+          ? `Anti-spam: Vehicle already counted today (1 max/car/24h). Next quota in ~${shareRes.remainingHours}h.`
+          : `Anti-spam : Véhicule déjà comptabilisé aujourd'hui (1 max/véhicule/24h). Nouveau quota dans ~${shareRes.remainingHours}h.`
       );
     }
 
-    const photoUrl = selectedVehicle.photoUrls?.[0] || '';
+    const photoUrl = targetVehicle.photoUrls?.[0] || '';
 
     if (platform === 'WHATSAPP_STATUS' || platform === 'WHATSAPP_CHAT') {
       // Priorité au partage média natif : photo en premier avec texte en légende
       if (typeof navigator !== 'undefined' && navigator.share && photoUrl) {
         try {
-          const imageFile = await fetchVehicleImageFile(photoUrl, `${selectedVehicle.brand}_${selectedVehicle.model}.jpg`);
+          const imageFile = await fetchVehicleImageFile(photoUrl, `${targetVehicle.brand}_${targetVehicle.model}.jpg`);
           if (imageFile && typeof navigator.canShare === 'function' && navigator.canShare({ files: [imageFile] })) {
             await navigator.share({
               files: [imageFile],
-              title: `FCT Automobile - ${selectedVehicle.brand} ${selectedVehicle.model}`,
+              title: `FCT Automobile - ${targetVehicle.brand} ${targetVehicle.model}`,
               text: shareText,
             });
             onToast(isEn ? 'Photo and description sent to WhatsApp!' : 'Photo et description envoyées vers WhatsApp !');
@@ -326,7 +354,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       if (photoUrl) {
         const copied = await copyImageToClipboard(photoUrl);
         if (!copied) {
-          downloadVehiclePhoto(photoUrl, `fct-${selectedVehicle.brand}-${selectedVehicle.model}.jpg`);
+          downloadVehiclePhoto(photoUrl, `fct-${targetVehicle.brand}-${targetVehicle.model}.jpg`);
         }
       }
       const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
@@ -342,14 +370,14 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         try {
           let filesToShare: File[] | undefined = undefined;
           if (photoUrl) {
-            const imageFile = await fetchVehicleImageFile(photoUrl, `${selectedVehicle.brand}_${selectedVehicle.model}.jpg`);
+            const imageFile = await fetchVehicleImageFile(photoUrl, `${targetVehicle.brand}_${targetVehicle.model}.jpg`);
             if (imageFile && typeof navigator.canShare === 'function' && navigator.canShare({ files: [imageFile] })) {
               filesToShare = [imageFile];
             }
           }
 
           await navigator.share({
-            title: `FCT Automobile - ${selectedVehicle.brand} ${selectedVehicle.model}`,
+            title: `FCT Automobile - ${targetVehicle.brand} ${targetVehicle.model}`,
             text: shareText,
             url: affUrl,
             ...(filesToShare && filesToShare.length > 0 ? { files: filesToShare } : {}),
@@ -364,8 +392,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
       try {
         await navigator.clipboard.writeText(`${shareText}\n\nPhoto : ${photoUrl || affUrl}`);
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 3000);
+        setCopiedVehicleId(targetVehicle.id);
+        setTimeout(() => setCopiedVehicleId(null), 3000);
         onToast(isEn ? 'Affiliate link and vehicle card copied!' : 'Lien affilié et fiche véhicule copiés !');
       } catch {
         onToast(isEn ? 'Could not share.' : 'Impossible de partager.');
@@ -373,8 +401,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     } else if (platform === 'COPY_LINK') {
       try {
         await navigator.clipboard.writeText(affUrl);
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 3000);
+        setCopiedVehicleId(targetVehicle.id);
+        setTimeout(() => setCopiedVehicleId(null), 3000);
         onToast(isEn ? 'Partner affiliate link copied to clipboard!' : 'Lien affilié copié dans le presse-papier !');
       } catch {
         onToast(isEn ? 'Could not copy link.' : 'Impossible de copier le lien.');
@@ -1064,182 +1092,305 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               );
             })()}
 
-            {/* 2.C OUTIL DE PARTAGE 1-CLIC D'UN VÉHICULE DU SHOWROOM */}
+            {/* 2.C NOUVEAU CATALOGUE MULTI-VÉHICULES DU SHOWROOM À PARTAGER */}
             <div className="fct-partner-share-panel">
               <div className="fct-partner-share-header">
                 <div>
-                  <h3 style={{ margin: '0 0 4px 0', fontSize: '17px', fontWeight: 900, color: 'var(--fct-blue-dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Send size={18} color="var(--fct-blue-primary)" />
-                    <span>{t.selectVehicleToShare}</span>
+                  <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 900, color: 'var(--fct-blue-dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Send size={19} color="var(--fct-blue-primary)" />
+                    <span>{isEn ? 'Showroom Vehicles to Share & Promote' : 'Véhicules du Showroom à Partager & Promouvoir'}</span>
                   </h3>
                   <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-sub)' }}>
                     {isEn
-                      ? 'Select any available vehicle to publish formatted messages and tracked photos on your WhatsApp status.'
-                      : 'Sélectionnez un véhicule pour publier une annonce calibrée avec votre lien d’affiliation sur WhatsApp.'}
+                      ? 'Select any vehicle below. Share directly to WhatsApp or copy the link with your affiliate tracking code.'
+                      : 'Choisissez n’importe quel véhicule ci-dessous. Partagez en 1 clic vers votre statut WhatsApp ou copiez votre lien affilié certifié.'}
                   </p>
                 </div>
 
-                {/* Sélecteur de véhicule */}
-                <div style={{ minWidth: 0, width: '100%', maxWidth: '360px' }}>
-                  <select
-                    value={selectedVehicleId}
-                    onChange={(e) => setSelectedVehicleId(e.target.value)}
-                    className="fct-select"
-                    style={{ fontWeight: 700 }}
-                  >
-                    {vehicles.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.brand} {v.model} ({v.year}) • {v.isForRent ? `${v.rentalDailyRate.toLocaleString('fr-FR')} F/j` : `${(v.salePrice || 0).toLocaleString('fr-FR')} F`}
-                      </option>
-                    ))}
-                  </select>
+                {/* Filtres par type : TOUS / À LOUER / EN VENTE */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <div className="fct-partner-filter-tabs">
+                    <button
+                      type="button"
+                      onClick={() => setShareFilter('ALL')}
+                      className={`fct-partner-filter-btn ${shareFilter === 'ALL' ? 'active' : ''}`}
+                    >
+                      <Car size={15} />
+                      <span>{isEn ? 'All' : 'Tous'}</span>
+                      <span className="fct-partner-filter-badge">{shareCounts.all}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShareFilter('RENT')}
+                      className={`fct-partner-filter-btn ${shareFilter === 'RENT' ? 'active' : ''}`}
+                    >
+                      <Sparkles size={14} color={shareFilter === 'RENT' ? '#ffffff' : '#2563eb'} />
+                      <span>{isEn ? 'For Rent' : 'À Louer'}</span>
+                      <span className="fct-partner-filter-badge">{shareCounts.rent}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShareFilter('SALE')}
+                      className={`fct-partner-filter-btn ${shareFilter === 'SALE' ? 'active' : ''}`}
+                    >
+                      <Award size={14} color={shareFilter === 'SALE' ? '#ffffff' : '#d97706'} />
+                      <span>{isEn ? 'For Sale' : 'En Vente'}</span>
+                      <span className="fct-partner-filter-badge">{shareCounts.sale}</span>
+                    </button>
+                  </div>
+
+                  {/* Recherche rapide */}
+                  <div style={{ position: 'relative', width: '180px' }}>
+                    <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input
+                      type="text"
+                      placeholder={isEn ? 'Search model...' : 'Rechercher...'}
+                      value={shareSearch}
+                      onChange={(e) => setShareSearch(e.target.value)}
+                      className="fct-input"
+                      style={{ padding: '7px 10px 7px 30px', fontSize: '12px', borderRadius: '9999px' }}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {selectedVehicle && (
-                <div className="fct-partner-share-body">
-                  {/* Photo miniature */}
-                  <div className="fct-partner-share-photo">
-                    {selectedVehicle.photoUrls?.[0] ? (
-                      <img
-                        src={selectedVehicle.photoUrls[0]}
-                        alt={selectedVehicle.model}
-                      />
-                    ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                        <Car size={40} />
-                      </div>
-                    )}
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: '10px',
-                        left: '10px',
-                        padding: '4px 10px',
-                        borderRadius: 'var(--radius-sm)',
-                        backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                        color: '#ffffff',
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                      }}
-                    >
-                      {selectedVehicle.isForRent ? (isEn ? 'For Rent' : 'Location') : (isEn ? 'For Sale' : 'Vente')}
-                    </span>
-                  </div>
+              {/* Grille dynamique des véhicules */}
+              {displayedShareVehicles.length === 0 ? (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <Car size={40} style={{ margin: '0 auto 10px', opacity: 0.4 }} />
+                  <p style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>
+                    {isEn ? 'No vehicles match your current filter.' : 'Aucun véhicule ne correspond à ce filtre.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="fct-partner-catalog-grid">
+                  {displayedShareVehicles.map((v) => {
+                    const affUrl = generateAffiliateUrl(v.id, partner.partnerCode);
+                    const shareText = generateShareCopyText(v, affUrl, v.isForRent);
+                    const isPreviewExpanded = expandedPreviewVehicleId === v.id;
+                    const isCopied = copiedVehicleId === v.id;
+                    const eligibility = checkVehicleShareEligibility(partner, v.id);
 
-                  {/* Actions & Boutons de Partage */}
-                  <div className="fct-partner-share-actions">
-                    {/* Statut Anti-Spam du véhicule sélectionné */}
-                    {(() => {
-                      const shareEligibility = checkVehicleShareEligibility(partner, selectedVehicle.id);
-                      if (!shareEligibility.canCount) {
-                        return (
+                    const priceStr = v.isForRent
+                      ? `${(v.rentalDailyRate || 0).toLocaleString('fr-FR')} FCFA / jour`
+                      : `${(v.salePrice || (v as any).sellingPrice || 0).toLocaleString('fr-FR')} FCFA`;
+
+                    const commissionStr = v.isForRent
+                      ? `~${Math.round((v.rentalDailyRate || 0) * 0.05).toLocaleString('fr-FR')} FCFA / j (5%)`
+                      : '100 000 FCFA forfaitaire';
+
+                    return (
+                      <div key={v.id} className="fct-partner-vcard">
+                        {/* Photo avec Badges */}
+                        <div className="fct-partner-vcard-media">
+                          {v.photoUrls?.[0] ? (
+                            <img src={v.photoUrls[0]} alt={`${v.brand} ${v.model}`} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                              <Car size={40} />
+                            </div>
+                          )}
+
+                          {/* Badge Type & Tarif */}
                           <div
                             style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              padding: '10px 14px',
-                              backgroundColor: '#fffbeb',
-                              border: '1px solid #fde68a',
-                              borderRadius: '8px',
-                              color: '#92400e',
-                              fontSize: '12px',
-                              marginBottom: '12px',
-                              fontWeight: 600,
+                              position: 'absolute',
+                              top: '10px',
+                              left: '10px',
+                              padding: '4px 10px',
+                              borderRadius: 'var(--radius-sm)',
+                              backgroundColor: v.isForRent ? 'rgba(15, 42, 74, 0.9)' : 'rgba(180, 83, 9, 0.9)',
+                              color: '#ffffff',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              letterSpacing: '0.03em',
+                              backdropFilter: 'blur(4px)',
                             }}
                           >
-                            <Clock size={16} style={{ flexShrink: 0 }} />
-                            <span>
-                              {isEn
-                                ? `Anti-spam active: Already counted today (1 max/vehicle/24h). Next quota in ~${shareEligibility.remainingHours}h (you can still share it freely).`
-                                : `Anti-spam actif : Déjà comptabilisé aujourd'hui (1 max/véhicule/24h). Nouveau quota dans ~${shareEligibility.remainingHours}h (vous pouvez continuer à le partager librement).`}
+                            {v.isForRent ? (isEn ? 'LOCATION' : 'LOCATION') : (isEn ? 'VENTE' : 'VENTE')} • {priceStr}
+                          </div>
+
+                          {/* Badge Anti-Spam Quota 24h */}
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '10px',
+                              right: '10px',
+                              padding: '3px 9px',
+                              borderRadius: '9999px',
+                              backgroundColor: eligibility.canCount ? 'rgba(16, 185, 129, 0.92)' : 'rgba(245, 158, 11, 0.92)',
+                              color: '#ffffff',
+                              fontSize: '10.5px',
+                              fontWeight: 800,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              backdropFilter: 'blur(4px)',
+                            }}
+                            title={
+                              eligibility.canCount
+                                ? 'Prêt pour comptabilisation (+1 partage)'
+                                : `Déjà comptabilisé aujourd'hui (prochain dans ~${eligibility.remainingHours}h)`
+                            }
+                          >
+                            {eligibility.canCount ? (
+                              <>
+                                <CheckCircle2 size={12} />
+                                <span>{isEn ? '+1 Quota ready' : '+1 Quota actif'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Clock size={12} />
+                                <span>{isEn ? `Shared (~${eligibility.remainingHours}h)` : `Partagé (~${eligibility.remainingHours}h)`}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Corps de la carte */}
+                        <div className="fct-partner-vcard-body">
+                          <div>
+                            <h4 className="fct-partner-vcard-title">{v.brand} {v.model} ({v.year})</h4>
+                            <div style={{ fontSize: '12px', color: 'var(--text-sub)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <span>{v.category}</span>
+                              <span>•</span>
+                              <span>{v.transmission || 'Automatique'}</span>
+                              <span>•</span>
+                              <span>{v.fuel || 'Essence'}</span>
+                              <span>•</span>
+                              <span>{v.currentLocation || 'Douala'}</span>
+                            </div>
+                          </div>
+
+                          {/* Aperçu Commission Partenaire */}
+                          <div className="fct-partner-commission-badge">
+                            <span style={{ fontWeight: 700, color: '#047857' }}>
+                              {isEn ? 'Your Commission:' : 'Votre Commission :'}
+                            </span>
+                            <span style={{ fontWeight: 900, color: '#065f46' }}>
+                              {commissionStr}
                             </span>
                           </div>
-                        );
-                      }
-                      return (
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '8px 12px',
-                            backgroundColor: '#f0fdf4',
-                            border: '1px solid #bbf7d0',
-                            borderRadius: '8px',
-                            color: '#15803d',
-                            fontSize: '12px',
-                            marginBottom: '12px',
-                            fontWeight: 600,
-                          }}
-                        >
-                          <CheckCircle2 size={15} style={{ flexShrink: 0 }} />
-                          <span>
-                            {isEn
-                              ? 'Eligible for daily quota (+1 share will be credited upon sharing).'
-                              : 'Éligible au quota 24h (+1 partage sera crédité à votre profil dès le partage).'}
-                          </span>
+
+                          {/* Boutons d'Action 1-Clic */}
+                          <div className="fct-partner-vcard-actions">
+                            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '8px' }}>
+                              {/* Bouton WhatsApp direct */}
+                              <button
+                                type="button"
+                                onClick={() => handleTriggerShare(v, 'WHATSAPP_STATUS')}
+                                className="fct-btn"
+                                style={{
+                                  backgroundColor: '#25D366',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  padding: '10px 12px',
+                                  fontSize: '12.5px',
+                                  fontWeight: 800,
+                                  boxShadow: '0 2px 8px rgba(37, 211, 102, 0.25)',
+                                }}
+                                title={isEn ? 'Share on WhatsApp with photo and pitch' : 'Partager sur WhatsApp avec photo et annonce'}
+                              >
+                                <WhatsAppIcon size={16} color="#ffffff" />
+                                <span>WhatsApp</span>
+                              </button>
+
+                              {/* Partage Universel */}
+                              <button
+                                type="button"
+                                onClick={() => handleTriggerShare(v, 'UNIVERSAL_SHARE')}
+                                className="fct-btn fct-btn-primary"
+                                style={{
+                                  padding: '10px 12px',
+                                  fontSize: '12.5px',
+                                  fontWeight: 800,
+                                }}
+                                title={isEn ? 'Share to other apps' : 'Partager vers d’autres applications'}
+                              >
+                                <Share2 size={14} />
+                                <span>{isEn ? 'Share' : 'Partager'}</span>
+                              </button>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                              {/* Copier le lien affilié */}
+                              <button
+                                type="button"
+                                onClick={() => handleTriggerShare(v, 'COPY_LINK')}
+                                className="fct-btn fct-btn-secondary"
+                                style={{
+                                  padding: '8px 12px',
+                                  fontSize: '11.5px',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {isCopied ? <Check size={14} color="#059669" /> : <Copy size={14} />}
+                                <span>{isCopied ? (isEn ? 'Copied ✓' : 'Lien Copié ✓') : (isEn ? 'Copy Link' : 'Copier Lien')}</span>
+                              </button>
+
+                              {/* Toggle texte d'annonce */}
+                              <button
+                                type="button"
+                                onClick={() => setExpandedPreviewVehicleId(isPreviewExpanded ? null : v.id)}
+                                className="fct-btn fct-btn-secondary"
+                                style={{
+                                  padding: '8px 12px',
+                                  fontSize: '11.5px',
+                                  fontWeight: 700,
+                                  backgroundColor: isPreviewExpanded ? '#f1f5f9' : '#ffffff',
+                                }}
+                              >
+                                <Eye size={13} />
+                                <span>{isPreviewExpanded ? (isEn ? 'Hide Text' : 'Masquer') : (isEn ? 'View Pitch' : 'Voir Annonce')}</span>
+                              </button>
+                            </div>
+
+                            {/* Aperçu déroulant du texte de l'annonce */}
+                            {isPreviewExpanded && (
+                              <div
+                                style={{
+                                  marginTop: '6px',
+                                  padding: '10px 12px',
+                                  backgroundColor: '#f8fafc',
+                                  borderRadius: '8px',
+                                  border: '1px solid #e2e8f0',
+                                  fontSize: '11.5px',
+                                  fontFamily: 'monospace',
+                                  color: '#334155',
+                                  whiteSpace: 'pre-wrap',
+                                  lineHeight: 1.5,
+                                  maxHeight: '160px',
+                                  overflowY: 'auto',
+                                }}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(shareText);
+                                      onToast(isEn ? 'Marketing text copied!' : 'Texte de l’annonce copié !');
+                                    }}
+                                    style={{
+                                      fontSize: '10.5px',
+                                      padding: '2px 8px',
+                                      background: '#ffffff',
+                                      border: '1px solid #cbd5e1',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    {isEn ? 'Copy Text' : 'Copier Texte'}
+                                  </button>
+                                </div>
+                                {shareText}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      );
-                    })()}
-
-                    <div className="fct-partner-share-buttons">
-                      {/* WhatsApp Statut */}
-                      <button
-                        type="button"
-                        onClick={() => handleTriggerShare('WHATSAPP_STATUS')}
-                        className="fct-btn"
-                        style={{
-                          backgroundColor: '#25D366',
-                          color: '#ffffff',
-                          border: 'none',
-                          flex: '1 1 200px',
-                          padding: '12px 18px',
-                          boxShadow: '0 2px 8px rgba(37, 211, 102, 0.25)',
-                        }}
-                      >
-                        <WhatsAppIcon size={18} color="#ffffff" />
-                        <span>{t.shareWhatsappBtn}</span>
-                      </button>
-
-                      {/* Partage Universel */}
-                      <button
-                        type="button"
-                        onClick={() => handleTriggerShare('UNIVERSAL_SHARE')}
-                        className="fct-btn fct-btn-primary"
-                        style={{
-                          padding: '12px 18px',
-                        }}
-                        title={isEn ? 'Share to any application (WhatsApp, Telegram, Facebook...)' : 'Partager vers n’importe quelle application'}
-                      >
-                        <Share2 size={16} />
-                        <span>{t.shareUniversalBtn}</span>
-                      </button>
-
-                      {/* Copie de Lien */}
-                      <button
-                        type="button"
-                        onClick={() => handleTriggerShare('COPY_LINK')}
-                        className="fct-btn fct-btn-secondary"
-                        style={{ padding: '12px 18px' }}
-                      >
-                        {copiedLink ? <Check size={16} color="#059669" /> : <Copy size={16} />}
-                        <span>{copiedLink ? (isEn ? 'Copied' : 'Lien Copié') : t.copyLinkBtn}</span>
-                      </button>
-                    </div>
-
-                    {/* Aperçu du texte généré */}
-                    <div className="fct-partner-share-preview">
-                      {generateShareCopyText(
-                        selectedVehicle,
-                        generateAffiliateUrl(selectedVehicle.id, partner.partnerCode),
-                        selectedVehicle.isForRent
-                      )}
-                    </div>
-                  </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
