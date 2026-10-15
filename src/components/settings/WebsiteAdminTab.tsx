@@ -39,6 +39,13 @@ import {
   FileCheck,
   RefreshCw,
   ExternalLink,
+  Share2,
+  ShieldCheck,
+  UserCheck,
+  KeyRound,
+  HeartPulse,
+  User,
+  SlidersHorizontal,
 } from 'lucide-react';
 import {
   WebsiteTheme,
@@ -115,11 +122,32 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
     nav: true,
     home: true,
     rental: false,
-    sales: false,
+    showroom: false,
     health: false,
+    partners: false,
+    portal: false,
+    profile: false,
     agency: false,
     footer: false,
+    auth: false,
   });
+  const [cmsSearch, setCmsSearch] = useState('');
+
+  const handleToggleAllSections = (expand: boolean) => {
+    setOpenSections({
+      nav: expand,
+      home: expand,
+      rental: expand,
+      showroom: expand,
+      health: expand,
+      partners: expand,
+      portal: expand,
+      profile: expand,
+      agency: expand,
+      footer: expand,
+      auth: expand,
+    });
+  };
 
   // Charger le contenu existant depuis Firestore au montage
   useEffect(() => {
@@ -411,58 +439,104 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
       {/* ==================================================== */}
       {currentSubTab === 'content' && (
         <div className="space-y-6">
-          {/* Barre d'action supérieure CMS */}
-          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-500">Langue à éditer :</span>
-              <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+          {/* Barre d'action supérieure CMS avec recherche et contrôles */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              {/* Langue & Recherche */}
+              <div className="flex flex-wrap items-center gap-3 flex-1">
+                <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setContentLang('fr')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
+                      contentLang === 'fr'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    FR · Français
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setContentLang('en')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
+                      contentLang === 'en'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    EN · English
+                  </button>
+                </div>
+
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={cmsSearch}
+                    onChange={(e) => setCmsSearch(e.target.value)}
+                    placeholder="Filtrer un texte, bouton, titre (ex: caution, whatsapp, carnet...)"
+                    className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  {cmsSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setCmsSearch('')}
+                      className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-slate-600 font-bold"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Boutons d'action */}
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setContentLang('fr')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
-                    contentLang === 'fr'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  onClick={() => handleToggleAllSections(true)}
+                  className="px-3 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition cursor-pointer"
+                  title="Déplier tous les modules"
                 >
-                  FR · Français (Officiel)
+                  Tout Déplier
                 </button>
                 <button
                   type="button"
-                  onClick={() => setContentLang('en')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
-                    contentLang === 'en'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  onClick={() => handleToggleAllSections(false)}
+                  className="px-3 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition cursor-pointer"
+                  title="Replier tous les modules"
                 >
-                  EN · English (International)
+                  Tout Replier
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetContent}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Rétablir</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isSavingContent}
+                  onClick={handleSaveContent}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSavingContent ? 'Enregistrement...' : 'Enregistrer dans Firebase'}</span>
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-              <button
-                type="button"
-                onClick={handleResetContent}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition cursor-pointer"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Rétablir par Défaut</span>
-              </button>
-              <button
-                type="button"
-                disabled={isSavingContent}
-                onClick={handleSaveContent}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition cursor-pointer disabled:opacity-50"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>{isSavingContent ? 'Enregistrement...' : 'Enregistrer dans Firebase'}</span>
-              </button>
-            </div>
+            {cmsSearch.trim() && (
+              <div className="text-[11px] text-blue-600 font-semibold bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 flex items-center justify-between">
+                <span>Filtre actif : « {cmsSearch} » — Les sections correspondantes sont automatiquement ouvertes.</span>
+                <button onClick={() => setCmsSearch('')} className="underline hover:text-blue-800 cursor-pointer">Effacer</button>
+              </div>
+            )}
           </div>
 
-          {/* Section A : Navigation & Barre d'en-tête */}
+          {/* Module 1 : Navigation & Menus */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <button
               type="button"
@@ -475,7 +549,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-900">1. Navigation, Menus & En-tête</h3>
-                  <p className="text-[11px] text-slate-500">Intitulés des liens du menu principal et des boutons d'accès</p>
+                  <p className="text-[11px] text-slate-500">Intitulés des liens du menu principal, barre VIP et boutons d'accès</p>
                 </div>
               </div>
               {openSections.nav ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
@@ -489,7 +563,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                     type="text"
                     value={activeContent.nav?.home || ''}
                     onChange={(e) => handleTextChange('nav', 'home', e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
                 <div>
@@ -498,7 +572,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                     type="text"
                     value={activeContent.nav?.rentals || ''}
                     onChange={(e) => handleTextChange('nav', 'rentals', e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
                 <div>
@@ -507,7 +581,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                     type="text"
                     value={activeContent.nav?.sales || ''}
                     onChange={(e) => handleTextChange('nav', 'sales', e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
                 <div>
@@ -516,7 +590,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                     type="text"
                     value={activeContent.nav?.healthPassport || ''}
                     onChange={(e) => handleTextChange('nav', 'healthPassport', e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
                 <div>
@@ -525,7 +599,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                     type="text"
                     value={activeContent.nav?.agency || ''}
                     onChange={(e) => handleTextChange('nav', 'agency', e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
                 <div>
@@ -534,7 +608,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                     type="text"
                     value={activeContent.nav?.whatsapp || ''}
                     onChange={(e) => handleTextChange('nav', 'whatsapp', e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
                 <div>
@@ -543,7 +617,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                     type="text"
                     value={activeContent.nav?.clientPortal || ''}
                     onChange={(e) => handleTextChange('nav', 'clientPortal', e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
                 <div>
@@ -552,14 +626,14 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                     type="text"
                     value={activeContent.nav?.switchLang || ''}
                     onChange={(e) => handleTextChange('nav', 'switchLang', e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
               </div>
             )}
           </div>
 
-          {/* Section B : Accueil & Héro */}
+          {/* Module 2 : Accueil & Hero */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <button
               type="button"
@@ -571,8 +645,8 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">2. Bannière Héro & Page d'Accueil</h3>
-                  <p className="text-[11px] text-slate-500">Accroches principales, badges, slogans et arguments d'autorité</p>
+                  <h3 className="text-sm font-black text-slate-900">2. Page d'Accueil & Bannières d'Autorité</h3>
+                  <p className="text-[11px] text-slate-500">Accroches principales, badges, slogans, KPI et arguments de confiance</p>
                 </div>
               </div>
               {openSections.home ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
@@ -580,14 +654,34 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
 
             {openSections.home && (
               <div className="p-5 space-y-4 text-xs">
-                <div>
-                  <label className="block text-slate-500 font-semibold mb-1">Badge Surtitre Héro</label>
-                  <input
-                    type="text"
-                    value={activeContent.home?.badge || ''}
-                    onChange={(e) => handleTextChange('home', 'badge', e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-1">
+                    <label className="block text-slate-500 font-semibold mb-1">Badge Surtitre Héro</label>
+                    <input
+                      type="text"
+                      value={activeContent.home?.badge || ''}
+                      onChange={(e) => handleTextChange('home', 'badge', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Explorer la Flotte</label>
+                    <input
+                      type="text"
+                      value={activeContent.home?.exploreFleet || ''}
+                      onChange={(e) => handleTextChange('home', 'exploreFleet', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Véhicules en Vente</label>
+                    <input
+                      type="text"
+                      value={activeContent.home?.viewSales || ''}
+                      onChange={(e) => handleTextChange('home', 'viewSales', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -597,7 +691,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       rows={2}
                       value={activeContent.home?.heroTitle || ''}
                       onChange={(e) => handleTextChange('home', 'heroTitle', e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold"
                     />
                   </div>
                   <div>
@@ -606,7 +700,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       rows={2}
                       value={activeContent.home?.heroSubtitle || ''}
                       onChange={(e) => handleTextChange('home', 'heroSubtitle', e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                     />
                   </div>
                 </div>
@@ -629,7 +723,6 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white"
                     />
                   </div>
-
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                     <span className="font-bold text-slate-700 block mb-1">KPI 2 : Caution</span>
                     <input
@@ -647,7 +740,6 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white"
                     />
                   </div>
-
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                     <span className="font-bold text-slate-700 block mb-1">KPI 3 : Assistance</span>
                     <input
@@ -667,20 +759,58 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                   </div>
                 </div>
 
-                <div className="pt-2">
-                  <label className="block text-slate-500 font-semibold mb-1">Titre Section Véhicules Disponibles</label>
-                  <input
-                    type="text"
-                    value={activeContent.home?.featuredVehicles || ''}
-                    onChange={(e) => handleTextChange('home', 'featuredVehicles', e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Titre Section Véhicules Disponibles</label>
+                    <input
+                      type="text"
+                      value={activeContent.home?.featuredVehicles || ''}
+                      onChange={(e) => handleTextChange('home', 'featuredVehicles', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Sous-titre Section Véhicules</label>
+                    <input
+                      type="text"
+                      value={activeContent.home?.featuredSubtitle || ''}
+                      onChange={(e) => handleTextChange('home', 'featuredSubtitle', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200/60 space-y-2">
+                  <span className="font-bold text-blue-900 block">Bannière Carnet de Santé Numérique</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Titre de la bannière"
+                      value={activeContent.home?.healthBannerTitle || ''}
+                      onChange={(e) => handleTextChange('home', 'healthBannerTitle', e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Bouton vérifier plaque"
+                      value={activeContent.home?.checkPlate || ''}
+                      onChange={(e) => handleTextChange('home', 'checkPlate', e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white"
+                    />
+                  </div>
+                  <textarea
+                    rows={2}
+                    placeholder="Description de la bannière"
+                    value={activeContent.home?.healthBannerDesc || ''}
+                    onChange={(e) => handleTextChange('home', 'healthBannerDesc', e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs"
                   />
                 </div>
               </div>
             )}
           </div>
 
-          {/* Section C : Location & Vente */}
+          {/* Module 3 : Location & Vente */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <button
               type="button"
@@ -692,8 +822,8 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                   <Car className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">3. Pages Location & Vente de Véhicules</h3>
-                  <p className="text-[11px] text-slate-500">Textes des catalogues, tarifs par jour et garanties de vente</p>
+                  <h3 className="text-sm font-black text-slate-900">3. Catalogues Location & Vente de Véhicules</h3>
+                  <p className="text-[11px] text-slate-500">Textes des catalogues, filtres de catégories, mentions tarifaires et garanties</p>
                 </div>
               </div>
               {openSections.rental ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
@@ -708,7 +838,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       type="text"
                       value={activeContent.rental?.title || ''}
                       onChange={(e) => handleTextChange('rental', 'title', e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold"
                     />
                   </div>
                   <div>
@@ -717,7 +847,37 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       type="text"
                       value={activeContent.rental?.subtitle || ''}
                       onChange={(e) => handleTextChange('rental', 'subtitle', e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Libellé Jour</label>
+                    <input
+                      type="text"
+                      value={activeContent.rental?.dayRate || ''}
+                      onChange={(e) => handleTextChange('rental', 'dayRate', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Libellé Caution</label>
+                    <input
+                      type="text"
+                      value={activeContent.rental?.deposit || ''}
+                      onChange={(e) => handleTextChange('rental', 'deposit', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Option Chauffeur VIP</label>
+                    <input
+                      type="text"
+                      value={activeContent.rental?.withDriverOpt || ''}
+                      onChange={(e) => handleTextChange('rental', 'withDriverOpt', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                     />
                   </div>
                 </div>
@@ -729,7 +889,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       type="text"
                       value={activeContent.sales?.title || ''}
                       onChange={(e) => handleTextChange('sales', 'title', e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold"
                     />
                   </div>
                   <div>
@@ -738,7 +898,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       type="text"
                       value={activeContent.sales?.subtitle || ''}
                       onChange={(e) => handleTextChange('sales', 'subtitle', e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                     />
                   </div>
                 </div>
@@ -749,14 +909,527 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                     type="text"
                     value={activeContent.sales?.warrantyIncluded || ''}
                     onChange={(e) => handleTextChange('sales', 'warrantyIncluded', e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-semibold"
                   />
                 </div>
               </div>
             )}
           </div>
 
-          {/* Section D : Agence & Contact Douala */}
+          {/* Module 4 : Fiche Détaillée Showroom & Réservation */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => toggleSection('showroom')}
+              className="w-full p-4 bg-slate-50/70 hover:bg-slate-100/70 border-b border-slate-200 flex items-center justify-between text-left transition cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                  <SlidersHorizontal className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">4. Fiche Détaillée Showroom & Formulaire Réservation</h3>
+                  <p className="text-[11px] text-slate-500">Caractéristiques techniques, conditions tarifaires, services inclus et confirmation</p>
+                </div>
+              </div>
+              {openSections.showroom ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+            </button>
+
+            {openSections.showroom && (
+              <div className="p-5 space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Retour</label>
+                    <input
+                      type="text"
+                      value={activeContent.showroom?.back || ''}
+                      onChange={(e) => handleTextChange('showroom', 'back', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Badge Certifié FCT</label>
+                    <input
+                      type="text"
+                      value={activeContent.showroom?.certifiedFCT || ''}
+                      onChange={(e) => handleTextChange('showroom', 'certifiedFCT', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Titre Caractéristiques</label>
+                    <input
+                      type="text"
+                      value={activeContent.showroom?.specsTitle || ''}
+                      onChange={(e) => handleTextChange('showroom', 'specsTitle', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Libellé Boîte de Vitesse</label>
+                    <input
+                      type="text"
+                      value={activeContent.showroom?.transmission || ''}
+                      onChange={(e) => handleTextChange('showroom', 'transmission', e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Libellé Carburant</label>
+                    <input
+                      type="text"
+                      value={activeContent.showroom?.fuel || ''}
+                      onChange={(e) => handleTextChange('showroom', 'fuel', e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Libellé Places Assises</label>
+                    <input
+                      type="text"
+                      value={activeContent.showroom?.seats || ''}
+                      onChange={(e) => handleTextChange('showroom', 'seats', e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Mention Disponible</label>
+                    <input
+                      type="text"
+                      value={activeContent.showroom?.available || ''}
+                      onChange={(e) => handleTextChange('showroom', 'available', e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white text-emerald-700 font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                  <span className="font-bold text-slate-800 block">Formulaire de Réservation VIP & Reçus</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Bouton Confirmer Réservation"
+                      value={activeContent.showroom?.bookNow || ''}
+                      onChange={(e) => handleTextChange('showroom', 'bookNow', e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Option Chauffeur dédié"
+                      value={activeContent.showroom?.withDriverCheckbox || ''}
+                      onChange={(e) => handleTextChange('showroom', 'withDriverCheckbox', e.target.value)}
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Message de succès après envoi de réservation"
+                    value={activeContent.showroom?.successNotice || ''}
+                    onChange={(e) => handleTextChange('showroom', 'successNotice', e.target.value)}
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-medium text-emerald-800"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Module 5 : Carnet de Santé Numérique */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => toggleSection('health')}
+              className="w-full p-4 bg-slate-50/70 hover:bg-slate-100/70 border-b border-slate-200 flex items-center justify-between text-left transition cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
+                  <HeartPulse className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">5. Carnet de Santé Numérique & Traçabilité</h3>
+                  <p className="text-[11px] text-slate-500">Moteur de recherche par plaque, libellés de révision, historique et sceau certifié</p>
+                </div>
+              </div>
+              {openSections.health ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+            </button>
+
+            {openSections.health && (
+              <div className="p-5 space-y-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Titre Page Carnet de Santé</label>
+                    <input
+                      type="text"
+                      value={activeContent.health?.title || ''}
+                      onChange={(e) => handleTextChange('health', 'title', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Sous-titre Page Carnet</label>
+                    <input
+                      type="text"
+                      value={activeContent.health?.subtitle || ''}
+                      onChange={(e) => handleTextChange('health', 'subtitle', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Placeholder Recherche de Plaque</label>
+                    <input
+                      type="text"
+                      value={activeContent.health?.searchPlaceholder || ''}
+                      onChange={(e) => handleTextChange('health', 'searchPlaceholder', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Lancer Recherche</label>
+                    <input
+                      type="text"
+                      value={activeContent.health?.searchBtn || ''}
+                      onChange={(e) => handleTextChange('health', 'searchBtn', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold text-teal-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Libellé Kilométrage Certifié</label>
+                    <input
+                      type="text"
+                      value={activeContent.health?.mileageCertified || ''}
+                      onChange={(e) => handleTextChange('health', 'mileageCertified', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Sceau Authentique FCT</label>
+                    <input
+                      type="text"
+                      value={activeContent.health?.certifiedStamp || ''}
+                      onChange={(e) => handleTextChange('health', 'certifiedStamp', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold text-emerald-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Message Si Plaque Inconnue</label>
+                    <input
+                      type="text"
+                      value={activeContent.health?.noRecords || ''}
+                      onChange={(e) => handleTextChange('health', 'noRecords', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-rose-700"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Module 6 : Réseau Partenaires & Apporteurs d'Affaires */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => toggleSection('partners')}
+              className="w-full p-4 bg-slate-50/70 hover:bg-slate-100/70 border-b border-slate-200 flex items-center justify-between text-left transition cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center font-bold">
+                  <Share2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">6. Réseau Partenaires & Apporteurs d'Affaires</h3>
+                  <p className="text-[11px] text-slate-500">Piliers de commissions, inscription, partage WhatsApp et retraits Orange/MTN</p>
+                </div>
+              </div>
+              {openSections.partners ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+            </button>
+
+            {openSections.partners && (
+              <div className="p-5 space-y-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Grand Titre Partenaire</label>
+                    <input
+                      type="text"
+                      value={activeContent.partners?.heroTitle || ''}
+                      onChange={(e) => handleTextChange('partners', 'heroTitle', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Badge Surtitre</label>
+                    <input
+                      type="text"
+                      value={activeContent.partners?.heroBadge || ''}
+                      onChange={(e) => handleTextChange('partners', 'heroBadge', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold text-orange-700"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 font-semibold mb-1">Descriptif Réseau d'Affiliation</label>
+                  <textarea
+                    rows={2}
+                    value={activeContent.partners?.heroSubtitle || ''}
+                    onChange={(e) => handleTextChange('partners', 'heroSubtitle', e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="font-bold text-slate-700 block mb-1">Pilier 1 : Location</span>
+                    <input
+                      type="text"
+                      placeholder="Titre"
+                      value={activeContent.partners?.pillar1Title || ''}
+                      onChange={(e) => handleTextChange('partners', 'pillar1Title', e.target.value)}
+                      className="w-full px-2 py-1 mb-1 rounded-lg border border-slate-200 bg-white font-semibold"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Description"
+                      value={activeContent.partners?.pillar1Desc || ''}
+                      onChange={(e) => handleTextChange('partners', 'pillar1Desc', e.target.value)}
+                      className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-[11px]"
+                    />
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="font-bold text-slate-700 block mb-1">Pilier 2 : Vente</span>
+                    <input
+                      type="text"
+                      placeholder="Titre"
+                      value={activeContent.partners?.pillar2Title || ''}
+                      onChange={(e) => handleTextChange('partners', 'pillar2Title', e.target.value)}
+                      className="w-full px-2 py-1 mb-1 rounded-lg border border-slate-200 bg-white font-semibold"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Description"
+                      value={activeContent.partners?.pillar2Desc || ''}
+                      onChange={(e) => handleTextChange('partners', 'pillar2Desc', e.target.value)}
+                      className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-[11px]"
+                    />
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="font-bold text-slate-700 block mb-1">Pilier 3 : Payout Mobile</span>
+                    <input
+                      type="text"
+                      placeholder="Titre"
+                      value={activeContent.partners?.pillar3Title || ''}
+                      onChange={(e) => handleTextChange('partners', 'pillar3Title', e.target.value)}
+                      className="w-full px-2 py-1 mb-1 rounded-lg border border-slate-200 bg-white font-semibold"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Description"
+                      value={activeContent.partners?.pillar3Desc || ''}
+                      onChange={(e) => handleTextChange('partners', 'pillar3Desc', e.target.value)}
+                      className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-[11px]"
+                    />
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="font-bold text-slate-700 block mb-1">Pilier 4 : Partage 1-Clic</span>
+                    <input
+                      type="text"
+                      placeholder="Titre"
+                      value={activeContent.partners?.pillar4Title || ''}
+                      onChange={(e) => handleTextChange('partners', 'pillar4Title', e.target.value)}
+                      className="w-full px-2 py-1 mb-1 rounded-lg border border-slate-200 bg-white font-semibold"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Description"
+                      value={activeContent.partners?.pillar4Desc || ''}
+                      onChange={(e) => handleTextChange('partners', 'pillar4Desc', e.target.value)}
+                      className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-[11px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Statut WhatsApp</label>
+                    <input
+                      type="text"
+                      value={activeContent.partners?.shareWhatsappBtn || ''}
+                      onChange={(e) => handleTextChange('partners', 'shareWhatsappBtn', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-semibold text-emerald-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Retrait Mobile Money</label>
+                    <input
+                      type="text"
+                      value={activeContent.partners?.requestPayoutBtn || ''}
+                      onChange={(e) => handleTextChange('partners', 'requestPayoutBtn', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-semibold text-amber-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Délai Versement (Avis)</label>
+                    <input
+                      type="text"
+                      value={activeContent.partners?.payoutNotice || ''}
+                      onChange={(e) => handleTextChange('partners', 'payoutNotice', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-600"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Module 7 : Espace Adhérent Client */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => toggleSection('portal')}
+              className="w-full p-4 bg-slate-50/70 hover:bg-slate-100/70 border-b border-slate-200 flex items-center justify-between text-left transition cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center font-bold">
+                  <UserCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">7. Espace Adhérent Client & Suivi Contrats</h3>
+                  <p className="text-[11px] text-slate-500">Connexion client, suivi des locations actives, cautions consignées et factures</p>
+                </div>
+              </div>
+              {openSections.portal ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+            </button>
+
+            {openSections.portal && (
+              <div className="p-5 space-y-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Titre Espace Adhérent</label>
+                    <input
+                      type="text"
+                      value={activeContent.portal?.title || ''}
+                      onChange={(e) => handleTextChange('portal', 'title', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Sous-titre Espace Adhérent</label>
+                    <input
+                      type="text"
+                      value={activeContent.portal?.subtitle || ''}
+                      onChange={(e) => handleTextChange('portal', 'subtitle', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Connexion Client</label>
+                    <input
+                      type="text"
+                      value={activeContent.portal?.loginBtn || ''}
+                      onChange={(e) => handleTextChange('portal', 'loginBtn', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold text-cyan-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Télécharger Facture PDF</label>
+                    <input
+                      type="text"
+                      value={activeContent.portal?.downloadInvoice || ''}
+                      onChange={(e) => handleTextChange('portal', 'downloadInvoice', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Prolongation Contrat</label>
+                    <input
+                      type="text"
+                      value={activeContent.portal?.extendContract || ''}
+                      onChange={(e) => handleTextChange('portal', 'extendContract', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Module 8 : Mon Compte & Profil Utilisateur */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => toggleSection('profile')}
+              className="w-full p-4 bg-slate-50/70 hover:bg-slate-100/70 border-b border-slate-200 flex items-center justify-between text-left transition cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center font-bold">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">8. Mon Compte, Profil & Restitution Cautions / Payouts</h3>
+                  <p className="text-[11px] text-slate-500">Coordonnées, contact WhatsApp, comptes Orange Money & MTN pour cautions et gains</p>
+                </div>
+              </div>
+              {openSections.profile ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+            </button>
+
+            {openSections.profile && (
+              <div className="p-5 space-y-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Titre Page Mon Compte</label>
+                    <input
+                      type="text"
+                      value={activeContent.profile?.headerTitle || ''}
+                      onChange={(e) => handleTextChange('profile', 'headerTitle', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Enregistrer Modifications</label>
+                    <input
+                      type="text"
+                      value={activeContent.profile?.saveBtn || ''}
+                      onChange={(e) => handleTextChange('profile', 'saveBtn', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold text-violet-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Rassurance Versement Partenaire (Commissions)</label>
+                    <input
+                      type="text"
+                      value={activeContent.profile?.payoutPartnerReassurance || ''}
+                      onChange={(e) => handleTextChange('profile', 'payoutPartnerReassurance', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Rassurance Restitution Caution Client</label>
+                    <input
+                      type="text"
+                      value={activeContent.profile?.payoutClientReassurance || ''}
+                      onChange={(e) => handleTextChange('profile', 'payoutClientReassurance', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Module 9 : Coordonnées Agence Bonamoussadi & Contacts */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <button
               type="button"
@@ -768,8 +1441,8 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                   <MapPin className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">4. Coordonnées Agence Bonamoussadi & Contact</h3>
-                  <p className="text-[11px] text-slate-500">Adresse physique, repère, horaires d'ouverture et numéros VIP</p>
+                  <h3 className="text-sm font-black text-slate-900">9. Coordonnées Agence Bonamoussadi & Contacts</h3>
+                  <p className="text-[11px] text-slate-500">Adresse physique, repère, horaires d'ouverture et numéros de hotline VIP</p>
                 </div>
               </div>
               {openSections.agency ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
@@ -784,7 +1457,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       type="text"
                       value={activeContent.agency?.addressDesc || ''}
                       onChange={(e) => handleTextChange('agency', 'addressDesc', e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-semibold"
                     />
                   </div>
                   <div>
@@ -793,7 +1466,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       type="text"
                       value={activeContent.agency?.landmark || ''}
                       onChange={(e) => handleTextChange('agency', 'landmark', e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                     />
                   </div>
                 </div>
@@ -861,7 +1534,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
             )}
           </div>
 
-          {/* Section E : Pied de Page & Mentions Légales */}
+          {/* Module 10 : Pied de Page & Mentions Légales */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <button
               type="button"
@@ -873,7 +1546,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                   <FileCheck className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">5. Pied de Page & Mentions Légales</h3>
+                  <h3 className="text-sm font-black text-slate-900">10. Pied de Page & Mentions Légales</h3>
                   <p className="text-[11px] text-slate-500">Descriptif d'entreprise en footer, copyright et immatriculation RC</p>
                 </div>
               </div>
@@ -908,6 +1581,81 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       type="text"
                       value={activeContent.footer?.officialPortal || ''}
                       onChange={(e) => handleTextChange('footer', 'officialPortal', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Module 11 : Sécurité, 2FA & Mot de Passe Oublié */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => toggleSection('auth')}
+              className="w-full p-4 bg-slate-50/70 hover:bg-slate-100/70 border-b border-slate-200 flex items-center justify-between text-left transition cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">11. Sécurité & Double Authentification (2FA)</h3>
+                  <p className="text-[11px] text-slate-500">Modales de vérification PIN, alertes d'expiration et réinitialisation de mot de passe</p>
+                </div>
+              </div>
+              {openSections.auth ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+            </button>
+
+            {openSections.auth && (
+              <div className="p-5 space-y-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Titre Modal Vérification Sécurité (2FA)</label>
+                    <input
+                      type="text"
+                      value={activeContent.auth?.pinModalTitle || ''}
+                      onChange={(e) => handleTextChange('auth', 'pinModalTitle', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold text-rose-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Descriptif Envoi Code</label>
+                    <input
+                      type="text"
+                      value={activeContent.auth?.pinModalDesc || ''}
+                      onChange={(e) => handleTextChange('auth', 'pinModalDesc', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Avis d'Expiration PIN (10 min)</label>
+                    <input
+                      type="text"
+                      value={activeContent.auth?.pinExpiryNotice || ''}
+                      onChange={(e) => handleTextChange('auth', 'pinExpiryNotice', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Valider PIN</label>
+                    <input
+                      type="text"
+                      value={activeContent.auth?.verifyPinBtn || ''}
+                      onChange={(e) => handleTextChange('auth', 'verifyPinBtn', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold text-rose-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Renvoyer Code</label>
+                    <input
+                      type="text"
+                      value={activeContent.auth?.resendPinBtn || ''}
+                      onChange={(e) => handleTextChange('auth', 'resendPinBtn', e.target.value)}
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                     />
                   </div>

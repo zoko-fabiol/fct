@@ -51,7 +51,7 @@ import {
 } from '../services/partnerService.ts';
 import { Vehicle } from '../types/index.ts';
 import { AppPage } from '../types/router.ts';
-import { WebsiteLanguage } from '../services/i18n.ts';
+import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
 
 interface PartnerPortalPageProps {
   vehicles: Vehicle[];
@@ -67,6 +67,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   lang = 'fr',
 }) => {
   const isEn = lang === 'en';
+  const t = websiteTranslations[lang]?.partners || websiteTranslations.fr.partners;
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(auth.currentUser);
   const [partner, setPartner] = useState<PartnerAccount | null>(() => getCachedPartnerAccount());
 
@@ -373,15 +374,13 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             <div>
               <div className="fct-hero-badge" style={{ marginBottom: '14px' }}>
                 <Zap size={14} />
-                <span>{isEn ? 'FCT Business Network • Partner Program' : "Réseau d'Affiliation FCT Automobile Douala"}</span>
+                <span>{t.heroBadge}</span>
               </div>
               <h1 style={{ margin: '0 0 10px 0' }}>
-                {isEn ? 'Earn Guaranteed Commissions with FCT' : 'Devenez Apporteur d’Affaires FCT Automobile'}
+                {t.heroTitle}
               </h1>
               <p style={{ maxWidth: '680px', margin: 0 }}>
-                {isEn
-                  ? 'Monetize your network in Douala and Cameroon. Share verified vehicles to your contacts and receive automatic payouts directly on Orange Money, MTN MoMo or agency cash desk.'
-                  : 'Monétisez votre carnet d’adresses à Douala et au Cameroun. Partagez nos véhicules certifiés et touchez vos commissions immédiatement par Orange Money, MTN MoMo ou à la caisse de l’agence.'}
+                {t.heroSubtitle}
               </p>
             </div>
 
@@ -417,7 +416,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 </div>
                 <div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-                    {isEn ? 'Connected Partner' : 'Partenaire Actif'}
+                    {t.connectedPartner}
                   </div>
                   <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--fct-blue-dark)' }}>{partner.fullName}</div>
                   <div style={{ fontSize: '12px', fontWeight: 800, fontFamily: 'monospace', color: 'var(--fct-amber-primary)' }}>
@@ -484,10 +483,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   </div>
                   <div>
                     <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 900, color: 'var(--fct-blue-dark)' }}>
-                      {isEn ? 'Join the Official FCT Network' : 'Rejoindre le Réseau Officiel FCT'}
+                      {t.joinNetwork}
                     </h2>
                     <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-sub)' }}>
-                      {isEn ? 'Monetize your relations with zero investment or stock' : 'Rentabilisez votre relationnel sans aucun stock ni investissement'}
+                      {t.joinSubtitle}
                     </p>
                   </div>
                 </div>
@@ -499,11 +498,9 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     <div className="fct-partner-benefit-icon" style={{ backgroundColor: 'var(--fct-blue-soft)', color: 'var(--fct-blue-dark)' }}>
                       <BadgePercent size={22} />
                     </div>
-                    <h4 className="fct-partner-benefit-title">{isEn ? 'Rentals: 5% Direct' : 'Location : 5% Direct'}</h4>
+                    <h4 className="fct-partner-benefit-title">{t.pillar1Title}</h4>
                     <p className="fct-partner-benefit-desc">
-                      {isEn
-                        ? 'Earn 5% direct commission on the total value of each signed car rental contract.'
-                        : 'Touchez 5% de commission brute sur le montant total de chaque contrat de location validé.'}
+                      {t.pillar1Desc}
                     </p>
                   </div>
 
@@ -512,11 +509,9 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     <div className="fct-partner-benefit-icon" style={{ backgroundColor: 'var(--fct-amber-soft)', color: 'var(--fct-amber-primary)' }}>
                       <CircleDollarSign size={22} />
                     </div>
-                    <h4 className="fct-partner-benefit-title">{isEn ? 'Sales: 100,000 FCFA' : 'Vente : 100 000 FCFA'}</h4>
+                    <h4 className="fct-partner-benefit-title">{t.pillar2Title}</h4>
                     <p className="fct-partner-benefit-desc">
-                      {isEn
-                        ? 'Fixed bonus of 100,000 FCFA guaranteed on every vehicle sale completed via your link.'
-                        : 'Prime forfaitaire garantie de 100 000 FCFA sur chaque vente de véhicule conclue via votre code.'}
+                      {t.pillar2Desc}
                     </p>
                   </div>
 
@@ -525,11 +520,9 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     <div className="fct-partner-benefit-icon" style={{ backgroundColor: '#ecfdf5', color: '#059669' }}>
                       <Smartphone size={22} />
                     </div>
-                    <h4 className="fct-partner-benefit-title">{isEn ? '24h Mobile Payout' : 'Paiement Mobile 24h'}</h4>
+                    <h4 className="fct-partner-benefit-title">{t.pillar3Title}</h4>
                     <p className="fct-partner-benefit-desc">
-                      {isEn
-                        ? 'Direct automated payouts on Orange Money, MTN MoMo, or cash desk at Bonamoussadi agency.'
-                        : 'Virements directs sur Orange Money, MTN MoMo ou retrait en espèces à l’agence de Bonamoussadi.'}
+                      {t.pillar3Desc}
                     </p>
                   </div>
 
@@ -538,11 +531,9 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     <div className="fct-partner-benefit-icon" style={{ backgroundColor: '#f5f3ff', color: '#7c3aed' }}>
                       <Share2 size={22} />
                     </div>
-                    <h4 className="fct-partner-benefit-title">{isEn ? '1-Click Sharing' : 'Partage 1-Clic Fluide'}</h4>
+                    <h4 className="fct-partner-benefit-title">{t.pillar4Title}</h4>
                     <p className="fct-partner-benefit-desc">
-                      {isEn
-                        ? 'Fiches and photos formatted automatically for immediate WhatsApp status publication.'
-                        : 'Fiches techniques et photos haute résolution préformatées pour vos statuts WhatsApp.'}
+                      {t.pillar4Desc}
                     </p>
                   </div>
                 </div>
@@ -552,31 +543,31 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
                     <CheckCircle2 size={16} color="var(--fct-blue-primary)" />
                     <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--fct-blue-dark)' }}>
-                      {isEn ? 'How to start in 3 simple steps:' : 'Comment démarrer en 3 étapes :'}
+                      {t.stepsTitle}
                     </span>
                   </div>
 
                   <div className="fct-partner-step-row">
                     <div className="fct-partner-step-num">1</div>
                     <div className="fct-partner-step-content">
-                      <h5>{isEn ? 'Register your Profile' : 'Créez votre profil en 30 secondes'}</h5>
-                      <p>{isEn ? 'Fill in your WhatsApp contact and choose your preferred mobile payout method.' : 'Renseignez votre numéro WhatsApp et choisissez votre mode de paiement mobile.'}</p>
+                      <h5>{t.step1Title}</h5>
+                      <p>{t.step1Desc}</p>
                     </div>
                   </div>
 
                   <div className="fct-partner-step-row">
                     <div className="fct-partner-step-num">2</div>
                     <div className="fct-partner-step-content">
-                      <h5>{isEn ? 'Receive your Unique Code' : 'Obtenez votre Code Partenaire unique'}</h5>
-                      <p>{isEn ? 'Your dedicated affiliate code and custom web link are generated immediately.' : 'Votre code d’apporteur d’affaires et vos liens personnalisés sont activés instantanément.'}</p>
+                      <h5>{t.step2Title}</h5>
+                      <p>{t.step2Desc}</p>
                     </div>
                   </div>
 
                   <div className="fct-partner-step-row">
                     <div className="fct-partner-step-num">3</div>
                     <div className="fct-partner-step-content">
-                      <h5>{isEn ? 'Share & Cash In' : 'Partagez sur WhatsApp & Encaissez'}</h5>
-                      <p>{isEn ? 'Post verified cars to your status. When a deal closes, commissions are credited to your balance.' : 'Publiez nos véhicules sur vos statuts. Dès validation du contrat, vos gains sont crédités.'}</p>
+                      <h5>{t.step3Title}</h5>
+                      <p>{t.step3Desc}</p>
                     </div>
                   </div>
                 </div>
@@ -633,7 +624,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     className={`fct-auth-tab-btn ${isRegister ? 'active' : ''}`}
                   >
                     <UserCheck size={15} />
-                    <span>{isEn ? 'Create Partner Account' : "Créer un Compte"}</span>
+                    <span>{t.createAccountTab}</span>
                   </button>
                   <button
                     type="button"
@@ -644,7 +635,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     className={`fct-auth-tab-btn ${!isRegister ? 'active' : ''}`}
                   >
                     <KeyRound size={15} />
-                    <span>{isEn ? 'Sign In' : 'Connexion'}</span>
+                    <span>{t.signInTab}</span>
                   </button>
                 </div>
 
@@ -659,7 +650,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   {isRegister && (
                     <>
                       <div className="fct-field">
-                        <label className="fct-label">{isEn ? 'Full Name *' : 'Nom & Prénom *'}</label>
+                        <label className="fct-label">{t.fullNameLabel}</label>
                         <input
                           type="text"
                           required
@@ -671,7 +662,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       </div>
 
                       <div className="fct-field">
-                        <label className="fct-label">{isEn ? 'WhatsApp Phone *' : 'Numéro Téléphone WhatsApp *'}</label>
+                        <label className="fct-label">{t.whatsappLabel}</label>
                         <input
                           type="tel"
                           required
@@ -684,7 +675,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
                       <div className="fct-form-row">
                         <div className="fct-field">
-                          <label className="fct-label">{isEn ? 'Payout Method' : 'Versement des Gains'}</label>
+                          <label className="fct-label">{t.payoutMethodLabel}</label>
                           <select
                             value={payoutMethod}
                             onChange={(e: any) => setPayoutMethod(e.target.value)}
@@ -696,7 +687,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                           </select>
                         </div>
                         <div className="fct-field">
-                          <label className="fct-label">{isEn ? 'City' : 'Ville de Résidence'}</label>
+                          <label className="fct-label">{t.cityLabel}</label>
                           <input
                             type="text"
                             value={city}
@@ -709,7 +700,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   )}
 
                   <div className="fct-field">
-                    <label className="fct-label">{isEn ? 'Email Address *' : 'Adresse Email *'}</label>
+                    <label className="fct-label">{t.emailLabel}</label>
                     <input
                       type="email"
                       required
@@ -721,7 +712,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   </div>
 
                   <div className="fct-field">
-                    <label className="fct-label">{isEn ? 'Password *' : 'Mot de Passe *'}</label>
+                    <label className="fct-label">{t.passwordLabel}</label>
                     <input
                       type="password"
                       required
@@ -748,7 +739,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                           textDecoration: 'underline',
                         }}
                       >
-                        {isEn ? 'Forgot password?' : 'Mot de passe oublié ?'}
+                        {t.forgotPassword}
                       </button>
                     </div>
                   )}
@@ -764,12 +755,12 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     ) : isRegister ? (
                       <>
                         <ShieldCheck size={16} />
-                        <span>{isEn ? 'Register & Activate Account' : "Activer mon Compte Partenaire"}</span>
+                        <span>{t.registerSubmitBtn}</span>
                       </>
                     ) : (
                       <>
                         <KeyRound size={16} />
-                        <span>{isEn ? 'Sign in to Partner Portal' : 'Accéder à mon Espace Partenaire'}</span>
+                        <span>{t.loginSubmitBtn}</span>
                       </>
                     )}
                   </button>
@@ -870,7 +861,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               {/* Partages du jour */}
               <div className="fct-partner-stat-card">
                 <div className="fct-partner-stat-header">
-                  <span className="fct-partner-stat-label">{isEn ? 'Daily Shares' : 'Partages du jour'}</span>
+                  <span className="fct-partner-stat-label">{t.totalShares}</span>
                   <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--fct-blue-soft)', color: 'var(--fct-blue-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Share2 size={16} />
                   </div>
@@ -884,7 +875,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               {/* Clics reçus */}
               <div className="fct-partner-stat-card">
                 <div className="fct-partner-stat-header">
-                  <span className="fct-partner-stat-label">{isEn ? 'Tracked Clicks' : 'Clics reçus'}</span>
+                  <span className="fct-partner-stat-label">{t.totalClicks}</span>
                   <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--fct-blue-soft)', color: 'var(--fct-blue-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <TrendingUp size={16} />
                   </div>
@@ -898,7 +889,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               {/* Réservations / Devis */}
               <div className="fct-partner-stat-card">
                 <div className="fct-partner-stat-header">
-                  <span className="fct-partner-stat-label">{isEn ? 'Bookings / Deals' : 'Demandes & Ventes'}</span>
+                  <span className="fct-partner-stat-label">{t.activeContracts}</span>
                   <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#f5f3ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Users size={16} />
                   </div>
@@ -912,7 +903,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               {/* Solde Disponible */}
               <div className="fct-partner-stat-card">
                 <div className="fct-partner-stat-header">
-                  <span className="fct-partner-stat-label">{isEn ? 'Available Balance' : 'Solde disponible'}</span>
+                  <span className="fct-partner-stat-label">{t.balanceAvailable}</span>
                   <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Wallet size={16} />
                   </div>
@@ -933,7 +924,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 <div>
                   <h3 style={{ margin: '0 0 4px 0', fontSize: '17px', fontWeight: 900, color: 'var(--fct-blue-dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Send size={18} color="var(--fct-blue-primary)" />
-                    <span>{isEn ? 'Share a Showroom Vehicle in 1-Click' : 'Partager un véhicule du showroom en 1-Clic'}</span>
+                    <span>{t.selectVehicleToShare}</span>
                   </h3>
                   <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-sub)' }}>
                     {isEn
@@ -1010,7 +1001,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                         }}
                       >
                         <WhatsAppIcon size={18} color="#ffffff" />
-                        <span>{isEn ? 'Share to WhatsApp Status' : 'Partager sur WhatsApp (Statut)'}</span>
+                        <span>{t.shareWhatsappBtn}</span>
                       </button>
 
                       {/* Partage Universel */}
@@ -1024,7 +1015,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                         title={isEn ? 'Share to any application (WhatsApp, Telegram, Facebook...)' : 'Partager vers n’importe quelle application'}
                       >
                         <Share2 size={16} />
-                        <span>{isEn ? 'Share' : 'Partager'}</span>
+                        <span>{t.shareUniversalBtn}</span>
                       </button>
 
                       {/* Copie de Lien */}
@@ -1035,7 +1026,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                         style={{ padding: '12px 18px' }}
                       >
                         {copiedLink ? <Check size={16} color="#059669" /> : <Copy size={16} />}
-                        <span>{copiedLink ? (isEn ? 'Copied' : 'Lien Copié') : (isEn ? 'Copy Link' : 'Copier Lien')}</span>
+                        <span>{copiedLink ? (isEn ? 'Copied' : 'Lien Copié') : t.copyLinkBtn}</span>
                       </button>
                     </div>
 
@@ -1103,7 +1094,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 style={{ padding: '12px 22px' }}
               >
                 <CircleDollarSign size={16} />
-                <span>{isEn ? 'Request Cashout' : 'Demander le Retrait'}</span>
+                <span>{t.requestPayoutBtn}</span>
               </button>
             </div>
           </div>

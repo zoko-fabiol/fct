@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { websiteTranslations } from '../services/i18n.ts';
 
 interface PinVerificationModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export const PinVerificationModal: React.FC<PinVerificationModalProps> = ({
   onCancel,
   isEn = false,
 }) => {
+  const t = websiteTranslations[isEn ? 'en' : 'fr']?.auth || websiteTranslations.fr.auth;
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -128,10 +130,10 @@ export const PinVerificationModal: React.FC<PinVerificationModalProps> = ({
           </div>
           <div>
             <h4 style={{ margin: 0, fontSize: 16.5, fontWeight: 900, color: 'var(--fct-blue-dark, #0f2a4a)' }}>
-              {isEn ? 'Two-Factor Authentication (2FA)' : 'Validation de votre E-mail (2FA)'}
+              {t.pinModalTitle}
             </h4>
             <p style={{ margin: 0, fontSize: 12, color: 'var(--text-sub, #475569)' }}>
-              {isEn ? 'Confirming a real and verified address' : 'Confirmation d’une adresse réelle et vérifiée'}
+              {t.pinExpiryNotice}
             </p>
           </div>
         </div>
@@ -139,17 +141,8 @@ export const PinVerificationModal: React.FC<PinVerificationModalProps> = ({
         {/* Corps */}
         <div style={{ padding: '26px' }}>
           <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-sub, #475569)', lineHeight: 1.55 }}>
-            {isEn ? (
-              <>
-                To protect the network against fake accounts, a 6-digit PIN code has been generated and sent to{' '}
-                <strong style={{ color: 'var(--fct-blue-dark, #0f2a4a)' }}>{email}</strong>. Please enter it below:
-              </>
-            ) : (
-              <>
-                Pour certifier votre profil et vérifier qu’il s’agit d’un vrai e-mail, un code PIN à 6 chiffres a été
-                envoyé à <strong style={{ color: 'var(--fct-blue-dark, #0f2a4a)' }}>{email}</strong>. Saisissez-le ci-dessous :
-              </>
-            )}
+            {t.pinModalDesc}{' '}
+            <strong style={{ color: 'var(--fct-blue-dark, #0f2a4a)' }}>{email}</strong>
           </p>
 
           {error && (
@@ -186,7 +179,7 @@ export const PinVerificationModal: React.FC<PinVerificationModalProps> = ({
                   letterSpacing: '0.5px',
                 }}
               >
-                {isEn ? 'Enter 6-Digit PIN Code' : 'Saisissez le Code PIN à 6 chiffres'}
+                {t.pinPlaceholder}
               </label>
               <input
                 type="text"
@@ -223,7 +216,7 @@ export const PinVerificationModal: React.FC<PinVerificationModalProps> = ({
                 color: 'var(--text-muted, #64748b)',
               }}
             >
-              <span>{isEn ? 'Code valid for 10 minutes' : 'Valide pendant 10 min'}</span>
+              <span>{t.pinExpiryNotice}</span>
               <button
                 type="button"
                 onClick={handleResend}
@@ -246,9 +239,7 @@ export const PinVerificationModal: React.FC<PinVerificationModalProps> = ({
                     ? isEn
                       ? `Resend in ${resendCountdown}s`
                       : `Renvoyer (${resendCountdown}s)`
-                    : isEn
-                    ? 'Resend PIN code'
-                    : 'Renvoyer le code PIN'}
+                    : t.resendPinBtn}
                 </span>
               </button>
             </div>
@@ -261,7 +252,7 @@ export const PinVerificationModal: React.FC<PinVerificationModalProps> = ({
                 style={{ flex: 1, padding: '12px' }}
               >
                 <ArrowLeft size={14} />
-                <span>{isEn ? 'Edit Info' : 'Modifier'}</span>
+                <span>{t.cancelBtn || (isEn ? 'Edit Info' : 'Modifier')}</span>
               </button>
               <button
                 type="submit"
@@ -274,7 +265,7 @@ export const PinVerificationModal: React.FC<PinVerificationModalProps> = ({
                 ) : (
                   <>
                     <CheckCircle2 size={16} />
-                    <span>{isEn ? 'Confirm & Activate' : 'Valider & Activer'}</span>
+                    <span>{t.verifyPinBtn}</span>
                   </>
                 )}
               </button>

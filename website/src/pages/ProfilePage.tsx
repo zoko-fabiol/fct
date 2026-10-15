@@ -33,7 +33,7 @@ import {
   setCachedUserProfile,
 } from '../services/profileService.ts';
 import { auth, onAuthStateChanged } from '../services/firebase.ts';
-import { WebsiteLanguage } from '../services/i18n.ts';
+import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
 import { WhatsAppIcon } from '../components/WhatsAppIcon.tsx';
 import { OrangeMoneyLogo, MtnMomoLogo, CashDeskLogo } from '../components/PaymentLogos.tsx';
 
@@ -55,6 +55,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onNavigateToAuth,
 }) => {
   const isEn = lang === 'en';
+  const t = websiteTranslations[lang]?.profile || websiteTranslations.fr.profile;
   const cachedProf = initialProfile || getCachedUserProfile();
   const [profile, setProfile] = useState<UnifiedUserProfile | null>(() => {
     if (cachedProf) return cachedProf;
@@ -214,12 +215,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <User size={34} />
         </div>
         <h2 style={{ fontSize: 22, fontWeight: 900, color: '#0f2a4a', marginBottom: 10 }}>
-          {isEn ? 'Access Your FCT Profile' : 'Accédez à votre profil FCT'}
+          {t.accessTitle}
         </h2>
         <p style={{ color: '#475569', fontSize: 14, lineHeight: 1.6, marginBottom: 28 }}>
-          {isEn
-            ? 'Sign in to update your personal contact details, WhatsApp contact, and Mobile Money payout accounts (Orange / MTN).'
-            : 'Connectez-vous pour mettre à jour vos coordonnées, votre contact WhatsApp et vos comptes de versement Mobile Money (Orange Money / MTN MoMo).'}
+          {t.accessSubtitle}
         </p>
         <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
@@ -228,7 +227,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             className="fct-btn fct-btn-primary"
             style={{ padding: '12px 24px' }}
           >
-            {isEn ? 'Client Space' : 'Espace Adhérent Client'}
+            {t.clientSpaceBtn}
           </button>
           <button
             type="button"
@@ -236,7 +235,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             className="fct-btn fct-btn-secondary"
             style={{ padding: '12px 24px' }}
           >
-            {isEn ? 'Partner Portal' : 'Portail Partenaire'}
+            {t.partnerPortalBtn}
           </button>
         </div>
       </div>
@@ -256,14 +255,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <div className="fct-profile-names-wrap">
             <div className="fct-profile-title-row">
               <h1 className="fct-profile-fullname">
-                {profile.fullName || (isEn ? 'My FCT Account' : 'Mon Compte FCT')}
+                {profile.fullName || t.headerTitle}
               </h1>
               <span className={`fct-profile-badge ${isPartner ? 'partner' : 'client'}`}>
                 {isPartner ? <Award size={13} /> : <Shield size={13} />}
                 <span>
                   {isPartner
-                    ? (isEn ? 'Certified Partner' : 'Partenaire Apporteur Agréé')
-                    : (isEn ? 'Verified Member' : 'Adhérent Client FCT')}
+                    ? t.partnerBadge
+                    : t.clientBadge}
                 </span>
               </span>
             </div>
@@ -280,7 +279,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             className="fct-btn fct-btn-secondary fct-profile-btn"
           >
             <ArrowLeft size={15} />
-            <span>{isEn ? 'Back' : 'Retour'}</span>
+            <span>{t.backBtn}</span>
           </button>
           <button
             type="button"
@@ -291,7 +290,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             className="fct-profile-logout-btn fct-profile-btn"
           >
             <LogOut size={15} />
-            <span>{isEn ? 'Log Out' : 'Se Déconnecter'}</span>
+            <span>{t.logoutBtn}</span>
           </button>
         </div>
       </div>
@@ -305,14 +304,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 <User size={18} />
               </div>
               <h3 className="fct-profile-card-title">
-                {isEn ? 'Personal Information' : 'Coordonnées & Identité'}
+                {t.personalInfoTitle}
               </h3>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 6 }}>
-                  {isEn ? 'Full Name' : 'Nom Complet'} <span style={{ color: '#ef4444' }}>*</span>
+                  {t.fullName} <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -332,7 +331,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 6 }}>
-                  {isEn ? 'Primary Phone Number' : 'Numéro de Téléphone Principal'}
+                  {t.primaryPhone}
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
@@ -386,7 +385,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               <div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 6 }}>
                   <WhatsAppIcon size={14} color="#059669" />
-                  <span>{isEn ? 'VIP WhatsApp Phone' : 'Numéro WhatsApp VIP'}</span>
+                  <span>{t.whatsappPhone}</span>
                 </label>
                 <input
                   type="tel"
@@ -406,7 +405,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 6 }}>
-                  {isEn ? 'City / District in Cameroon' : 'Ville & Quartier (Cameroun)'}
+                  {t.city}
                 </label>
                 <input
                   type="text"
@@ -433,7 +432,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 <CreditCard size={18} />
               </div>
               <h3 className="fct-profile-card-title">
-                {isEn ? 'Payout & Mobile Money Settings' : 'Paiements & Mobile Money (OM / MoMo)'}
+                {t.payoutTitle}
               </h3>
             </div>
 
@@ -450,18 +449,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               }}
             >
               {isPartner
-                ? (isEn
-                    ? 'Your commissions are paid directly to this Mobile Money account upon request.'
-                    : 'Vos commissions d’apporteur d’affaires sont versées directement sur ce compte Mobile Money.')
-                : (isEn
-                    ? 'Your security deposits are securely refunded to this account after vehicle return.'
-                    : 'Vos cautions de location vous sont restituées sans délai sur ce compte après inspection de retour.')}
+                ? t.payoutPartnerReassurance
+                : t.payoutClientReassurance}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 8 }}>
-                  {isEn ? 'Preferred Payment Channel' : 'Opérateur de Paiement'}
+                  {t.preferredChannel}
                 </label>
                 <div className="fct-operator-selector-grid">
                   <button
@@ -525,7 +520,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 6 }}>
-                  {isEn ? 'Mobile Money Phone Number' : 'Numéro Orange Money ou MTN MoMo'}
+                  {t.payoutPhone}
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
@@ -578,7 +573,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 6 }}>
-                  {isEn ? 'Account Holder Name' : 'Nom du Titulaire de la Carte SIM'}
+                  {t.accountHolder}
                 </label>
                 <input
                   type="text"
@@ -608,7 +603,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             style={{ padding: '12px 28px', fontSize: 13.5 }}
           >
             <Save size={16} />
-            <span>{saving ? (isEn ? 'Saving...' : 'Enregistrement...') : (isEn ? 'Save Changes' : 'Enregistrer les Modifications')}</span>
+            <span>{saving ? t.savingBtn : t.saveBtn}</span>
           </button>
         </div>
       </form>

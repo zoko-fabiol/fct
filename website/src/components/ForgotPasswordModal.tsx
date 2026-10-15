@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, CheckCircle2, AlertCircle, X, ArrowLeft, Send, Clock } from 'lucide-react';
 import { sendPasswordReset } from '../services/authSecurityService.ts';
+import { websiteTranslations } from '../services/i18n.ts';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   defaultEmail = '',
   isEn = false,
 }) => {
+  const t = websiteTranslations[isEn ? 'en' : 'fr'].auth;
   const [email, setEmail] = useState(defaultEmail);
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -112,7 +114,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             </div>
             <div>
               <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: 'var(--fct-blue-dark, #0f2a4a)' }}>
-                {isEn ? 'Password Recovery' : 'Mot de Passe Oublié'}
+                {t.forgotPasswordTitle}
               </h4>
               <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-sub, #475569)' }}>
                 {isEn ? 'Official FCT secure link' : 'Lien sécurisé officiel FCT'}
@@ -186,9 +188,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           ) : (
             <form onSubmit={handleSubmit}>
               <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-sub, #475569)', lineHeight: 1.5 }}>
-                {isEn
-                  ? 'Enter your account email. We will send you an official secure link allowing you to reset your password.'
-                  : 'Saisissez l’adresse e-mail de votre compte. Nous vous transmettrons un lien officiel sécurisé pour réinitialiser votre mot de passe.'}
+                {t.forgotPasswordDesc}
               </p>
 
               <div className="fct-field" style={{ marginBottom: 20 }}>
@@ -211,7 +211,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                   className="fct-btn fct-btn-secondary"
                   style={{ flex: 1, padding: '11px' }}
                 >
-                  <span>{isEn ? 'Cancel' : 'Annuler'}</span>
+                  <span>{t.cancelBtn}</span>
                 </button>
                 <button
                   type="submit"
@@ -224,7 +224,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                   ) : (
                     <>
                       <Send size={15} />
-                      <span>{isEn ? 'Send Reset Link' : 'Envoyer le Lien'}</span>
+                      <span>{t.sendResetBtn}</span>
                     </>
                   )}
                 </button>
