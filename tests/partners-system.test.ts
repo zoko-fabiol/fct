@@ -9,6 +9,9 @@ import {
   generateAffiliateUrl,
   generateShareCopyText,
   calculatePartnerCommission,
+  checkVehicleShareEligibility,
+  calculatePartnerImpactScore,
+  PartnerAccount,
 } from '../website/src/services/partnerService.ts';
 import {
   getSharesInLast30Days,
@@ -162,5 +165,101 @@ describe('FCT Système Partenaires - Quotas 30 jours et Maintien / Chute de Rang
     expect(res.newTier).toBe('GOLD');
     expect(res.status).toBe('PROMOTED');
   });
+
+  it('devrait valoriser les Vrais Clics Réels pour la promotion vers GOLD même avec peu de partages manuels', () => {
+    // 1 seul partage manuel, mais 28 clics réels enregistrés sur les 30 derniers jours
+    const dailyShares = { '2026-10-12': 1 };
+    const dailyClicks = { '2026-10-12': 28 };
+    const res = evaluatePartnerTier('BRONZE', dailyShares, refDate, dailyClicks);
+
+    expect(res.effectiveImpact30Days).toBe(28);
+    expect(res.newTier).toBe('GOLD');
+    expect(res.status).toBe('PROMOTED');
+  });
 });
+
+describe('FCT Système Partenaires - Anti-Spam 24h par véhicule', () => {
+  const dummyPartner: PartnerAccount = {
+    id: 'ptr_test_anti_spam',
+    partnerCode: 'FCT-TST-01',
+    fullName: 'Test Partenaire',
+    phone: '690000000',
+    email: 'test@fct.cm',
+    city: 'Douala',
+    payoutMethod: 'ORANGE_MONEY',
+    payoutPhone: '690000000',
+    status: 'ACTIVE',
+    tier: 'BRONZE',
+    stats: {
+      totalShares: 1,
+      totalClicks: 0,
+      totalLeads: 0,
+      totalConversions: 0,
+      totalEarnedXAF: 0,
+      balanceAvailableXAF: 0,
+      paidOutXAF: 0,
+      lastActivityDate: '2026-10-15T10:00:00Z',
+      dailySharesCount: { '2026-10-15': 1 },
+      vehicleLastSharedAt: {
+        'v_toyota_prado_2024': '2026-10-15T08:00:00Z', // Partagé à 8h ce matin
+      },
+    },
+    createdAt: '2026-10-15T08:00:00Z',
+    updatedAt: '2026-10-15T08:00:00Z',
+  };
+
+  it('devrait autoriser le premier partage d\'un véhicule jamais partagé', () => {
+    const res = checkVehicleShareEligibility(dummyPartner, 'v_autre_vehicule_inconnu');
+    expect(res.canCount).toBe(true);
+    expect(res.remainingHours).toBe(0);
+  });
+
+  it('devrait bloquer le spam si le même véhicule est partagé moins de 24h après (ex: 2h après)', () => {
+    const testNow = new Date('2026-10-15T10:00:00Z'); // 2 heures après 8h
+    const res = checkVehicleShareEligibility(dummyPartner, 'v_toyota_prado_2024', testNow);
+
+    expect(res.canCount).toBe(false);
+    expect(res.remainingHours).toBe(22); // 24h - 2h = 22h restantes
+  });
+
+  it('devrait réautoriser la comptabilisation une fois les 24h écoulées (ex: 25h après)', () => {
+    const testNow = new Date('2026-10-16T09:00:00Z'); // 25 heures après
+    const res = checkVehicleShareEligibility(dummyPartner, 'v_toyota_prado_2024', testNow);
+
+    expect(res.canCount).toBe(true);
+    expect(res.remainingHours).toBe(0);
+  });
+});
+
+describe('FCT Système Partenaires - Calcul de la Portée & Surplus de Vrais Clics', () => {
+  it('devrait retourner le partage de base si aucun clic ou 1 seul clic', () => {
+    const score0 = calculatePartnerImpactScore(1, 0);
+    expect(score0.baseShares).toBe(1);
+    expect(score0.surplusClicks).toBe(0);
+    expect(score0.totalImpactScore).toBe(1);
+
+    const score1 = calculatePartnerImpactScore(1, 1);
+    expect(score1.baseShares).toBe(1);
+    expect(score1.surplusClicks).toBe(0);
+    expect(score1.totalImpactScore).toBe(1);
+  });
+
+  it('devrait ajouter les clics supplémentaires (ex: 1 partage, 8 personnes cliquent = 1 + 7 = 8 total)', () => {
+    // Cas d'usage exact dicté en note vocale par l'utilisateur
+    const score8 = calculatePartnerImpactScore(1, 8);
+    expect(score8.baseShares).toBe(1);
+    expect(score8.realClicks).toBe(8);
+    expect(score8.surplusClicks).toBe(7); // 8 - 1 = 7 supplémentaires
+    expect(score8.totalImpactScore).toBe(8); // 1 base + 7 surplus = 8 total
+    expect(score8.displayBreakdown).toContain('1 base + 7 clics bonus = 8 personnes réelles touchées');
+  });
+
+  it('devrait conserver les partages de base si plus de partages que de clics (ex: 5 partages, 2 clics = 5 total)', () => {
+    const score = calculatePartnerImpactScore(5, 2);
+    expect(score.baseShares).toBe(5);
+    expect(score.surplusClicks).toBe(0);
+    expect(score.totalImpactScore).toBe(5);
+  });
+});
+
 

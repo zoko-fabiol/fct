@@ -49,6 +49,8 @@ import {
   getCachedPartnerAccount,
   setCachedPartnerAccount,
   getSharesInLast30Days,
+  calculatePartnerImpactScore,
+  checkVehicleShareEligibility,
 } from '../services/partnerService.ts';
 import { Vehicle } from '../types/index.ts';
 import { AppPage } from '../types/router.ts';
@@ -267,24 +269,36 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     const isRent = selectedVehicle.isForRent;
     const shareText = generateShareCopyText(selectedVehicle, affUrl, isRent);
 
-    await logPartnerShare(partner, selectedVehicle, platform);
+    const shareRes = await logPartnerShare(partner, selectedVehicle, platform);
 
-    setPartner((prev) => {
-      if (!prev) return prev;
-      const todayStr = new Date().toISOString().split('T')[0];
-      const currentDaily = prev.stats.dailySharesCount || {};
-      return {
-        ...prev,
-        stats: {
-          ...prev.stats,
-          totalShares: (prev.stats.totalShares || 0) + 1,
-          dailySharesCount: {
-            ...currentDaily,
-            [todayStr]: (currentDaily[todayStr] || 0) + 1,
+    if (shareRes.logged) {
+      setPartner((prev) => {
+        if (!prev) return prev;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const currentDaily = prev.stats.dailySharesCount || {};
+        return {
+          ...prev,
+          stats: {
+            ...prev.stats,
+            totalShares: (prev.stats.totalShares || 0) + 1,
+            dailySharesCount: {
+              ...currentDaily,
+              [todayStr]: (currentDaily[todayStr] || 0) + 1,
+            },
+            vehicleLastSharedAt: {
+              ...(prev.stats.vehicleLastSharedAt || {}),
+              [selectedVehicle.id]: new Date().toISOString(),
+            },
           },
-        },
-      };
-    });
+        };
+      });
+    } else if (shareRes.reason === 'COOLDOWN_ACTIVE') {
+      onToast(
+        isEn
+          ? `Anti-spam: Vehicle already counted today (1 max/car/24h). Next counted share in ~${shareRes.remainingHours}h.`
+          : `Anti-spam : Véhicule déjà comptabilisé aujourd'hui (1 max/véhicule/24h). Prochain comptage dans ~${shareRes.remainingHours}h.`
+      );
+    }
 
     const photoUrl = selectedVehicle.photoUrls?.[0] || '';
 
@@ -832,10 +846,12 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   {/* Jauge Quota Mensuel de Maintien de Rang (30 jours glissants) */}
                   {(() => {
                     const shares30d = getSharesInLast30Days(partner.stats?.dailySharesCount);
+                    const clicks30d = getSharesInLast30Days(partner.stats?.dailyClicksCount);
+                    const impact30d = Math.max(shares30d, clicks30d);
                     const quotaMin = partner.tier === 'GOLD' ? 25 : partner.tier === 'SILVER' ? 10 : 0;
-                    const isSafe = quotaMin === 0 || shares30d >= quotaMin;
+                    const isSafe = quotaMin === 0 || impact30d >= quotaMin;
                     const targetMax = quotaMin > 0 ? quotaMin : 10;
-                    const progressPercent = Math.min(100, Math.round((shares30d / targetMax) * 100));
+                    const progressPercent = Math.min(100, Math.round((impact30d / targetMax) * 100));
 
                     return (
                       <div
@@ -851,15 +867,15 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                           <span style={{ color: '#e2e8f0', fontWeight: 600 }}>
                             {partner.tier === 'GOLD'
                               ? isEn
-                                ? `Gold 30-Day Quota: ${shares30d}/25 shares`
-                                : `Quota Maintien Gold : ${shares30d}/25 partages (30j)`
+                                ? `Gold 30-Day Impact: ${impact30d}/25 pts (${clicks30d} real clicks)`
+                                : `Quota Maintien Gold : ${impact30d}/25 pts (${clicks30d} clics réels)`
                               : partner.tier === 'SILVER'
                               ? isEn
-                                ? `Silver 30-Day Quota: ${shares30d}/10 shares`
-                                : `Quota Maintien Silver : ${shares30d}/10 partages (30j)`
+                                ? `Silver 30-Day Impact: ${impact30d}/10 pts (${clicks30d} real clicks)`
+                                : `Quota Maintien Silver : ${impact30d}/10 pts (${clicks30d} clics réels)`
                               : isEn
-                              ? `Progress toward Silver: ${shares30d}/10 shares`
-                              : `Objectif Rang Silver : ${shares30d}/10 partages (30j)`}
+                              ? `Progress toward Silver: ${impact30d}/10 pts (${clicks30d} real clicks)`
+                              : `Objectif Rang Silver : ${impact30d}/10 pts (${clicks30d} clics réels)`}
                           </span>
                           <span style={{ fontWeight: 800, color: isSafe ? '#34d399' : '#f87171' }}>
                             {quotaMin > 0
@@ -932,66 +948,121 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             </div>
 
             {/* 2.B GRILLE DES STATISTIQUES & KPIS */}
-            <div className="fct-partner-stats-grid">
-              {/* Partages du jour */}
-              <div className="fct-partner-stat-card">
-                <div className="fct-partner-stat-header">
-                  <span className="fct-partner-stat-label">{t.totalShares}</span>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--fct-blue-soft)', color: 'var(--fct-blue-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Share2 size={16} />
+            {(() => {
+              const impact = calculatePartnerImpactScore(partner.stats.totalShares, partner.stats.totalClicks);
+              return (
+                <div className="fct-partner-stats-grid">
+                  {/* 1. VRAIS CLICS / VISITEURS RÉELS (Priorité Absolue) */}
+                  <div
+                    className="fct-partner-stat-card"
+                    style={{
+                      border: '2px solid rgba(16, 185, 129, 0.4)',
+                      background: 'linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%)',
+                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.12)',
+                    }}
+                  >
+                    <div className="fct-partner-stat-header">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span className="fct-partner-stat-label" style={{ color: '#047857', fontWeight: 800 }}>
+                          {isEn ? 'REAL CLICKS' : 'VRAIS CLICS RÉELS'}
+                        </span>
+                        <span style={{ fontSize: '10px', color: '#059669', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          {isEn ? 'Unique Visitors' : 'Visiteurs Uniques Vérifiés'}
+                        </span>
+                      </div>
+                      <div style={{ width: '34px', height: '34px', borderRadius: '10px', backgroundColor: '#d1fae5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <TrendingUp size={18} />
+                      </div>
+                    </div>
+                    <div className="fct-partner-stat-val" style={{ color: '#065f46', fontSize: '28px' }}>
+                      {partner.stats.totalClicks || 0}
+                    </div>
+                    <div className="fct-partner-stat-sub" style={{ color: '#047857', fontWeight: 600 }}>
+                      {isEn ? 'People opened your referral link' : 'Personnes réelles ayant ouvert votre lien'}
+                    </div>
                   </div>
-                </div>
-                <div className="fct-partner-stat-val">{sharesToday}</div>
-                <div className="fct-partner-stat-sub">
-                  {partner.stats.totalShares || 0} {isEn ? 'total shares' : 'partages au total'}
-                </div>
-              </div>
 
-              {/* Clics reçus */}
-              <div className="fct-partner-stat-card">
-                <div className="fct-partner-stat-header">
-                  <span className="fct-partner-stat-label">{t.totalClicks}</span>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--fct-blue-soft)', color: 'var(--fct-blue-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <TrendingUp size={16} />
+                  {/* 2. SCORE DE PORTÉE & SURPLUS D'IMPACT */}
+                  <div
+                    className="fct-partner-stat-card"
+                    style={{
+                      border: '2px solid rgba(59, 130, 246, 0.3)',
+                      background: 'linear-gradient(180deg, #ffffff 0%, #eff6ff 100%)',
+                    }}
+                  >
+                    <div className="fct-partner-stat-header">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span className="fct-partner-stat-label" style={{ color: '#1d4ed8', fontWeight: 800 }}>
+                          {isEn ? 'AUDIENCE REACH' : 'PORTÉE & IMPACT TOTAL'}
+                        </span>
+                        <span style={{ fontSize: '10px', color: '#2563eb', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          {impact.surplusClicks > 0 ? `+${impact.surplusClicks} clics bonus` : (isEn ? 'Base + Surplus' : 'Partages valorisés')}
+                        </span>
+                      </div>
+                      <div style={{ width: '34px', height: '34px', borderRadius: '10px', backgroundColor: '#dbeafe', color: '#1d4ed8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Award size={18} />
+                      </div>
+                    </div>
+                    <div className="fct-partner-stat-val" style={{ color: '#1e3a8a', fontSize: '28px' }}>
+                      {impact.totalImpactScore}
+                    </div>
+                    <div className="fct-partner-stat-sub" style={{ color: '#1e40af', fontWeight: 600 }}>
+                      {impact.displayBreakdown}
+                    </div>
                   </div>
-                </div>
-                <div className="fct-partner-stat-val">{partner.stats.totalClicks || 0}</div>
-                <div className="fct-partner-stat-sub">
-                  {isEn ? 'Interested visitors' : 'Visiteurs arrivés sur le showroom'}
-                </div>
-              </div>
 
-              {/* Réservations / Devis */}
-              <div className="fct-partner-stat-card">
-                <div className="fct-partner-stat-header">
-                  <span className="fct-partner-stat-label">{t.activeContracts}</span>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#f5f3ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Users size={16} />
+                  {/* 3. PARTAGES CERTIFIÉS (Anti-Spam 1/véhicule/24h) */}
+                  <div className="fct-partner-stat-card">
+                    <div className="fct-partner-stat-header">
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span className="fct-partner-stat-label">{t.totalShares}</span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                          Anti-spam 1/véhicule/24h
+                        </span>
+                      </div>
+                      <div style={{ width: '34px', height: '34px', borderRadius: '10px', backgroundColor: 'var(--fct-blue-soft)', color: 'var(--fct-blue-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Share2 size={18} />
+                      </div>
+                    </div>
+                    <div className="fct-partner-stat-val">{sharesToday}</div>
+                    <div className="fct-partner-stat-sub">
+                      {partner.stats.totalShares || 0} {isEn ? 'certified shares' : 'partages certifiés au total'}
+                    </div>
                   </div>
-                </div>
-                <div className="fct-partner-stat-val">{partner.stats.totalLeads || 0}</div>
-                <div className="fct-partner-stat-sub">
-                  {partner.stats.totalConversions || 0} {isEn ? 'conversions closed' : 'contrats conclus'}
-                </div>
-              </div>
 
-              {/* Solde Disponible */}
-              <div className="fct-partner-stat-card">
-                <div className="fct-partner-stat-header">
-                  <span className="fct-partner-stat-label">{t.balanceAvailable}</span>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Wallet size={16} />
+                  {/* 4. RÉSERVATIONS / CONTRATS */}
+                  <div className="fct-partner-stat-card">
+                    <div className="fct-partner-stat-header">
+                      <span className="fct-partner-stat-label">{t.activeContracts}</span>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#f5f3ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Users size={16} />
+                      </div>
+                    </div>
+                    <div className="fct-partner-stat-val">{partner.stats.totalLeads || 0}</div>
+                    <div className="fct-partner-stat-sub">
+                      {partner.stats.totalConversions || 0} {isEn ? 'conversions closed' : 'contrats conclus'}
+                    </div>
+                  </div>
+
+                  {/* 5. SOLDE DISPONIBLE */}
+                  <div className="fct-partner-stat-card">
+                    <div className="fct-partner-stat-header">
+                      <span className="fct-partner-stat-label">{t.balanceAvailable}</span>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Wallet size={16} />
+                      </div>
+                    </div>
+                    <div className="fct-partner-stat-val" style={{ color: '#059669' }}>
+                      {(partner.stats.balanceAvailableXAF || 0).toLocaleString('fr-FR')}{' '}
+                      <span style={{ fontSize: '13px', fontWeight: 700 }}>FCFA</span>
+                    </div>
+                    <div className="fct-partner-stat-sub">
+                      {isEn ? 'Paid out: ' : 'Déjà encaissé : '} {(partner.stats.paidOutXAF || 0).toLocaleString('fr-FR')} FCFA
+                    </div>
                   </div>
                 </div>
-                <div className="fct-partner-stat-val" style={{ color: '#059669' }}>
-                  {(partner.stats.balanceAvailableXAF || 0).toLocaleString('fr-FR')}{' '}
-                  <span style={{ fontSize: '13px', fontWeight: 700 }}>FCFA</span>
-                </div>
-                <div className="fct-partner-stat-sub">
-                  {isEn ? 'Paid out: ' : 'Déjà encaissé : '} {(partner.stats.paidOutXAF || 0).toLocaleString('fr-FR')} FCFA
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* 2.C OUTIL DE PARTAGE 1-CLIC D'UN VÉHICULE DU SHOWROOM */}
             <div className="fct-partner-share-panel">
@@ -1060,6 +1131,61 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
                   {/* Actions & Boutons de Partage */}
                   <div className="fct-partner-share-actions">
+                    {/* Statut Anti-Spam du véhicule sélectionné */}
+                    {(() => {
+                      const shareEligibility = checkVehicleShareEligibility(partner, selectedVehicle.id);
+                      if (!shareEligibility.canCount) {
+                        return (
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              padding: '10px 14px',
+                              backgroundColor: '#fffbeb',
+                              border: '1px solid #fde68a',
+                              borderRadius: '8px',
+                              color: '#92400e',
+                              fontSize: '12px',
+                              marginBottom: '12px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            <Clock size={16} style={{ flexShrink: 0 }} />
+                            <span>
+                              {isEn
+                                ? `Anti-spam active: Already counted today (1 max/vehicle/24h). Next quota in ~${shareEligibility.remainingHours}h (you can still share it freely).`
+                                : `Anti-spam actif : Déjà comptabilisé aujourd'hui (1 max/véhicule/24h). Nouveau quota dans ~${shareEligibility.remainingHours}h (vous pouvez continuer à le partager librement).`}
+                            </span>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 12px',
+                            backgroundColor: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '8px',
+                            color: '#15803d',
+                            fontSize: '12px',
+                            marginBottom: '12px',
+                            fontWeight: 600,
+                          }}
+                        >
+                          <CheckCircle2 size={15} style={{ flexShrink: 0 }} />
+                          <span>
+                            {isEn
+                              ? 'Eligible for daily quota (+1 share will be credited upon sharing).'
+                              : 'Éligible au quota 24h (+1 partage sera crédité à votre profil dès le partage).'}
+                          </span>
+                        </div>
+                      );
+                    })()}
+
                     <div className="fct-partner-share-buttons">
                       {/* WhatsApp Statut */}
                       <button

@@ -31,6 +31,8 @@ export interface PartnerStats {
   paidOutXAF: number;
   lastActivityDate: string;
   dailySharesCount: Record<string, number>;
+  dailyClicksCount?: Record<string, number>;
+  vehicleLastSharedAt?: Record<string, string>; // vehicleId -> timestamp ISO de la dernière comptabilisation
 }
 
 export interface PartnerAccount {
@@ -51,8 +53,97 @@ export interface PartnerAccount {
 }
 
 // ==========================================
-// RÈGLES DE QUOTAS & GESTION DES TIERS PARTENAIRES
+// RÈGLES DE QUOTAS, ANTI-SPAM & GESTION DES TIERS PARTENAIRES
 // ==========================================
+
+export const VEHICLE_SHARE_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 heures
+
+/**
+ * Vérifie si un partage pour ce véhicule peut être comptabilisé (max 1 partage / véhicule / 24h)
+ */
+export function checkVehicleShareEligibility(
+  partner: PartnerAccount | null | undefined,
+  vehicleId: string,
+  now: Date = new Date()
+): {
+  canCount: boolean;
+  lastSharedAt?: string;
+  remainingMs: number;
+  remainingHours: number;
+} {
+  if (!partner || !vehicleId) {
+    return { canCount: true, remainingMs: 0, remainingHours: 0 };
+  }
+
+  let lastIso = partner.stats?.vehicleLastSharedAt?.[vehicleId];
+  if (!lastIso && typeof window !== 'undefined' && window.localStorage) {
+    try {
+      lastIso = localStorage.getItem(`fct_last_share_${partner.id}_${vehicleId}`) || undefined;
+    } catch {
+      // ignore storage error
+    }
+  }
+
+  if (!lastIso) {
+    return { canCount: true, remainingMs: 0, remainingHours: 0 };
+  }
+
+  const lastTime = new Date(lastIso).getTime();
+  if (isNaN(lastTime)) {
+    return { canCount: true, remainingMs: 0, remainingHours: 0 };
+  }
+
+  const elapsedMs = now.getTime() - lastTime;
+  if (elapsedMs >= VEHICLE_SHARE_COOLDOWN_MS) {
+    return { canCount: true, lastSharedAt: lastIso, remainingMs: 0, remainingHours: 0 };
+  }
+
+  const remainingMs = VEHICLE_SHARE_COOLDOWN_MS - elapsedMs;
+  const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
+  return {
+    canCount: false,
+    lastSharedAt: lastIso,
+    remainingMs,
+    remainingHours,
+  };
+}
+
+/**
+ * Calcule le score d'impact réel du partenaire selon la règle FCT :
+ * - 1 partage de base max par véhicule toutes les 24h
+ * - Si plusieurs personnes réelles cliquent sur le lien, on ajoute le surplus de clics
+ *   (ex: 1 partage + 8 personnes qui ouvrent le lien = 1 base + 7 surplus = 8 au score d'impact)
+ */
+export function calculatePartnerImpactScore(
+  totalShares: number = 0,
+  totalClicks: number = 0
+): {
+  baseShares: number;
+  realClicks: number;
+  surplusClicks: number;
+  totalImpactScore: number;
+  displayBreakdown: string;
+} {
+  const baseShares = Math.max(0, Number(totalShares) || 0);
+  const realClicks = Math.max(0, Number(totalClicks) || 0);
+  const surplusClicks = Math.max(0, realClicks - baseShares);
+  const totalImpactScore = baseShares + surplusClicks;
+
+  let displayBreakdown = `${baseShares} partage${baseShares > 1 ? 's' : ''}`;
+  if (surplusClicks > 0) {
+    displayBreakdown = `${baseShares} base + ${surplusClicks} clic${surplusClicks > 1 ? 's' : ''} bonus = ${totalImpactScore} personnes réelles touchées`;
+  } else if (realClicks > 0) {
+    displayBreakdown = `${realClicks} clic${realClicks > 1 ? 's' : ''} réel${realClicks > 1 ? 's' : ''}`;
+  }
+
+  return {
+    baseShares,
+    realClicks,
+    surplusClicks,
+    totalImpactScore,
+    displayBreakdown,
+  };
+}
 
 export const PARTNER_TIER_CONFIG = {
   BRONZE: {
@@ -85,18 +176,18 @@ export const PARTNER_TIER_CONFIG = {
 } as const;
 
 /**
- * Calcule le nombre total de partages effectués sur les 30 derniers jours glissants
+ * Calcule le nombre total d'événements (partages ou clics) sur les 30 derniers jours glissants
  */
 export function getSharesInLast30Days(
-  dailySharesCount?: Record<string, number>,
+  dailyCount?: Record<string, number>,
   referenceDate: Date = new Date()
 ): number {
-  if (!dailySharesCount) return 0;
+  if (!dailyCount) return 0;
   const thirtyDaysAgo = new Date(referenceDate.getTime() - 30 * 24 * 60 * 60 * 1000);
   const cutoffStr = thirtyDaysAgo.toISOString().split('T')[0];
 
   let sum = 0;
-  for (const [dateStr, count] of Object.entries(dailySharesCount)) {
+  for (const [dateStr, count] of Object.entries(dailyCount)) {
     if (dateStr >= cutoffStr) {
       sum += Number(count) || 0;
     }
@@ -105,55 +196,60 @@ export function getSharesInLast30Days(
 }
 
 /**
- * Évalue le rang d'un partenaire avec gestion stricte des quotas 30 jours :
+ * Évalue le rang d'un partenaire avec gestion stricte des quotas 30 jours et valorisation des Vrais Clics :
  * - Quota mensuel (30 jours glissants) :
- *   - GOLD : minimum 25 partages/30j. Si non atteint -> rétrograde en SILVER.
- *   - SILVER : minimum 10 partages/30j. Si non atteint -> rétrograde en BRONZE.
+ *   - GOLD : minimum 25 points d'impact/30j. Si non atteint -> rétrograde en SILVER.
+ *   - SILVER : minimum 10 points d'impact/30j. Si non atteint -> rétrograde en BRONZE.
  *   - BRONZE : palier initial (0 quota minimum).
  * - Promotion :
- *   - Si >= 25 partages/30j -> Promu GOLD.
- *   - Si >= 10 partages/30j -> Promu SILVER.
+ *   - Si >= 25 points d'impact/30j -> Promu GOLD.
+ *   - Si >= 10 points d'impact/30j -> Promu SILVER.
  */
 export function evaluatePartnerTier(
   currentTier: 'BRONZE' | 'SILVER' | 'GOLD',
   dailySharesCount?: Record<string, number>,
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  dailyClicksCount?: Record<string, number>
 ): {
   newTier: 'BRONZE' | 'SILVER' | 'GOLD';
   sharesLast30Days: number;
+  clicksLast30Days: number;
+  effectiveImpact30Days: number;
   quotaRequired: number;
   quotaMet: boolean;
   status: 'PROMOTED' | 'MAINTAINED' | 'DEMOTED';
 } {
   const sharesLast30Days = getSharesInLast30Days(dailySharesCount, referenceDate);
+  const clicksLast30Days = getSharesInLast30Days(dailyClicksCount, referenceDate);
+  const effectiveImpact30Days = Math.max(sharesLast30Days, clicksLast30Days);
 
   if (currentTier === 'GOLD') {
-    if (sharesLast30Days >= 25) {
-      return { newTier: 'GOLD', sharesLast30Days, quotaRequired: 25, quotaMet: true, status: 'MAINTAINED' };
+    if (effectiveImpact30Days >= 25) {
+      return { newTier: 'GOLD', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 25, quotaMet: true, status: 'MAINTAINED' };
     }
     // Rétrogradation progressive d'un seul niveau : Gold -> Silver
-    return { newTier: 'SILVER', sharesLast30Days, quotaRequired: 25, quotaMet: false, status: 'DEMOTED' };
+    return { newTier: 'SILVER', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 25, quotaMet: false, status: 'DEMOTED' };
   }
 
   if (currentTier === 'SILVER') {
-    if (sharesLast30Days >= 25) {
-      return { newTier: 'GOLD', sharesLast30Days, quotaRequired: 10, quotaMet: true, status: 'PROMOTED' };
+    if (effectiveImpact30Days >= 25) {
+      return { newTier: 'GOLD', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 10, quotaMet: true, status: 'PROMOTED' };
     }
-    if (sharesLast30Days >= 10) {
-      return { newTier: 'SILVER', sharesLast30Days, quotaRequired: 10, quotaMet: true, status: 'MAINTAINED' };
+    if (effectiveImpact30Days >= 10) {
+      return { newTier: 'SILVER', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 10, quotaMet: true, status: 'MAINTAINED' };
     }
     // Rétrogradation progressive d'un seul niveau : Silver -> Bronze
-    return { newTier: 'BRONZE', sharesLast30Days, quotaRequired: 10, quotaMet: false, status: 'DEMOTED' };
+    return { newTier: 'BRONZE', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 10, quotaMet: false, status: 'DEMOTED' };
   }
 
   // BRONZE (Progression)
-  if (sharesLast30Days >= 25) {
-    return { newTier: 'GOLD', sharesLast30Days, quotaRequired: 0, quotaMet: true, status: 'PROMOTED' };
+  if (effectiveImpact30Days >= 25) {
+    return { newTier: 'GOLD', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 0, quotaMet: true, status: 'PROMOTED' };
   }
-  if (sharesLast30Days >= 10) {
-    return { newTier: 'SILVER', sharesLast30Days, quotaRequired: 0, quotaMet: true, status: 'PROMOTED' };
+  if (effectiveImpact30Days >= 10) {
+    return { newTier: 'SILVER', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 0, quotaMet: true, status: 'PROMOTED' };
   }
-  return { newTier: 'BRONZE', sharesLast30Days, quotaRequired: 0, quotaMet: true, status: 'MAINTAINED' };
+  return { newTier: 'BRONZE', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 0, quotaMet: true, status: 'MAINTAINED' };
 }
 
 const PARTNER_STORAGE_KEY = 'fct_affiliate_partner_ref';
@@ -185,13 +281,28 @@ export async function trackPartnerLandingRef(refCode: string | null) {
 
     // Si nouveau clic dans la session, on incrémente le compteur de clics du partenaire
     if (existing !== cleanCode) {
+      const todayStr = new Date().toISOString().split('T')[0];
       const q = query(collection(firestore, 'partners'), where('partnerCode', '==', cleanCode));
       const snap = await getDocs(q);
       if (!snap.empty) {
         const partnerDoc = snap.docs[0];
+        const data = partnerDoc.data() as PartnerAccount;
+        const currentDailyClicks = data.stats?.dailyClicksCount || {};
+        const updatedDailyClicks = (currentDailyClicks[todayStr] || 0) + 1;
+
+        // Réévaluation dynamique du rang en fonction des vrais clics reçus
+        const evalRes = evaluatePartnerTier(
+          data.tier,
+          data.stats?.dailySharesCount,
+          new Date(),
+          { ...currentDailyClicks, [todayStr]: updatedDailyClicks }
+        );
+
         await updateDoc(doc(firestore, 'partners', partnerDoc.id), {
           'stats.totalClicks': increment(1),
+          [`stats.dailyClicksCount.${todayStr}`]: updatedDailyClicks,
           'stats.lastActivityDate': new Date().toISOString(),
+          tier: evalRes.newTier,
           updatedAt: new Date().toISOString(),
         });
       }
@@ -327,6 +438,8 @@ export async function registerPartnerAccount(data: {
         paidOutXAF: 0,
         lastActivityDate: new Date().toISOString(),
         dailySharesCount: {},
+        dailyClicksCount: {},
+        vehicleLastSharedAt: {},
       },
       userId: data.userId || auth.currentUser?.uid,
       createdAt: new Date().toISOString(),
@@ -344,16 +457,55 @@ export async function registerPartnerAccount(data: {
 
 /**
  * Enregistre l'action de partage sur les réseaux sociaux et met à jour l'activité du partenaire
+ * avec protection Anti-Spam stricte : 1 seul partage comptabilisé par véhicule toutes les 24h par utilisateur.
  */
 export async function logPartnerShare(
   partner: PartnerAccount,
   vehicle: Vehicle,
   platform: SharePlatform
-): Promise<void> {
+): Promise<{
+  logged: boolean;
+  reason?: 'COOLDOWN_ACTIVE' | 'FIRST_SHARE' | 'COOLDOWN_PASSED';
+  remainingHours?: number;
+  message?: string;
+}> {
   try {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const eligibility = checkVehicleShareEligibility(partner, vehicle.id);
 
-    // 1. Log individuel pour audit et traçabilité
+    // Si le véhicule a déjà été partagé il y a moins de 24h : Anti-spam actif
+    if (!eligibility.canCount) {
+      await addDoc(collection(firestore, 'partner_shares'), {
+        partnerId: partner.id,
+        partnerCode: partner.partnerCode,
+        partnerName: partner.fullName,
+        vehicleId: vehicle.id,
+        vehicleName: `${vehicle.brand} ${vehicle.model} (${vehicle.year})`,
+        platform,
+        counted: false,
+        antiSpamNote: `Déjà partagé il y a moins de 24h (déblocage dans ~${eligibility.remainingHours}h)`,
+        timestamp: serverTimestamp(),
+      }).catch(() => {});
+
+      return {
+        logged: false,
+        reason: 'COOLDOWN_ACTIVE',
+        remainingHours: eligibility.remainingHours,
+        message: `Ce véhicule a déjà été comptabilisé dans vos partages des dernières 24h. Nouveau quota débloqué dans ~${eligibility.remainingHours}h.`,
+      };
+    }
+
+    // Première fois ou délai de 24h écoulé : Comptabilisation acceptée
+    const nowIso = new Date().toISOString();
+    const todayStr = nowIso.split('T')[0];
+
+    // Mémorisation locale immédiate anti-spam
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        localStorage.setItem(`fct_last_share_${partner.id}_${vehicle.id}`, nowIso);
+      } catch {}
+    }
+
+    // 1. Log individuel d'audit pour traçabilité
     await addDoc(collection(firestore, 'partner_shares'), {
       partnerId: partner.id,
       partnerCode: partner.partnerCode,
@@ -361,6 +513,7 @@ export async function logPartnerShare(
       vehicleId: vehicle.id,
       vehicleName: `${vehicle.brand} ${vehicle.model} (${vehicle.year})`,
       platform,
+      counted: true,
       timestamp: serverTimestamp(),
     });
 
@@ -372,19 +525,43 @@ export async function logPartnerShare(
       [todayStr]: updatedDailyCount,
     };
 
-    // Évaluation du niveau de tier selon quota 30 jours (Bronze / Silver / Gold)
-    const evaluation = evaluatePartnerTier(partner.tier, updatedDailyMap);
+    const updatedVehicleLastSharedAt = {
+      ...(partner.stats.vehicleLastSharedAt || {}),
+      [vehicle.id]: nowIso,
+    };
+
+    // Évaluation du niveau de tier (partages + clics réels sur 30 jours)
+    const evaluation = evaluatePartnerTier(
+      partner.tier,
+      updatedDailyMap,
+      new Date(),
+      partner.stats.dailyClicksCount
+    );
     const newTier = evaluation.newTier;
 
     await updateDoc(doc(firestore, 'partners', partner.id), {
       'stats.totalShares': increment(1),
       [`stats.dailySharesCount.${todayStr}`]: updatedDailyCount,
-      'stats.lastActivityDate': new Date().toISOString(),
+      [`stats.vehicleLastSharedAt.${vehicle.id}`]: nowIso,
+      'stats.lastActivityDate': nowIso,
       tier: newTier,
-      updatedAt: new Date().toISOString(),
+      updatedAt: nowIso,
     });
+
+    // Mise à jour de l'objet en mémoire
+    partner.stats.totalShares = (partner.stats.totalShares || 0) + 1;
+    partner.stats.dailySharesCount = updatedDailyMap;
+    partner.stats.vehicleLastSharedAt = updatedVehicleLastSharedAt;
+    partner.tier = newTier;
+
+    return {
+      logged: true,
+      reason: eligibility.lastSharedAt ? 'COOLDOWN_PASSED' : 'FIRST_SHARE',
+      message: 'Partage certifié avec succès (+1 comptabilisé !)',
+    };
   } catch (err) {
     console.warn('[FCT Partner] Erreur logging partage :', err);
+    return { logged: false, message: 'Erreur technique lors de l’enregistrement du partage.' };
   }
 }
 

@@ -606,18 +606,18 @@ export const PARTNER_TIER_CONFIG = {
 } as const;
 
 /**
- * Calcule le nombre total de partages effectués sur les 30 derniers jours glissants
+ * Calcule le nombre total d'événements (partages ou clics) sur les 30 derniers jours glissants
  */
 export function getSharesInLast30Days(
-  dailySharesCount?: Record<string, number>,
+  dailyCount?: Record<string, number>,
   referenceDate: Date = new Date()
 ): number {
-  if (!dailySharesCount) return 0;
+  if (!dailyCount) return 0;
   const thirtyDaysAgo = new Date(referenceDate.getTime() - 30 * 24 * 60 * 60 * 1000);
   const cutoffStr = thirtyDaysAgo.toISOString().split('T')[0];
 
   let sum = 0;
-  for (const [dateStr, count] of Object.entries(dailySharesCount)) {
+  for (const [dateStr, count] of Object.entries(dailyCount)) {
     if (dateStr >= cutoffStr) {
       sum += Number(count) || 0;
     }
@@ -626,53 +626,96 @@ export function getSharesInLast30Days(
 }
 
 /**
- * Évalue le rang d'un partenaire avec gestion stricte des quotas 30 jours :
+ * Calcule le score d'impact réel du partenaire selon la règle FCT :
+ * - 1 partage de base max par véhicule toutes les 24h
+ * - Si plusieurs personnes réelles cliquent sur le lien, on ajoute le surplus de clics
+ *   (ex: 1 partage + 8 personnes qui ouvrent le lien = 1 base + 7 surplus = 8 au score d'impact)
+ */
+export function calculatePartnerImpactScore(
+  totalShares: number = 0,
+  totalClicks: number = 0
+): {
+  baseShares: number;
+  realClicks: number;
+  surplusClicks: number;
+  totalImpactScore: number;
+  displayBreakdown: string;
+} {
+  const baseShares = Math.max(0, Number(totalShares) || 0);
+  const realClicks = Math.max(0, Number(totalClicks) || 0);
+  const surplusClicks = Math.max(0, realClicks - baseShares);
+  const totalImpactScore = baseShares + surplusClicks;
+
+  let displayBreakdown = `${baseShares} partage${baseShares > 1 ? 's' : ''}`;
+  if (surplusClicks > 0) {
+    displayBreakdown = `${baseShares} base + ${surplusClicks} clic${surplusClicks > 1 ? 's' : ''} bonus = ${totalImpactScore} personnes touchées`;
+  } else if (realClicks > 0) {
+    displayBreakdown = `${realClicks} clic${realClicks > 1 ? 's' : ''} réel${realClicks > 1 ? 's' : ''}`;
+  }
+
+  return {
+    baseShares,
+    realClicks,
+    surplusClicks,
+    totalImpactScore,
+    displayBreakdown,
+  };
+}
+
+/**
+ * Évalue le rang d'un partenaire avec gestion stricte des quotas 30 jours et valorisation des Vrais Clics :
  * - Quota mensuel (30 jours glissants) :
- *   - GOLD : minimum 25 partages/30j. Si non atteint -> rétrograde en SILVER.
- *   - SILVER : minimum 10 partages/30j. Si non atteint -> rétrograde en BRONZE.
+ *   - GOLD : minimum 25 partages/points d'impact sur 30j. Si non atteint -> rétrograde en SILVER.
+ *   - SILVER : minimum 10 partages/points d'impact sur 30j. Si non atteint -> rétrograde en BRONZE.
  *   - BRONZE : palier initial (0 quota minimum).
  * - Promotion :
- *   - Si >= 25 partages/30j -> Promu GOLD.
- *   - Si >= 10 partages/30j -> Promu SILVER.
+ *   - Si >= 25 points d'impact sur 30j -> Promu GOLD.
+ *   - Si >= 10 points d'impact sur 30j -> Promu SILVER.
  */
 export function evaluatePartnerTier(
   currentTier: PartnerTier,
   dailySharesCount?: Record<string, number>,
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  dailyClicksCount?: Record<string, number>
 ): {
   newTier: PartnerTier;
   sharesLast30Days: number;
+  clicksLast30Days: number;
+  effectiveImpact30Days: number;
   quotaRequired: number;
   quotaMet: boolean;
   status: 'PROMOTED' | 'MAINTAINED' | 'DEMOTED';
 } {
   const sharesLast30Days = getSharesInLast30Days(dailySharesCount, referenceDate);
+  const clicksLast30Days = getSharesInLast30Days(dailyClicksCount, referenceDate);
+  const effectiveImpact30Days = Math.max(sharesLast30Days, clicksLast30Days);
 
   if (currentTier === 'GOLD') {
-    if (sharesLast30Days >= 25) {
-      return { newTier: 'GOLD', sharesLast30Days, quotaRequired: 25, quotaMet: true, status: 'MAINTAINED' };
+    if (effectiveImpact30Days >= 25) {
+      return { newTier: 'GOLD', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 25, quotaMet: true, status: 'MAINTAINED' };
     }
     // Rétrogradation progressive d'un seul niveau : Gold -> Silver
-    return { newTier: 'SILVER', sharesLast30Days, quotaRequired: 25, quotaMet: false, status: 'DEMOTED' };
+    return { newTier: 'SILVER', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 25, quotaMet: false, status: 'DEMOTED' };
   }
 
   if (currentTier === 'SILVER') {
-    if (sharesLast30Days >= 25) {
-      return { newTier: 'GOLD', sharesLast30Days, quotaRequired: 10, quotaMet: true, status: 'PROMOTED' };
+    if (effectiveImpact30Days >= 25) {
+      return { newTier: 'GOLD', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 10, quotaMet: true, status: 'PROMOTED' };
     }
-    if (sharesLast30Days >= 10) {
-      return { newTier: 'SILVER', sharesLast30Days, quotaRequired: 10, quotaMet: true, status: 'MAINTAINED' };
+    if (effectiveImpact30Days >= 10) {
+      return { newTier: 'SILVER', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 10, quotaMet: true, status: 'MAINTAINED' };
     }
     // Rétrogradation progressive d'un seul niveau : Silver -> Bronze
-    return { newTier: 'BRONZE', sharesLast30Days, quotaRequired: 10, quotaMet: false, status: 'DEMOTED' };
+    return { newTier: 'BRONZE', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 10, quotaMet: false, status: 'DEMOTED' };
   }
 
   // BRONZE (Progression)
-  if (sharesLast30Days >= 25) {
-    return { newTier: 'GOLD', sharesLast30Days, quotaRequired: 0, quotaMet: true, status: 'PROMOTED' };
+  if (effectiveImpact30Days >= 25) {
+    return { newTier: 'GOLD', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 0, quotaMet: true, status: 'PROMOTED' };
   }
-  if (sharesLast30Days >= 10) {
-    return { newTier: 'SILVER', sharesLast30Days, quotaRequired: 0, quotaMet: true, status: 'PROMOTED' };
+  if (effectiveImpact30Days >= 10) {
+    return { newTier: 'SILVER', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 0, quotaMet: true, status: 'PROMOTED' };
   }
-  return { newTier: 'BRONZE', sharesLast30Days, quotaRequired: 0, quotaMet: true, status: 'MAINTAINED' };
+  return { newTier: 'BRONZE', sharesLast30Days, clicksLast30Days, effectiveImpact30Days, quotaRequired: 0, quotaMet: true, status: 'MAINTAINED' };
 }
+
