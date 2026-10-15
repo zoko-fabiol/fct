@@ -36,6 +36,7 @@ import { auth, onAuthStateChanged } from '../services/firebase.ts';
 import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
 import { WhatsAppIcon } from '../components/WhatsAppIcon.tsx';
 import { OrangeMoneyLogo, MtnMomoLogo, CashDeskLogo } from '../components/PaymentLogos.tsx';
+import { UnifiedPhoneChannelsInput } from '../components/UnifiedPhoneChannelsInput.tsx';
 
 interface ProfilePageProps {
   initialProfile?: UnifiedUserProfile | null;
@@ -329,79 +330,33 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 6 }}>
-                  {t.primaryPhone}
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="tel"
-                    value={profile.phone}
-                    onChange={(e) => handlePhoneChange(e.target.value)}
-                    placeholder="699 45 88 12"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 10,
-                      border: '1px solid var(--border-medium)',
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  />
-                  {phoneOperator !== 'AUTRE' && (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        right: 10,
-                        top: 7,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        fontSize: 11,
-                        fontWeight: 800,
-                        padding: '3px 8px',
-                        borderRadius: 8,
-                        backgroundColor: phoneOperator === 'ORANGE' ? '#fff7ed' : '#fefce8',
-                        color: phoneOperator === 'ORANGE' ? '#c2410c' : '#854d0e',
-                        border: phoneOperator === 'ORANGE' ? '1px solid #ffedd5' : '1px solid #fef08a',
-                      }}
-                    >
-                      {phoneOperator === 'ORANGE' ? (
-                        <>
-                          <OrangeMoneyLogo size={16} />
-                          <span>Orange</span>
-                        </>
-                      ) : (
-                        <>
-                          <MtnMomoLogo size={16} />
-                          <span>MTN</span>
-                        </>
-                      )}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 6 }}>
-                  <WhatsAppIcon size={14} color="#059669" />
-                  <span>{t.whatsappPhone}</span>
-                </label>
-                <input
-                  type="tel"
-                  value={profile.whatsappPhone}
-                  onChange={(e) => setProfile({ ...profile, whatsappPhone: e.target.value })}
-                  placeholder="677 12 34 56"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 10,
-                    border: '1px solid var(--border-medium)',
-                    fontSize: 13,
-                    fontWeight: 600,
-                  }}
-                />
-              </div>
+              {/* Composant Unifié Intelligent Téléphone & Canaux Connectés (WhatsApp & Mobile Money) */}
+              <UnifiedPhoneChannelsInput
+                phone={profile.phone}
+                whatsappPhone={profile.whatsappPhone}
+                payoutPhone={profile.payoutPhone}
+                payoutMethod={profile.payoutMethod}
+                lang={lang}
+                labelPhone={t.primaryPhone}
+                onChange={({ phone: newPhone, whatsappPhone: newWa, payoutPhone: newPayout, payoutMethod: newMethod, isWhatsappSame, isPayoutSame }) => {
+                  setProfile((prev) => {
+                    if (!prev) return null;
+                    return {
+                      ...prev,
+                      phone: newPhone,
+                      whatsappPhone: newWa,
+                      payoutPhone: newPayout,
+                      payoutMethod: newMethod || prev.payoutMethod,
+                      isWhatsappSame,
+                      isPayoutSame,
+                    };
+                  });
+                  setPhoneOperator(validateCameroonPhone(newPhone).operator);
+                  if (newPayout) {
+                    setPayoutOperator(validateCameroonPhone(newPayout).operator);
+                  }
+                }}
+              />
 
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 6 }}>
@@ -518,58 +473,83 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 6 }}>
-                  {t.payoutPhone}
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="tel"
-                    value={profile.payoutPhone}
-                    onChange={(e) => handlePayoutPhoneChange(e.target.value)}
-                    placeholder="699 45 88 12"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 10,
-                      border: '1px solid var(--border-medium)',
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  />
-                  {payoutOperator !== 'AUTRE' && (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        right: 10,
-                        top: 7,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        fontSize: 11,
-                        fontWeight: 800,
-                        padding: '3px 8px',
-                        borderRadius: 8,
-                        backgroundColor: payoutOperator === 'ORANGE' ? '#fff7ed' : '#fefce8',
-                        color: payoutOperator === 'ORANGE' ? '#c2410c' : '#854d0e',
-                        border: payoutOperator === 'ORANGE' ? '1px solid #ffedd5' : '1px solid #fef08a',
+              {profile.payoutMethod !== 'CASH' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)' }}>
+                      {t.payoutPhone}
+                    </label>
+                    {profile.payoutPhone && profile.phone && profile.payoutPhone.trim() === profile.phone.trim() ? (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <CheckCircle2 size={12} />
+                        <span>{isEn ? 'Synced with main phone' : 'Synchronisé avec l\'appel'}</span>
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#0284c7' }}>
+                        {isEn ? 'Dedicated payout number' : 'Numéro dédié'}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="tel"
+                      value={profile.payoutPhone}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        handlePayoutPhoneChange(val);
+                        setProfile((prev) => {
+                          if (!prev) return null;
+                          return {
+                            ...prev,
+                            payoutPhone: val,
+                            isPayoutSame: val.trim() === prev.phone.trim(),
+                          };
+                        });
                       }}
-                    >
-                      {payoutOperator === 'ORANGE' ? (
-                        <>
-                          <OrangeMoneyLogo size={16} />
-                          <span>Orange Money</span>
-                        </>
-                      ) : (
-                        <>
-                          <MtnMomoLogo size={16} />
-                          <span>MTN MoMo</span>
-                        </>
-                      )}
-                    </span>
-                  )}
+                      placeholder="699 45 88 12"
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: 10,
+                        border: '1px solid var(--border-medium)',
+                        fontSize: 13,
+                        fontWeight: 600,
+                      }}
+                    />
+                    {payoutOperator !== 'AUTRE' && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          right: 10,
+                          top: 7,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          fontSize: 11,
+                          fontWeight: 800,
+                          padding: '3px 8px',
+                          borderRadius: 8,
+                          backgroundColor: payoutOperator === 'ORANGE' ? '#fff7ed' : '#fefce8',
+                          color: payoutOperator === 'ORANGE' ? '#c2410c' : '#854d0e',
+                          border: payoutOperator === 'ORANGE' ? '1px solid #ffedd5' : '1px solid #fef08a',
+                        }}
+                      >
+                        {payoutOperator === 'ORANGE' ? (
+                          <>
+                            <OrangeMoneyLogo size={16} />
+                            <span>Orange Money</span>
+                          </>
+                        ) : (
+                          <>
+                            <MtnMomoLogo size={16} />
+                            <span>MTN MoMo</span>
+                          </>
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-body)', marginBottom: 6 }}>

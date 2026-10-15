@@ -79,6 +79,7 @@ import { sendEmailVerificationPin, verifyEmailPin, sendFirebaseEmailVerification
 import { AppPage } from '../types/router.ts';
 import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
 import { WebsiteLanguage, websiteI18n } from '../services/i18n.ts';
+import { UnifiedPhoneChannelsInput } from '../components/UnifiedPhoneChannelsInput.tsx';
 
 type PortalTab = 'PROFILE' | 'DOCS' | 'RENTALS' | 'SALES' | 'INVOICES' | 'TIMELINE';
 
@@ -715,31 +716,20 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                         <span>{isEn ? 'Contact & Tax Information' : 'Fiscalité & Localisation'}</span>
                       </div>
 
-                      <div>
-                        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>
-                          {isEn ? 'Phone Number (Calls)' : 'Numéro de Téléphone (Appels) :'}
-                        </label>
-                        <input
-                          type="tel"
-                          value={editProfileForm.phone || ''}
-                          onChange={(e) => setEditProfileForm({ ...editProfileForm, phone: e.target.value })}
-                          className="fct-input"
-                          placeholder="ex: +237 699 00 00 00"
-                        />
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>
-                          {isEn ? 'WhatsApp Phone' : 'Numéro WhatsApp (Notifications contrat) :'}
-                        </label>
-                        <input
-                          type="tel"
-                          value={editProfileForm.whatsappPhone || ''}
-                          onChange={(e) => setEditProfileForm({ ...editProfileForm, whatsappPhone: e.target.value })}
-                          className="fct-input"
-                          placeholder="ex: +237 677 00 00 00"
-                        />
-                      </div>
+                      <UnifiedPhoneChannelsInput
+                        phone={editProfileForm.phone || ''}
+                        whatsappPhone={editProfileForm.whatsappPhone || ''}
+                        showPayoutChannel={false}
+                        lang={lang}
+                        labelPhone={isEn ? 'Phone Number (Calls)' : 'Numéro de Téléphone (Appels) :'}
+                        onChange={({ phone: newPhone, whatsappPhone: newWa }) => {
+                          setEditProfileForm((prev) => ({
+                            ...prev,
+                            phone: newPhone,
+                            whatsappPhone: newWa,
+                          }));
+                        }}
+                      />
 
                       <div>
                         <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>

@@ -53,6 +53,7 @@ import {
 import { Vehicle } from '../types/index.ts';
 import { AppPage } from '../types/router.ts';
 import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
+import { UnifiedPhoneChannelsInput } from '../components/UnifiedPhoneChannelsInput.tsx';
 
 interface PartnerPortalPageProps {
   vehicles: Vehicle[];
@@ -663,14 +664,19 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       </div>
 
                       <div className="fct-field">
-                        <label className="fct-label">{t.whatsappLabel}</label>
-                        <input
-                          type="tel"
-                          required
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="ex: 699 90 28 89"
-                          className="fct-input"
+                        <UnifiedPhoneChannelsInput
+                          phone={phone}
+                          whatsappPhone={phone}
+                          payoutPhone={payoutPhone || phone}
+                          payoutMethod={payoutMethod}
+                          lang={lang}
+                          labelPhone={isEn ? 'Primary Phone Number (Calls & WhatsApp)' : 'Numéro de téléphone principal (Appels & WhatsApp) :'}
+                          showPayoutChannel={payoutMethod !== 'CASH'}
+                          onChange={({ phone: newPhone, payoutPhone: newPayout, payoutMethod: newMethod }) => {
+                            setPhone(newPhone);
+                            if (newPayout) setPayoutPhone(newPayout);
+                            if (newMethod) setPayoutMethod(newMethod);
+                          }}
                         />
                       </div>
 

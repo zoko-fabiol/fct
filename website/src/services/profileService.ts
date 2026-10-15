@@ -25,6 +25,10 @@ export interface UnifiedUserProfile {
   payoutPhone: string;
   payoutAccountName: string;
 
+  // Drapeaux de synchronisation intelligente
+  isWhatsappSame?: boolean;
+  isPayoutSame?: boolean;
+
   // Chiffres & Activité
   partnerCode?: string;
   stats?: {
@@ -177,20 +181,55 @@ export async function saveUserProfile(
     const colName = profile.accountType === 'PARTNER' ? 'partners' : 'customers';
     const ref = doc(firestore, colName, profile.id);
 
+    const cleanPhone = profile.phone.trim();
+    const cleanWhatsapp = (profile.isWhatsappSame ? cleanPhone : (profile.whatsappPhone || cleanPhone)).trim();
+    const cleanPayout = (profile.isPayoutSame ? cleanPhone : (profile.payoutPhone || cleanPhone)).trim();
+
     const updatePayload: Record<string, any> = {
       fullName: profile.fullName.trim(),
-      phone: profile.phone.trim(),
-      whatsappPhone: profile.whatsappPhone.trim() || profile.phone.trim(),
+      phone: cleanPhone,
+      whatsappPhone: cleanWhatsapp,
       city: profile.city.trim(),
       address: (profile.address || '').trim(),
       idCardNumber: (profile.idCardNumber || '').trim(),
       payoutMethod: profile.payoutMethod,
-      payoutPhone: profile.payoutPhone.trim() || profile.phone.trim(),
+      payoutPhone: cleanPayout,
       payoutAccountName: (profile.payoutAccountName || profile.fullName).trim(),
+      isWhatsappSame: profile.isWhatsappSame !== undefined ? profile.isWhatsappSame : cleanWhatsapp === cleanPhone,
+      isPayoutSame: profile.isPayoutSame !== undefined ? profile.isPayoutSame : cleanPayout === cleanPhone,
       updatedAt: serverTimestamp(),
     };
 
     await setDoc(ref, updatePayload, { merge: true });
+
+    // Synchronisation croisée : si l'utilisateur existe dans l'autre collection (adhérent ⇄ client),
+    // on propage immédiatement le bloc coordonnées afin d'éviter toute double saisie
+    const counterpartCol = profile.accountType === 'PARTNER' ? 'customers' : 'partners';
+    const counterpartRef = doc(firestore, counterpartCol, profile.id);
+    const counterpartSnap = await getDocLocalFirst(counterpartRef);
+    if (counterpartSnap && counterpartSnap.exists()) {
+      await setDoc(
+        counterpartRef,
+        {
+          fullName: profile.fullName.trim(),
+          phone: cleanPhone,
+          whatsappPhone: cleanWhatsapp,
+          city: profile.city.trim(),
+          address: (profile.address || '').trim(),
+          payoutPhone: cleanPayout,
+          payoutMethod: profile.payoutMethod,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      ).catch(() => {});
+    }
+
+    setCachedUserProfile({
+      ...profile,
+      phone: cleanPhone,
+      whatsappPhone: cleanWhatsapp,
+      payoutPhone: cleanPayout,
+    });
 
     return { success: true };
   } catch (err: any) {
