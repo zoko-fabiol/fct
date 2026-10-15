@@ -103,17 +103,17 @@ service cloud.firestore {
 
     // 4. Collection Rental Contracts (Locations)
     match /rental_contracts/{contractId} {
-      // Un chauffeur ne peut lire que les contrats où il est affecté
-      allow read: if isStaff() && (
-        !isDriver() || resource.data.driverId == request.auth.uid
-      );
+      // Un chauffeur ne peut lire que les contrats où il est affecté, un client lit ses propres contrats
+      allow read: if (isStaff() && (!isDriver() || resource.data.driverId == request.auth.uid))
+        || (isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.customerEmail == request.auth.token.email));
       allow create, update: if isRentalAgent();
       allow delete: if isSuperAdmin();
     }
 
     // 5. Collection Reservations
     match /reservations/{reservationId} {
-      allow read: if isStaff() && !isDriver();
+      allow read: if (isStaff() && !isDriver())
+        || (isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.customerEmail == request.auth.token.email));
       allow create, update: if isRentalAgent() || isSalesAgent();
       allow delete: if isSuperAdmin();
     }
@@ -183,21 +183,25 @@ service cloud.firestore {
 
     match /web_leads/{leadId} {
       allow create: if isValidId(leadId) && isValidWebLead(request.resource.data);
-      allow read: if isStaff() && (isSalesAgent() || isRentalAgent() || isDirector());
+      allow read: if (isStaff() && (isSalesAgent() || isRentalAgent() || isDirector()))
+        || (isSignedIn() && resource.data.get('customerUid', null) == request.auth.uid);
       allow update: if isSalesAgent();
       allow delete: if isSuperAdmin();
     }
 
     // 6. Collection Sales & CRM
     match /sales/{saleId} {
-      allow read: if isStaff() && !isDriver();
+      allow read: if (isStaff() && !isDriver())
+        || (isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.customerEmail == request.auth.token.email));
       allow create, update: if isSalesAgent();
       allow delete: if isSuperAdmin();
     }
 
     match /customers/{customerId} {
-      allow read: if isStaff() && !isDriver();
-      allow create, update: if isRentalAgent() || isSalesAgent();
+      allow read: if (isStaff() && !isDriver())
+        || (isSignedIn() && (customerId == request.auth.uid || resource.data.email == request.auth.token.email));
+      allow create, update: if isRentalAgent() || isSalesAgent()
+        || (isSignedIn() && customerId == request.auth.uid);
       allow delete: if isSuperAdmin();
     }
 
@@ -220,7 +224,8 @@ service cloud.firestore {
 
     // 8. Collection Invoices (Facturation)
     match /invoices/{invoiceId} {
-      allow read: if isStaff() && !isDriver();
+      allow read: if (isStaff() && !isDriver())
+        || (isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.customerEmail == request.auth.token.email));
       allow create, update: if isCashier() || isRentalAgent() || isSalesAgent();
       allow delete: if isSuperAdmin();
     }
@@ -247,14 +252,20 @@ service cloud.firestore {
 
     // 11. Documents & Coffre-fort
     match /documents/{docId} {
-      // Fichiers privés réservés aux profils autorisés
-      allow read: if isStaff() && (
+      // Fichiers privés réservés aux profils autorisés et au client propriétaire
+      allow read: if (isStaff() && (
         resource.data.isPrivate == false ||
         isDirector() ||
         isCashier() ||
         isFleetManager()
-      );
-      allow create, update: if isStaff() && !isDriver();
+      )) || (isSignedIn() && (
+        resource.data.relatedCustomerId == request.auth.uid ||
+        resource.data.customerEmail == request.auth.token.email ||
+        resource.data.relatedEntityId == request.auth.uid
+      ));
+      allow create: if (isStaff() && !isDriver())
+        || (isSignedIn() && (request.resource.data.relatedCustomerId == request.auth.uid || request.resource.data.customerEmail == request.auth.token.email));
+      allow update: if isStaff() && !isDriver();
       allow delete: if isSuperAdmin();
     }
 
