@@ -31,6 +31,8 @@ import {
   getUserProfile,
   getCachedUserProfile,
   setCachedUserProfile,
+  getSharedContactInfo,
+  saveSharedContactInfo,
 } from '../services/profileService.ts';
 import { auth, onAuthStateChanged } from '../services/firebase.ts';
 import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
@@ -116,18 +118,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           return;
         }
 
-        // Profil par défaut rattaché à Firebase Auth
+        // Profil par défaut rattaché à Firebase Auth avec pré-remplissage du contact partagé
+        const sc = getSharedContactInfo();
         const defaultProf: UnifiedUserProfile = {
           id: u.uid,
           accountType: 'CLIENT',
-          fullName: u.displayName || u.email?.split('@')[0] || 'Adhérent FCT',
-          email: u.email || '',
-          phone: u.phoneNumber || '',
-          whatsappPhone: u.phoneNumber || '',
-          city: 'Douala',
-          payoutMethod: 'ORANGE_MONEY',
-          payoutPhone: u.phoneNumber || '',
-          payoutAccountName: u.displayName || '',
+          fullName: sc.fullName || u.displayName || u.email?.split('@')[0] || 'Adhérent FCT',
+          email: u.email || sc.email || '',
+          phone: sc.phone || u.phoneNumber || '',
+          whatsappPhone: sc.whatsappPhone || sc.phone || u.phoneNumber || '',
+          city: sc.city || 'Douala',
+          payoutMethod: sc.payoutMethod || 'ORANGE_MONEY',
+          payoutPhone: sc.payoutPhone || sc.phone || u.phoneNumber || '',
+          payoutAccountName: sc.fullName || u.displayName || '',
         };
         setProfile((prev) => prev || defaultProf);
         setCachedUserProfile(defaultProf);

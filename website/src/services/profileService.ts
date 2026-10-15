@@ -113,6 +113,16 @@ export function setCachedUserProfile(profile: UnifiedUserProfile | null) {
     try {
       if (profile) {
         localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
+        // Mettre à jour automatiquement le contact partagé
+        saveSharedContactInfo({
+          fullName: profile.fullName,
+          phone: profile.phone,
+          whatsappPhone: profile.whatsappPhone,
+          city: profile.city,
+          email: profile.email,
+          payoutPhone: profile.payoutPhone,
+          payoutMethod: profile.payoutMethod,
+        });
       } else {
         localStorage.removeItem(PROFILE_CACHE_KEY);
       }
@@ -120,6 +130,57 @@ export function setCachedUserProfile(profile: UnifiedUserProfile | null) {
       // ignore storage errors
     }
   }
+}
+
+export interface SharedContactInfo {
+  fullName?: string;
+  phone?: string;
+  whatsappPhone?: string;
+  payoutPhone?: string;
+  payoutMethod?: 'ORANGE_MONEY' | 'MTN_MOMO' | 'CASH';
+  city?: string;
+  email?: string;
+  taxNumber?: string;
+}
+
+const SHARED_CONTACT_KEY = 'fct_shared_contact_info';
+let cachedSharedContact: SharedContactInfo | null = null;
+
+export function getSharedContactInfo(): SharedContactInfo {
+  if (cachedSharedContact && cachedSharedContact.phone) return cachedSharedContact;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const raw = localStorage.getItem(SHARED_CONTACT_KEY);
+      if (raw) {
+        cachedSharedContact = JSON.parse(raw);
+        return cachedSharedContact || {};
+      }
+    } catch {}
+  }
+  return cachedSharedContact || {};
+}
+
+export function saveSharedContactInfo(info: Partial<SharedContactInfo>): SharedContactInfo {
+  const current = getSharedContactInfo();
+  const merged: SharedContactInfo = {
+    ...current,
+    ...info,
+    fullName: info.fullName?.trim() || current.fullName || '',
+    phone: info.phone?.trim() || current.phone || '',
+    whatsappPhone: info.whatsappPhone?.trim() || current.whatsappPhone || info.phone?.trim() || current.phone || '',
+    payoutPhone: info.payoutPhone?.trim() || current.payoutPhone || info.phone?.trim() || current.phone || '',
+    payoutMethod: info.payoutMethod || current.payoutMethod || 'ORANGE_MONEY',
+    city: info.city?.trim() || current.city || 'Douala',
+    email: info.email?.trim() || current.email || '',
+    taxNumber: info.taxNumber?.trim() || current.taxNumber || '',
+  };
+  cachedSharedContact = merged;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      localStorage.setItem(SHARED_CONTACT_KEY, JSON.stringify(merged));
+    } catch {}
+  }
+  return merged;
 }
 
 /**

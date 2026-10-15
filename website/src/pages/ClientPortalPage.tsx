@@ -80,6 +80,7 @@ import { AppPage } from '../types/router.ts';
 import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
 import { WebsiteLanguage, websiteI18n } from '../services/i18n.ts';
 import { UnifiedPhoneChannelsInput } from '../components/UnifiedPhoneChannelsInput.tsx';
+import { saveSharedContactInfo, getSharedContactInfo } from '../services/profileService.ts';
 
 type PortalTab = 'PROFILE' | 'DOCS' | 'RENTALS' | 'SALES' | 'INVOICES' | 'TIMELINE';
 
@@ -106,7 +107,14 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Édition profil
-  const [editProfileForm, setEditProfileForm] = useState<Partial<ClientProfile>>({});
+  const sharedContact = getSharedContactInfo();
+  const [editProfileForm, setEditProfileForm] = useState<Partial<ClientProfile>>(() => ({
+    fullName: sharedContact.fullName || '',
+    phone: sharedContact.phone || '',
+    whatsappPhone: sharedContact.whatsappPhone || sharedContact.phone || '',
+    city: sharedContact.city || 'Douala',
+    taxNumber: sharedContact.taxNumber || '',
+  }));
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Téléversement GED (Documents)
@@ -120,10 +128,10 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
 
   // Formulaire d'authentification
   const [isRegister, setIsRegister] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => sharedContact.email || '');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [fullName, setFullName] = useState(() => sharedContact.fullName || '');
+  const [phone, setPhone] = useState(() => sharedContact.phone || '');
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
@@ -158,6 +166,14 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
     const unsubProfile = subscribeCustomerProfile(uid, userEmail, (prof) => {
       setProfile(prof);
       if (prof) {
+        saveSharedContactInfo({
+          fullName: prof.fullName,
+          phone: prof.phone,
+          whatsappPhone: prof.whatsappPhone || prof.phone,
+          city: prof.city,
+          email: prof.email,
+          taxNumber: prof.taxNumber,
+        });
         setEditProfileForm({
           fullName: prof.fullName,
           phone: prof.phone,
@@ -320,16 +336,32 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
 
     setIsSavingProfile(true);
     try {
+      const cleanFull = editProfileForm.fullName?.trim() || profile?.fullName;
+      const cleanPh = editProfileForm.phone?.trim() || profile?.phone;
+      const cleanWa = editProfileForm.whatsappPhone?.trim() || cleanPh;
+      const cleanCity = editProfileForm.city?.trim() || 'Douala';
+      const cleanTax = editProfileForm.taxNumber?.trim().toUpperCase() || '';
+
       await saveCustomerProfile(currentUser.uid, {
-        fullName: editProfileForm.fullName?.trim() || profile?.fullName,
-        phone: editProfileForm.phone?.trim() || profile?.phone,
-        whatsappPhone: editProfileForm.whatsappPhone?.trim() || editProfileForm.phone?.trim(),
+        fullName: cleanFull,
+        phone: cleanPh,
+        whatsappPhone: cleanWa,
         companyName: editProfileForm.companyName?.trim() || '',
         type: editProfileForm.type || 'INDIVIDUAL',
-        taxNumber: editProfileForm.taxNumber?.trim().toUpperCase() || '',
+        taxNumber: cleanTax,
         address: editProfileForm.address?.trim() || '',
-        city: editProfileForm.city?.trim() || 'Douala',
+        city: cleanCity,
       });
+
+      saveSharedContactInfo({
+        fullName: cleanFull,
+        phone: cleanPh,
+        whatsappPhone: cleanWa,
+        city: cleanCity,
+        taxNumber: cleanTax,
+        email: currentUser.email || undefined,
+      });
+
       onToast(isEn ? 'Profile updated successfully!' : 'Coordonnées et profil mis à jour avec succès !');
     } catch (err: any) {
       onToast(isEn ? 'Error updating profile.' : `Erreur : ${err.message || 'Mise à jour impossible'}`);
@@ -728,6 +760,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                             phone: newPhone,
                             whatsappPhone: newWa,
                           }));
+                          saveSharedContactInfo({ phone: newPhone, whatsappPhone: newWa });
                         }}
                       />
 

@@ -54,6 +54,7 @@ import { Vehicle } from '../types/index.ts';
 import { AppPage } from '../types/router.ts';
 import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
 import { UnifiedPhoneChannelsInput } from '../components/UnifiedPhoneChannelsInput.tsx';
+import { getSharedContactInfo, saveSharedContactInfo } from '../services/profileService.ts';
 
 interface PartnerPortalPageProps {
   vehicles: Vehicle[];
@@ -73,15 +74,18 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(auth.currentUser);
   const [partner, setPartner] = useState<PartnerAccount | null>(() => getCachedPartnerAccount());
 
+  // Pré-remplissage automatique depuis le socle de contact partagé (Client ⇄ Partenaire)
+  const sharedContact = getSharedContactInfo();
+
   // Authentification & Formulaire
   const [isRegister, setIsRegister] = useState(true);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => sharedContact.email || auth.currentUser?.email || '');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [payoutMethod, setPayoutMethod] = useState<'ORANGE_MONEY' | 'MTN_MOMO' | 'CASH'>('ORANGE_MONEY');
-  const [payoutPhone, setPayoutPhone] = useState('');
-  const [city, setCity] = useState('Douala');
+  const [fullName, setFullName] = useState(() => sharedContact.fullName || '');
+  const [phone, setPhone] = useState(() => sharedContact.phone || '');
+  const [payoutMethod, setPayoutMethod] = useState<'ORANGE_MONEY' | 'MTN_MOMO' | 'CASH'>(() => sharedContact.payoutMethod || 'ORANGE_MONEY');
+  const [payoutPhone, setPayoutPhone] = useState(() => sharedContact.payoutPhone || sharedContact.phone || '');
+  const [city, setCity] = useState(() => sharedContact.city || 'Douala');
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
@@ -657,7 +661,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                           type="text"
                           required
                           value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
+                          onChange={(e) => {
+                            setFullName(e.target.value);
+                            saveSharedContactInfo({ fullName: e.target.value });
+                          }}
                           placeholder="ex: Jean-Paul Mvogo"
                           className="fct-input"
                         />
@@ -676,6 +683,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                             setPhone(newPhone);
                             if (newPayout) setPayoutPhone(newPayout);
                             if (newMethod) setPayoutMethod(newMethod);
+                            saveSharedContactInfo({ phone: newPhone, payoutPhone: newPayout, payoutMethod: newMethod });
                           }}
                         />
                       </div>
@@ -685,7 +693,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                           <label className="fct-label">{t.payoutMethodLabel}</label>
                           <select
                             value={payoutMethod}
-                            onChange={(e: any) => setPayoutMethod(e.target.value)}
+                            onChange={(e: any) => {
+                              setPayoutMethod(e.target.value);
+                              saveSharedContactInfo({ payoutMethod: e.target.value });
+                            }}
                             className="fct-select"
                           >
                             <option value="ORANGE_MONEY">Orange Money</option>
@@ -698,7 +709,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                           <input
                             type="text"
                             value={city}
-                            onChange={(e) => setCity(e.target.value)}
+                            onChange={(e) => {
+                              setCity(e.target.value);
+                              saveSharedContactInfo({ city: e.target.value });
+                            }}
                             className="fct-input"
                           />
                         </div>
