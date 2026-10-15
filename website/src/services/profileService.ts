@@ -4,8 +4,8 @@
  * Franchise Conseils Trading - Douala, Cameroun
  */
 
-import { firestore } from './firebase.ts';
-import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { firestore, getDocLocalFirst } from './firebase.ts';
+import { doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export type UserAccountType = 'PARTNER' | 'CLIENT';
 
@@ -96,15 +96,15 @@ export async function getUserProfile(
   try {
     const colName = accountType === 'PARTNER' ? 'partners' : 'customers';
     let ref = doc(firestore, colName, userId);
-    let snap = await getDoc(ref);
+    let snap = await getDocLocalFirst(ref);
 
-    if (!snap.exists() && accountType === 'CLIENT') {
+    if ((!snap || !snap.exists()) && accountType === 'CLIENT') {
       // Fallback si enregistré sous la collection legacy 'clients'
       ref = doc(firestore, 'clients', userId);
-      snap = await getDoc(ref);
+      snap = await getDocLocalFirst(ref);
     }
 
-    if (!snap.exists()) {
+    if (!snap || !snap.exists()) {
       return null;
     }
 

@@ -1,6 +1,8 @@
 import {
   firestore,
   auth,
+  getDocLocalFirst,
+  getDocsLocalFirst,
 } from './firebase.ts';
 import {
   doc,
@@ -103,20 +105,20 @@ export async function fetchCurrentPartnerProfile(userId?: string, userEmail?: st
 
     if (!uid && !email) return null;
 
-    // 1. Recherche par ID direct
+    // 1. Recherche par ID direct (cache local d'abord)
     if (uid) {
       const docRef = doc(firestore, 'partners', uid);
-      const snap = await getDoc(docRef);
-      if (snap.exists()) {
+      const snap = await getDocLocalFirst(docRef);
+      if (snap && snap.exists()) {
         return snap.data() as PartnerAccount;
       }
     }
 
-    // 2. Recherche par email
+    // 2. Recherche par email (cache local d'abord)
     if (email) {
       const q = query(collection(firestore, 'partners'), where('email', '==', email));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
+      const snap = await getDocsLocalFirst(q);
+      if (snap && !snap.empty) {
         return snap.docs[0].data() as PartnerAccount;
       }
     }

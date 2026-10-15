@@ -10,6 +10,13 @@ import {
   addDoc,
   serverTimestamp,
   doc,
+  getDoc,
+  getDocFromCache,
+  getDocsFromCache,
+  DocumentReference,
+  DocumentSnapshot,
+  Query,
+  QuerySnapshot,
   setDoc,
   updateDoc,
   increment,
@@ -60,6 +67,52 @@ export const db: Firestore = firestore;
 export const auth = getAuth(app);
 export { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword };
 export type { FirebaseUser };
+
+/**
+ * Lecture locale prioritaire (Firebase IndexedDB Cache First) avec protection timeout.
+ * Évite les temps de chargement infinis et accélère le rendu instantané.
+ */
+export async function getDocLocalFirst(docRef: DocumentReference): Promise<DocumentSnapshot | null> {
+  try {
+    const cachedSnap = await getDocFromCache(docRef);
+    if (cachedSnap && cachedSnap.exists()) {
+      return cachedSnap;
+    }
+  } catch {
+    // Document non encore présent en cache local
+  }
+
+  try {
+    const networkPromise = getDoc(docRef);
+    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500));
+    const snap = await Promise.race([networkPromise, timeoutPromise]);
+    return (snap as DocumentSnapshot) || null;
+  } catch (err) {
+    console.warn('[FCT Local Firebase] Récupération document différée :', err);
+    return null;
+  }
+}
+
+export async function getDocsLocalFirst(q: Query): Promise<QuerySnapshot | null> {
+  try {
+    const cachedSnap = await getDocsFromCache(q);
+    if (cachedSnap && !cachedSnap.empty) {
+      return cachedSnap;
+    }
+  } catch {
+    // Collection non en cache
+  }
+
+  try {
+    const networkPromise = getDocs(q);
+    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500));
+    const snap = await Promise.race([networkPromise, timeoutPromise]);
+    return (snap as QuerySnapshot) || null;
+  } catch (err) {
+    console.warn('[FCT Local Firebase] Récupération collection différée :', err);
+    return null;
+  }
+}
 
 // Purge automatique des clés LocalStorage résiduelles (remplacé par Firebase Local IndexedDB)
 if (typeof localStorage !== 'undefined') {

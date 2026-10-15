@@ -67,7 +67,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   const isEn = lang === 'en';
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(auth.currentUser);
   const [partner, setPartner] = useState<PartnerAccount | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(Boolean(auth.currentUser));
 
   // Authentification & Formulaire
   const [isRegister, setIsRegister] = useState(true);
@@ -90,21 +90,38 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>(vehicles[0]?.id || '');
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Synchronisation avec l'authentification Firebase
+  // Synchronisation avec l'authentification Firebase (cache local d'abord & timeout de sécurité)
   useEffect(() => {
+    let isMounted = true;
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) setIsLoading(false);
+    }, 1200);
+
     const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!isMounted) return;
       setCurrentUser(user);
       if (user) {
-        setIsLoading(true);
-        const profile = await fetchCurrentPartnerProfile(user.uid, user.email || '');
-        setPartner(profile);
-        setIsLoading(false);
+        try {
+          const profile = await fetchCurrentPartnerProfile(user.uid, user.email || '');
+          if (isMounted) setPartner(profile);
+        } catch (e) {
+          console.warn('[FCT Partner] Erreur profil :', e);
+        } finally {
+          if (isMounted) setIsLoading(false);
+        }
       } else {
-        setPartner(null);
-        setIsLoading(false);
+        if (isMounted) {
+          setPartner(null);
+          setIsLoading(false);
+        }
       }
     });
-    return () => unsub();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(safetyTimer);
+      unsub();
+    };
   }, []);
 
   const selectedVehicle = useMemo(() => {

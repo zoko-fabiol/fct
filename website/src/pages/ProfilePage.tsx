@@ -53,12 +53,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 }) => {
   const isEn = lang === 'en';
   const [profile, setProfile] = useState<UnifiedUserProfile | null>(initialProfile || null);
-  const [loadingProfile, setLoadingProfile] = useState(!initialProfile);
+  const [loadingProfile, setLoadingProfile] = useState(!initialProfile && Boolean(auth.currentUser));
   const [saving, setSaving] = useState(false);
   const [phoneOperator, setPhoneOperator] = useState<'ORANGE' | 'MTN' | 'AUTRE'>('AUTRE');
   const [payoutOperator, setPayoutOperator] = useState<'ORANGE' | 'MTN' | 'AUTRE'>('AUTRE');
 
-  // Chargement automatique si non fourni
+  // Chargement automatique si non fourni (priorité cache local & timeout de sécurité)
   useEffect(() => {
     if (initialProfile) {
       setProfile(initialProfile);
@@ -66,46 +66,65 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       return;
     }
 
+    let isMounted = true;
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) setLoadingProfile(false);
+    }, 1200);
+
     const unsub = onAuthStateChanged(auth, async (u) => {
+      if (!isMounted) return;
       if (!u) {
         setProfile(null);
         setLoadingProfile(false);
         return;
       }
 
-      // Vérifier d'abord s'il s'agit d'un partenaire
-      const partnerData = await getUserProfile(u.uid, 'PARTNER');
-      if (partnerData) {
-        setProfile(partnerData);
-        setLoadingProfile(false);
-        return;
-      }
+      try {
+        // Recherche en parallèle dans le cache local / Firestore
+        const [partnerData, clientData] = await Promise.all([
+          getUserProfile(u.uid, 'PARTNER'),
+          getUserProfile(u.uid, 'CLIENT'),
+        ]);
 
-      // Sinon client
-      const clientData = await getUserProfile(u.uid, 'CLIENT');
-      if (clientData) {
-        setProfile(clientData);
-        setLoadingProfile(false);
-        return;
-      }
+        if (!isMounted) return;
 
-      // Profil par défaut rattaché à Firebase Auth
-      setProfile({
-        id: u.uid,
-        accountType: 'CLIENT',
-        fullName: u.displayName || u.email?.split('@')[0] || 'Adhérent FCT',
-        email: u.email || '',
-        phone: u.phoneNumber || '',
-        whatsappPhone: u.phoneNumber || '',
-        city: 'Douala',
-        payoutMethod: 'ORANGE_MONEY',
-        payoutPhone: u.phoneNumber || '',
-        payoutAccountName: u.displayName || '',
-      });
-      setLoadingProfile(false);
+        if (partnerData) {
+          setProfile(partnerData);
+          setLoadingProfile(false);
+          return;
+        }
+
+        if (clientData) {
+          setProfile(clientData);
+          setLoadingProfile(false);
+          return;
+        }
+
+        // Profil par défaut rattaché à Firebase Auth
+        setProfile({
+          id: u.uid,
+          accountType: 'CLIENT',
+          fullName: u.displayName || u.email?.split('@')[0] || 'Adhérent FCT',
+          email: u.email || '',
+          phone: u.phoneNumber || '',
+          whatsappPhone: u.phoneNumber || '',
+          city: 'Douala',
+          payoutMethod: 'ORANGE_MONEY',
+          payoutPhone: u.phoneNumber || '',
+          payoutAccountName: u.displayName || '',
+        });
+      } catch (err) {
+        console.warn('[FCT Profile] Erreur hydratation profil :', err);
+      } finally {
+        if (isMounted) setLoadingProfile(false);
+      }
     });
 
-    return () => unsub();
+    return () => {
+      isMounted = false;
+      clearTimeout(safetyTimer);
+      unsub();
+    };
   }, [initialProfile]);
 
   // Détection automatique opérateur

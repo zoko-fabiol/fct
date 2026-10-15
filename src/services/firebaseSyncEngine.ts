@@ -12,6 +12,8 @@ import {
   doc,
   collection,
   getDocs,
+  getDocsFromCache,
+  QuerySnapshot,
   onSnapshot,
   Unsubscribe,
 } from 'firebase/firestore';
@@ -276,6 +278,34 @@ export async function transferAllDataToFirebase(
 }
 
 /**
+ * Récupération prioritaire depuis le cache local IndexedDB (Local Firebase).
+ * Si les collections sont déjà synchronisées en local, le chargement est instantané (<10ms).
+ */
+async function fetchCollectionWithCacheFallback(colName: string): Promise<QuerySnapshot> {
+  try {
+    const cached = await getDocsFromCache(collection(db, colName));
+    if (cached && !cached.empty) {
+      return cached;
+    }
+  } catch {
+    // Rien en cache local
+  }
+
+  try {
+    const serverPromise = getDocs(collection(db, colName));
+    const timeoutPromise = new Promise<QuerySnapshot>((resolve) => {
+      setTimeout(() => {
+        resolve({ docs: [], empty: true, size: 0 } as unknown as QuerySnapshot);
+      }, 3500);
+    });
+    return await Promise.race([serverPromise, timeoutPromise]);
+  } catch (e) {
+    console.warn(`[FCT Firebase Sync] Fallback collection ${colName} :`, e);
+    return { docs: [], empty: true, size: 0 } as unknown as QuerySnapshot;
+  }
+}
+
+/**
  * 3. Récupération de l'ensemble des données depuis Firebase (Local Cache ou Cloud)
  */
 export async function loadAllFromFirebase(): Promise<Partial<DatabaseState> | null> {
@@ -299,21 +329,21 @@ export async function loadAllFromFirebase(): Promise<Partial<DatabaseState> | nu
       docSnap,
       userSnap,
     ] = await Promise.all([
-      getDocs(collection(db, 'vehicles')),
-      getDocs(collection(db, 'customers')),
-      getDocs(collection(db, 'leads')),
-      getDocs(collection(db, 'rental_contracts')),
-      getDocs(collection(db, 'reservations')),
-      getDocs(collection(db, 'sales')),
-      getDocs(collection(db, 'invoices')),
-      getDocs(collection(db, 'cash_sessions')),
-      getDocs(collection(db, 'cash_movements')),
-      getDocs(collection(db, 'stock')),
-      getDocs(collection(db, 'stock_movements')),
-      getDocs(collection(db, 'maintenance')),
-      getDocs(collection(db, 'drivers')),
-      getDocs(collection(db, 'documents')),
-      getDocs(collection(db, 'users')),
+      fetchCollectionWithCacheFallback('vehicles'),
+      fetchCollectionWithCacheFallback('customers'),
+      fetchCollectionWithCacheFallback('leads'),
+      fetchCollectionWithCacheFallback('rental_contracts'),
+      fetchCollectionWithCacheFallback('reservations'),
+      fetchCollectionWithCacheFallback('sales'),
+      fetchCollectionWithCacheFallback('invoices'),
+      fetchCollectionWithCacheFallback('cash_sessions'),
+      fetchCollectionWithCacheFallback('cash_movements'),
+      fetchCollectionWithCacheFallback('stock'),
+      fetchCollectionWithCacheFallback('stock_movements'),
+      fetchCollectionWithCacheFallback('maintenance'),
+      fetchCollectionWithCacheFallback('drivers'),
+      fetchCollectionWithCacheFallback('documents'),
+      fetchCollectionWithCacheFallback('users'),
     ]);
 
     // Si Firebase contient des véhicules ou des clients, hydrater le store
