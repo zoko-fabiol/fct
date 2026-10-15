@@ -508,9 +508,9 @@ export default function App() {
 
   const t = translations[lang];
 
-  // 1. Écran de démarrage / Splash Screen FCT
-  if (authLoading) {
-    return <AppLoader message="Initialisation sécurisée de l'écosystème FCT..." />;
+  // 1. Écran de démarrage / Splash Screen FCT (Zéro flash de fausse donnée)
+  if (authLoading || (typeof window !== 'undefined' && !state.isHydrated)) {
+    return <AppLoader message="Connexion au cache sécurisé FCT..." />;
   }
 
   // 2. Vue de connexion plein écran si non authentifié

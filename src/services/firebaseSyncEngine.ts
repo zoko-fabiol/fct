@@ -346,54 +346,28 @@ export async function loadAllFromFirebase(): Promise<Partial<DatabaseState> | nu
       fetchCollectionWithCacheFallback('users'),
     ]);
 
-    // Si Firebase contient des véhicules ou des clients, hydrater le store
-    if (vehSnap.docs.length > 0) {
-      loaded.vehicles = vehSnap.docs.map((d) => d.data() as Vehicle);
-    }
-    if (custSnap.docs.length > 0) {
-      loaded.customers = custSnap.docs.map((d) => d.data() as Customer);
-    }
-    if (leadSnap.docs.length > 0) {
-      loaded.leads = leadSnap.docs.map((d) => d.data() as CrmLead);
-    }
-    if (ctrSnap.docs.length > 0) {
-      loaded.contracts = ctrSnap.docs.map((d) => d.data() as RentalContract);
-    }
-    if (resSnap.docs.length > 0) {
-      loaded.reservations = resSnap.docs.map((d) => d.data() as Reservation);
-    }
-    if (saleSnap.docs.length > 0) {
-      loaded.sales = saleSnap.docs.map((d) => d.data() as SaleOrder);
-    }
-    if (invSnap.docs.length > 0) {
-      loaded.invoices = invSnap.docs.map((d) => d.data() as Invoice);
-    }
-    if (csSnap.docs.length > 0) {
-      loaded.cashSessions = csSnap.docs.map((d) => d.data() as CashSession);
-    }
-    if (cmSnap.docs.length > 0) {
-      loaded.cashMovements = cmSnap.docs.map((d) => d.data() as CashMovement);
-    }
-    if (stkSnap.docs.length > 0) {
-      loaded.stock = stkSnap.docs.map((d) => d.data() as StockItem);
-    }
-    if (smSnap.docs.length > 0) {
-      loaded.stockMovements = smSnap.docs.map((d) => d.data() as StockMovement);
-    }
-    if (mntSnap.docs.length > 0) {
-      loaded.maintenance = mntSnap.docs.map((d) => d.data() as MaintenanceRecord);
-    }
-    if (drvSnap.docs.length > 0) {
-      loaded.drivers = drvSnap.docs.map((d) => d.data() as Driver);
-    }
-    if (docSnap.docs.length > 0) {
-      loaded.documents = docSnap.docs.map((d) => d.data() as FctDocument);
-    }
+    // Hydratation stricte : zéro fausse donnée résiduelle.
+    // Chaque collection réelle de Firebase (IndexedDB ou Cloud) est mappée directement.
+    loaded.vehicles = vehSnap.docs.map((d) => d.data() as Vehicle);
+    loaded.customers = custSnap.docs.map((d) => d.data() as Customer);
+    loaded.leads = leadSnap.docs.map((d) => d.data() as CrmLead);
+    loaded.contracts = ctrSnap.docs.map((d) => d.data() as RentalContract);
+    loaded.reservations = resSnap.docs.map((d) => d.data() as Reservation);
+    loaded.sales = saleSnap.docs.map((d) => d.data() as SaleOrder);
+    loaded.invoices = invSnap.docs.map((d) => d.data() as Invoice);
+    loaded.cashSessions = csSnap.docs.map((d) => d.data() as CashSession);
+    loaded.cashMovements = cmSnap.docs.map((d) => d.data() as CashMovement);
+    loaded.stock = stkSnap.docs.map((d) => d.data() as StockItem);
+    loaded.stockMovements = smSnap.docs.map((d) => d.data() as StockMovement);
+    loaded.maintenance = mntSnap.docs.map((d) => d.data() as MaintenanceRecord);
+    loaded.drivers = drvSnap.docs.map((d) => d.data() as Driver);
+    loaded.documents = docSnap.docs.map((d) => d.data() as FctDocument);
     if (userSnap.docs.length > 0) {
       loaded.users = userSnap.docs.map((d) => d.data() as UserProfile);
     }
+    loaded.isHydrated = true;
 
-    return Object.keys(loaded).length > 0 ? loaded : null;
+    return loaded;
   } catch (err) {
     handleFirestoreError(err, OperationType.LIST, 'loadAllFromFirebase');
     return null;
@@ -401,7 +375,9 @@ export async function loadAllFromFirebase(): Promise<Partial<DatabaseState> | nu
 }
 
 /**
- * 4. Abonnement en temps réel aux collections principales pour synchronisation continue
+ * 4. Abonnement en temps réel aux collections principales pour synchronisation continue.
+ * Même lorsqu'une collection est vide ou purgée, elle est propagée comme un tableau vide []
+ * garantissant qu'aucune fausse donnée résiduelle ne persiste à l'écran.
  */
 export function listenToFirebaseRealtime(
   onUpdate: (partial: Partial<DatabaseState>) => void
@@ -413,10 +389,8 @@ export function listenToFirebaseRealtime(
       const unsub = onSnapshot(
         collection(db, collectionName),
         (snapshot) => {
-          if (!snapshot.empty) {
-            const items = snapshot.docs.map((d) => d.data() as T);
-            onUpdate({ [stateKey]: items } as Partial<DatabaseState>);
-          }
+          const items = snapshot.docs.map((d) => d.data() as T);
+          onUpdate({ [stateKey]: items, isHydrated: true } as Partial<DatabaseState>);
         },
         (error) => {
           handleFirestoreError(error, OperationType.LIST, collectionName);

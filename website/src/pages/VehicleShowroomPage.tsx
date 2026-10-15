@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Car,
   ChevronLeft,
@@ -30,10 +30,10 @@ import {
 } from 'lucide-react';
 import { WhatsAppIcon } from '../components/WhatsAppIcon.tsx';
 import { fetchVehicleImageFile, copyImageToClipboard, downloadVehiclePhoto } from '../utils/imageShareHelper.ts';
-import { Vehicle } from '../types/index.ts';
-import { FCT_AGENCY_INFO, CERTIFIED_HEALTH_RECORDS } from '../data/defaultCatalog.ts';
+import { Vehicle, MaintenanceRecordItem } from '../types/index.ts';
+import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
 import { formatXAF, formatDateFR } from '../utils/formatters.ts';
-import { submitBooking, submitPurchaseLead, auth, onAuthStateChanged } from '../services/firebase.ts';
+import { submitBooking, submitPurchaseLead, auth, onAuthStateChanged, fetchVehicleHealthPassport } from '../services/firebase.ts';
 import {
   PartnerAccount,
   fetchCurrentPartnerProfile,
@@ -220,7 +220,24 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
   const photos = vehicle.photoUrls && vehicle.photoUrls.length > 0 ? vehicle.photoUrls : [];
 
   // Données de maintenance certifiée associées
-  const healthData = vehicle.licensePlate ? CERTIFIED_HEALTH_RECORDS[vehicle.licensePlate] : null;
+  const hasHealthPassport = Boolean(vehicle.licensePlate);
+  const [healthRecords, setHealthRecords] = useState<MaintenanceRecordItem[]>([]);
+
+  useEffect(() => {
+    if (!vehicle.licensePlate) {
+      setHealthRecords([]);
+      return;
+    }
+    let active = true;
+    fetchVehicleHealthPassport(vehicle.licensePlate).then((res) => {
+      if (active && res) {
+        setHealthRecords(res.records);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [vehicle.licensePlate]);
 
   // Calcul du nombre de jours et des montants
   const totalDays = useMemo(() => {
@@ -579,7 +596,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
             </div>
 
             {/* Historique du Carnet de Santé Associé */}
-            {healthData && (
+            {hasHealthPassport && (
               <div className="fct-showroom-specs-box" style={{ borderLeft: '4px solid var(--fct-green-primary)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -604,29 +621,31 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
-                  {healthData.records.map((rec) => (
-                    <div
-                      key={rec.id}
-                      style={{
-                        padding: '12px 16px',
-                        background: 'var(--bg-surface-alt)',
-                        borderRadius: 10,
-                        border: '1px solid var(--border-subtle)',
-                        fontSize: 13,
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: 'var(--fct-blue-dark)' }}>
-                        <span>{rec.type}</span>
-                        <span style={{ color: 'var(--text-muted)' }}>{formatDateFR(rec.date)}</span>
+                {healthRecords.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
+                    {healthRecords.slice(0, 3).map((rec: MaintenanceRecordItem) => (
+                      <div
+                        key={rec.id}
+                        style={{
+                          padding: '12px 16px',
+                          background: 'var(--bg-surface-alt)',
+                          borderRadius: 10,
+                          border: '1px solid var(--border-subtle)',
+                          fontSize: 13,
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: 'var(--fct-blue-dark)' }}>
+                          <span>{rec.type}</span>
+                          <span style={{ color: 'var(--text-muted)' }}>{formatDateFR(rec.date)}</span>
+                        </div>
+                        <p style={{ color: 'var(--text-sub)', marginTop: 4 }}>{rec.workDescription}</p>
+                        <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+                          {isEn ? 'Approved by:' : 'Validé par :'} <strong>{rec.certifiedBy}</strong> ({rec.mileageKm.toLocaleString(isEn ? 'en-US' : 'fr-FR')} km)
+                        </div>
                       </div>
-                      <p style={{ color: 'var(--text-sub)', marginTop: 4 }}>{rec.workDescription}</p>
-                      <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}>
-                        {isEn ? 'Approved by:' : 'Validé par :'} <strong>{rec.certifiedBy}</strong> ({rec.mileageKm.toLocaleString(isEn ? 'en-US' : 'fr-FR')} km)
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

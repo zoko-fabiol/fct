@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { ShieldCheck, CheckCircle2, Search, Wrench, Calendar, Gauge, Award, FileText } from 'lucide-react';
-import { CERTIFIED_HEALTH_RECORDS, INITIAL_VEHICLES } from '../data/defaultCatalog.ts';
+import React, { useState, useEffect } from 'react';
+import { ShieldCheck, CheckCircle2, Search, Wrench, Calendar, Gauge, Award, FileText, Loader2 } from 'lucide-react';
+import { fetchVehicleHealthPassport } from '../services/firebase.ts';
+import { Vehicle, MaintenanceRecordItem } from '../types/index.ts';
 import { formatXAF, formatDateFR } from '../utils/formatters.ts';
 
 interface HealthPassportProps {
@@ -9,10 +10,34 @@ interface HealthPassportProps {
 
 export const HealthPassport: React.FC<HealthPassportProps> = ({ initialPlate = '' }) => {
   const [plate, setPlate] = useState(initialPlate);
-  const [searchedPlate, setSearchedPlate] = useState(initialPlate || 'LT-8841-CE');
+  const [searchedPlate, setSearchedPlate] = useState(initialPlate);
+  const [data, setData] = useState<{ vehicle: Vehicle; records: MaintenanceRecordItem[] } | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const normalizedPlate = searchedPlate.trim().toUpperCase();
-  const data = CERTIFIED_HEALTH_RECORDS[normalizedPlate];
+  useEffect(() => {
+    if (!searchedPlate) {
+      setData(null);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    fetchVehicleHealthPassport(searchedPlate)
+      .then((res) => {
+        if (active) {
+          setData(res);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setData(null);
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [searchedPlate]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,7 +208,7 @@ export const HealthPassport: React.FC<HealthPassportProps> = ({ initialPlate = '
                 }}
               >
                 <p style={{ color: 'var(--text-sub)', fontSize: 13 }}>
-                  Aucun dossier public FCT trouvé pour la plaque <strong>{normalizedPlate}</strong>.
+                  Aucun dossier public FCT trouvé pour la plaque <strong>{searchedPlate}</strong>.
                 </p>
                 <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
                   Contactez notre agence au +237 699 45 88 12 pour vérifier un véhicule privé.

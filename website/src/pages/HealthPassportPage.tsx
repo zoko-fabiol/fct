@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { ShieldCheck, Search, CheckCircle2, Wrench, Calendar, Gauge, Award, FileText, ArrowRight } from 'lucide-react';
-import { CERTIFIED_HEALTH_RECORDS } from '../data/defaultCatalog.ts';
+import React, { useState, useEffect } from 'react';
+import { ShieldCheck, Search, CheckCircle2, Wrench, Calendar, Gauge, Award, FileText, ArrowRight, Loader2 } from 'lucide-react';
+import { fetchVehicleHealthPassport } from '../services/firebase.ts';
+import { Vehicle, MaintenanceRecordItem } from '../types/index.ts';
 import { formatDateFR } from '../utils/formatters.ts';
 import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
 
@@ -11,7 +12,7 @@ interface HealthPassportPageProps {
 }
 
 export const HealthPassportPage: React.FC<HealthPassportPageProps> = ({
-  initialPlate = 'LT-8841-CE',
+  initialPlate = '',
   onOpenShowroom,
   lang = 'fr',
 }) => {
@@ -20,9 +21,36 @@ export const HealthPassportPage: React.FC<HealthPassportPageProps> = ({
 
   const [inputPlate, setInputPlate] = useState(initialPlate);
   const [searchedPlate, setSearchedPlate] = useState(initialPlate);
+  const [data, setData] = useState<{ vehicle: Vehicle; records: MaintenanceRecordItem[] } | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(Boolean(initialPlate));
 
-  const cleanPlate = searchedPlate.trim().toUpperCase();
-  const data = CERTIFIED_HEALTH_RECORDS[cleanPlate];
+  useEffect(() => {
+    if (!searchedPlate) {
+      setData(null);
+      return;
+    }
+    let active = true;
+    setSearching(true);
+    fetchVehicleHealthPassport(searchedPlate)
+      .then((res) => {
+        if (active) {
+          setData(res);
+          setSearching(false);
+          setHasSearched(true);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setData(null);
+          setSearching(false);
+          setHasSearched(true);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [searchedPlate]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +115,14 @@ export const HealthPassportPage: React.FC<HealthPassportPageProps> = ({
         </div>
 
         {/* Résultat du Carnet de Santé */}
-        {data ? (
+        {searching ? (
+          <div style={{ background: 'white', padding: 48, borderRadius: 16, textAlign: 'center', border: '1.5px solid var(--border-subtle)', maxWidth: 600, margin: '0 auto', boxShadow: 'var(--shadow-sm)' }}>
+            <Loader2 size={36} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 16px', color: 'var(--fct-blue-primary, #1e3a8a)' }} />
+            <p style={{ margin: 0, fontWeight: 700, color: 'var(--fct-blue-dark, #0f2a4a)', fontSize: 15 }}>
+              {isEn ? 'Searching official FCT vehicle registry...' : 'Recherche en direct dans la base certifiée FCT...'}
+            </p>
+          </div>
+        ) : data ? (
           <div style={{ maxWidth: 900, margin: '0 auto' }}>
             {/* Carte Synthèse Véhicule */}
             <div
