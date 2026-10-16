@@ -464,12 +464,32 @@ export interface AuditLog {
   userId: string;
   userName: string;
   userRole: UserRole;
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'REVERSAL' | 'CLOSE_SESSION' | 'EXPORT';
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'RESTORE' | 'REVERSAL' | 'CLOSE_SESSION' | 'EXPORT' | 'SECURITY';
   module: AppModule;
   recordId: string;
   details: string;
   reason?: string;
   idempotencyKey?: string;
+  entityTitle?: string;
+  trashId?: string;
+}
+
+export interface TrashItem {
+  id: string;
+  originalCollection: 'vehicles' | 'customers' | 'contracts' | 'invoices' | 'reservations' | 'stock' | 'maintenance' | 'leads' | 'drivers' | 'documents';
+  entityId: string;
+  entityTitle: string;
+  entityData: any;
+  deletedAt: string;
+  deletedByUserId: string;
+  deletedByName: string;
+  deletedByRole: UserRole;
+  deletionReason?: string;
+  expiresAt: string; // ISO 8601 date, +30 jours après deletedAt
+  isRestored?: boolean;
+  restoredAt?: string;
+  restoredByUserId?: string;
+  restoredByName?: string;
 }
 
 export interface SyncQueueItem {

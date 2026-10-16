@@ -43,7 +43,7 @@ export const SalesPage: React.FC<SalesPageProps> = ({ vehicles, onOpenShowroom, 
       <div className="fct-page-header">
         <div className="fct-container">
           <span className="fct-badge fct-badge-green">
-            {isEn ? 'FCT Certified Vehicles' : 'Véhicules Certifiés FCT'}
+            {(t as any).badge || (isEn ? 'FCT Certified Vehicles' : 'Véhicules Certifiés FCT')}
           </span>
           <h2>{t.title}</h2>
           <p>{t.subtitle}</p>
@@ -225,14 +225,14 @@ export const SalesPage: React.FC<SalesPageProps> = ({ vehicles, onOpenShowroom, 
                       <div className="fct-card-price-row">
                         <div>
                           <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {isEn ? 'Direct Purchase Price' : 'Prix TTC Garanti'}
+                            {t.salePrice || (isEn ? 'Direct Purchase Price' : 'Prix TTC Garanti')}
                           </span>
                           <div className="fct-price-tag">
                             {formatXAF(v.salePrice)}
                           </div>
                         </div>
                         <button className="btn-primary" style={{ padding: '8px 14px', fontSize: 12 }}>
-                          <span>{isEn ? 'Showroom' : 'Showroom'}</span>
+                          <span>{t.viewShowroom || (isEn ? 'Showroom' : 'Showroom')}</span>
                           <ArrowRight size={14} />
                         </button>
                       </div>

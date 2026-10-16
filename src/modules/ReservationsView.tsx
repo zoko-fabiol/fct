@@ -48,6 +48,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
   contextEntityId,
 }) => {
   const t = translations[lang];
+  const isEn = lang === 'en';
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
@@ -405,19 +406,19 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
                   <div className="flex items-center gap-2 text-slate-600">
                     <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <span className="text-[11px]">
-                      {res.startDate} au {res.endDate} <strong className="text-slate-800">({days} j)</strong>
+                      {res.startDate} {isEn ? 'to' : 'au'} {res.endDate} <strong className="text-slate-800">({days} {isEn ? 'days' : 'j'})</strong>
                     </span>
                   </div>
 
                   {/* Montants */}
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] text-slate-400 block font-medium">Acompte consigné</span>
-                      <span className="font-black text-emerald-700 text-xs">{formatXAF(res.advanceDepositXAF)}</span>
+                      <span className="text-[10px] text-slate-400 block font-medium">{isEn ? 'Deposit Held' : 'Acompte consigné'}</span>
+                      <span className="font-black text-emerald-700 text-xs privacy-blur">{formatXAF(res.advanceDepositXAF)}</span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] text-slate-400 block font-medium">Total estimé</span>
-                      <span className="font-bold text-slate-900 text-xs">{formatXAF(res.estimatedTotalXAF)}</span>
+                      <span className="text-[10px] text-slate-400 block font-medium">{isEn ? 'Estimated Total' : 'Total estimé'}</span>
+                      <span className="font-bold text-slate-900 text-xs privacy-blur">{formatXAF(res.estimatedTotalXAF)}</span>
                     </div>
                   </div>
                 </div>
@@ -440,11 +441,11 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
                     <button
                       type="button"
                       onClick={() => onNavigate('rentals', res.convertedContractId)}
-                      title="Ouvrir le contrat généré"
+                      title={isEn ? 'Open generated contract' : 'Ouvrir le contrat généré'}
                       className="px-2.5 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs cursor-pointer inline-flex items-center gap-1 transition"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
-                      <span>Voir Contrat</span>
+                      <span>{isEn ? 'View Contract' : 'Voir Contrat'}</span>
                     </button>
                   )}
 
@@ -452,11 +453,11 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setCancelConfirmRes(res)}
-                      title="Annuler la réservation"
+                      title={isEn ? 'Cancel reservation' : 'Annuler la réservation'}
                       className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs cursor-pointer inline-flex items-center gap-1 transition"
                     >
                       <Ban className="w-3.5 h-3.5" />
-                      <span>Annuler</span>
+                      <span>{isEn ? 'Cancel' : 'Annuler'}</span>
                     </button>
                   )}
                 </div>
@@ -515,10 +516,10 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
                           {res.source}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right font-black text-emerald-700 whitespace-nowrap">
+                      <td className="py-3 px-4 text-right font-black text-emerald-700 whitespace-nowrap privacy-blur">
                         {formatXAF(res.advanceDepositXAF)}
                       </td>
-                      <td className="py-3 px-4 text-right font-bold text-slate-900 whitespace-nowrap">
+                      <td className="py-3 px-4 text-right font-bold text-slate-900 whitespace-nowrap privacy-blur">
                         {formatXAF(res.estimatedTotalXAF)}
                       </td>
                       <td className="py-3 px-4 text-center whitespace-nowrap">
@@ -547,33 +548,33 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
                         {!isConverted && !isCancelled && (
                           <button
                             onClick={() => handleOpenConvert(res)}
-                            title="Convertir directement en contrat de location officiel"
+                            title={isEn ? 'Convert directly into official rental agreement' : 'Convertir directement en contrat de location officiel'}
                             className="px-2.5 py-1 rounded bg-blue-900 hover:bg-blue-800 text-white font-bold text-[11px] cursor-pointer inline-flex items-center gap-1 shadow-xs transition"
                           >
                             <KeyRound className="w-3 h-3" />
-                            <span>Convertir</span>
+                            <span>{isEn ? 'Convert' : 'Convertir'}</span>
                           </button>
                         )}
 
                         {isConverted && res.convertedContractId && onNavigate && (
                           <button
                             onClick={() => onNavigate('rentals', res.convertedContractId)}
-                            title="Ouvrir le contrat généré"
+                            title={isEn ? 'Open generated contract' : 'Ouvrir le contrat généré'}
                             className="px-2 py-1 rounded bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-[11px] cursor-pointer inline-flex items-center gap-1 transition"
                           >
                             <ExternalLink className="w-3 h-3" />
-                            <span>Voir Contrat</span>
+                            <span>{isEn ? 'View Contract' : 'Voir Contrat'}</span>
                           </button>
                         )}
 
                         {!isConverted && !isCancelled && (
                           <button
                             onClick={() => setCancelConfirmRes(res)}
-                            title="Annuler la réservation"
+                            title={isEn ? 'Cancel reservation' : 'Annuler la réservation'}
                             className="px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] cursor-pointer inline-flex items-center gap-1 transition"
                           >
                             <Ban className="w-3 h-3" />
-                            <span>Annuler</span>
+                            <span>{isEn ? 'Cancel' : 'Annuler'}</span>
                           </button>
                         )}
                       </td>
@@ -609,11 +610,11 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
             )}
 
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1.5">
-              <div><strong>Client :</strong> {convertingRes.customerName}</div>
-              <div><strong>Véhicule :</strong> {convertingRes.vehicleName}</div>
-              <div><strong>Période :</strong> {convertingRes.startDate} au {convertingRes.endDate}</div>
+              <div><strong>{isEn ? 'Client:' : 'Client :'}</strong> {convertingRes.customerName}</div>
+              <div><strong>{isEn ? 'Vehicle:' : 'Véhicule :'}</strong> {convertingRes.vehicleName}</div>
+              <div><strong>{isEn ? 'Period:' : 'Période :'}</strong> {convertingRes.startDate} {isEn ? 'to' : 'au'} {convertingRes.endDate}</div>
               <div>
-                <strong>Acompte consigné reporté :</strong>{' '}
+                <strong>{isEn ? 'Transferred advance deposit:' : 'Acompte consigné reporté :'}</strong>{' '}
                 <span className="font-bold text-emerald-700">{formatXAF(convertingRes.advanceDepositXAF)}</span>
               </div>
             </div>
@@ -626,12 +627,12 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
                   onChange={(e) => setDriverIncluded(e.target.checked)}
                   className="rounded text-blue-900 w-4 h-4 cursor-pointer"
                 />
-                <span>Mise à disposition d'un chauffeur professionnel FCT</span>
+                <span>{isEn ? 'Include certified FCT professional chauffeur' : "Mise à disposition d'un chauffeur professionnel FCT"}</span>
               </label>
 
               {driverIncluded && (
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Affecter un chauffeur :</label>
+                  <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Assign a chauffeur:' : 'Affecter un chauffeur :'}</label>
                   <select
                     value={selectedDriverId}
                     onChange={(e) => setSelectedDriverId(e.target.value)}
@@ -651,16 +652,16 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsConvertModalOpen(false)}
-                className="px-4 py-2 rounded bg-slate-200 cursor-pointer"
+                className="px-4 py-2 rounded bg-slate-200 cursor-pointer font-bold"
               >
-                Annuler
+                {isEn ? 'Cancel' : 'Annuler'}
               </button>
               <button
                 type="button"
                 onClick={handleConfirmConvert}
                 className="px-5 py-2 rounded bg-blue-900 hover:bg-blue-800 text-white font-bold cursor-pointer shadow transition"
               >
-                Émettre le Contrat Officiel
+                {isEn ? 'Issue Official Contract' : 'Émettre le Contrat Officiel'}
               </button>
             </div>
           </div>
@@ -674,7 +675,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-emerald-600" />
-                <span>Enregistrer une Nouvelle Réservation</span>
+                <span>{isEn ? 'Record a New Reservation' : 'Enregistrer une Nouvelle Réservation'}</span>
               </h3>
               <button onClick={() => setIsNewModalOpen(false)}>
                 <X className="w-5 h-5 text-slate-400" />
@@ -690,7 +691,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
 
             <form onSubmit={handleCreateReservation} className="space-y-3 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Client *</label>
+                <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Client *' : 'Client *'}</label>
                 <select
                   value={resForm.customerId}
                   onChange={(e) => setResForm({ ...resForm, customerId: e.target.value })}
@@ -705,7 +706,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Véhicule souhaité *</label>
+                <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Desired Vehicle *' : 'Véhicule souhaité *'}</label>
                 <select
                   value={resForm.vehicleId}
                   onChange={(e) => setResForm({ ...resForm, vehicleId: e.target.value })}
@@ -715,7 +716,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
                     .filter((v) => v.status !== 'SOLD')
                     .map((v) => (
                       <option key={v.id} value={v.id}>
-                        {v.licensePlate} — {v.brand} {v.model} ({formatXAF(v.rentalDailyRate)}/jour) [{v.status}]
+                        {v.licensePlate} — {v.brand} {v.model} ({formatXAF(v.rentalDailyRate)}/{isEn ? 'day' : 'jour'}) [{v.status}]
                       </option>
                     ))}
                 </select>
@@ -723,7 +724,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Date de début *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Start Date *' : 'Date de début *'}</label>
                   <input
                     type="date"
                     required
@@ -733,7 +734,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Date de restitution prévue *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Expected Return Date *' : 'Date de restitution prévue *'}</label>
                   <input
                     type="date"
                     required
@@ -746,7 +747,7 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Acompte versé en espèces (XAF) *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Cash Deposit Received (XAF) *' : 'Acompte versé en espèces (XAF) *'}</label>
                   <input
                     type="number"
                     min={0}
@@ -757,16 +758,16 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Canal de réservation</label>
+                  <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Reservation Channel' : 'Canal de réservation'}</label>
                   <select
                     value={resForm.source}
                     onChange={(e) => setResForm({ ...resForm, source: e.target.value as any })}
                     className="w-full p-2 rounded border border-slate-300"
                   >
-                    <option value="WALK_IN">Agence Bonamoussadi (Sur place)</option>
-                    <option value="WHATSAPP">WhatsApp Business</option>
-                    <option value="PHONE">Appel Téléphonique</option>
-                    <option value="WEBSITE">Site Web Public FCT</option>
+                    <option value="WALK_IN">{isEn ? 'Bonamoussadi Agency (Walk-in)' : 'Agence Bonamoussadi (Sur place)'}</option>
+                    <option value="WHATSAPP">{isEn ? 'WhatsApp Business' : 'WhatsApp Business'}</option>
+                    <option value="PHONE">{isEn ? 'Phone Call' : 'Appel Téléphonique'}</option>
+                    <option value="WEBSITE">{isEn ? 'FCT Public Website' : 'Site Web Public FCT'}</option>
                   </select>
                 </div>
               </div>
@@ -774,14 +775,14 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
               {/* Dynamic Estimated Total Calculation */}
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] text-blue-700 font-bold uppercase">Durée &amp; Montant Estimé</div>
-                  <div className="text-xs text-blue-900 font-semibold">{rentalDays} jour(s) de location</div>
+                  <div className="text-[10px] text-blue-700 font-bold uppercase">{isEn ? 'Duration & Estimated Amount' : 'Durée & Montant Estimé'}</div>
+                  <div className="text-xs text-blue-900 font-semibold">{rentalDays} {isEn ? 'rental day(s)' : 'jour(s) de location'}</div>
                 </div>
                 <div className="text-base font-black text-blue-950">{formatXAF(estimatedTotal)}</div>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Notes et demandes particulières</label>
+                <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Notes & special requests' : 'Notes et demandes particulières'}</label>
                 <textarea
                   rows={2}
                   value={resForm.notes}
@@ -796,13 +797,13 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
                   onClick={() => setIsNewModalOpen(false)}
                   className="px-4 py-2 bg-slate-200 rounded font-semibold cursor-pointer"
                 >
-                  Annuler
+                  {isEn ? 'Cancel' : 'Annuler'}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded shadow transition cursor-pointer"
                 >
-                  Valider la Réservation
+                  {isEn ? 'Confirm Reservation' : 'Valider la Réservation'}
                 </button>
               </div>
             </form>
@@ -813,16 +814,16 @@ export const ReservationsView: React.FC<ReservationsViewProps> = ({
       {/* Annulation Confirmation Modal */}
       <DeleteConfirmModal
         isOpen={!!cancelConfirmRes}
-        title="Annuler une Réservation"
+        title={isEn ? 'Cancel a Reservation' : 'Annuler une Réservation'}
         itemName={cancelConfirmRes ? `${cancelConfirmRes.reservationNumber} (${cancelConfirmRes.customerName})` : ''}
         itemDetails={
           cancelConfirmRes
-            ? `Véhicule : ${cancelConfirmRes.vehicleName} — Période : ${cancelConfirmRes.startDate} au ${cancelConfirmRes.endDate}`
+            ? `${isEn ? 'Vehicle:' : 'Véhicule :'} ${cancelConfirmRes.vehicleName} — ${isEn ? 'Period:' : 'Période :'} ${cancelConfirmRes.startDate} ${isEn ? 'to' : 'au'} ${cancelConfirmRes.endDate}`
             : undefined
         }
-        warningMessage="Le statut de la réservation passera à ANNULÉE. Le véhicule redeviendra immédiatement disponible sur cette période dans le planning FCT."
+        warningMessage={isEn ? 'The reservation status will be set to CANCELLED. The vehicle will immediately become available in the FCT schedule.' : "Le statut de la réservation passera à ANNULÉE. Le véhicule redeviendra immédiatement disponible sur cette période dans le planning FCT."}
         requireReason={true}
-        confirmLabel="Confirmer l'Annulation"
+        confirmLabel={isEn ? 'Confirm Cancellation' : "Confirmer l'Annulation"}
         onClose={() => setCancelConfirmRes(null)}
         onConfirm={handleConfirmCancel}
       />

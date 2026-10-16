@@ -46,6 +46,8 @@ import {
   HeartPulse,
   User,
   SlidersHorizontal,
+  Bot,
+  Trash2,
 } from 'lucide-react';
 import {
   WebsiteTheme,
@@ -55,9 +57,11 @@ import {
   saveWebsiteTheme,
   subscribeWebsiteTheme,
   saveWebsiteContent,
+  subscribeWebsiteContent,
   getWebsiteContent,
   DEFAULT_WEBSITE_TRANSLATIONS,
   WebsiteLanguage,
+  deepMergeWebsiteContent,
 } from '../../services/websiteCmsService.ts';
 import {
   VisitorLog,
@@ -65,6 +69,8 @@ import {
   subscribeVisitors,
   subscribeDailyStats,
   seedDemoAnalyticsIfEmpty,
+  purgeBotAndLinuxVisits,
+  consolidateLinuxBotVisits,
 } from '../../services/websiteAnalyticsService.ts';
 
 type AdminSubTab = 'content' | 'analytics' | 'theme';
@@ -149,27 +155,40 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
     });
   };
 
-  // Charger le contenu existant depuis Firestore au montage
+  // Synchronisation temps réel bidirectionnelle des textes (Firestore + BroadcastChannel + Pont HMR Local)
   useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      const [remoteFr, remoteEn] = await Promise.all([
-        getWebsiteContent('fr'),
-        getWebsiteContent('en'),
-      ]);
-      if (isMounted) {
-        if (remoteFr) {
-          setContentFr((prev) => ({ ...prev, ...remoteFr }));
-        }
-        if (remoteEn) {
-          setContentEn((prev) => ({ ...prev, ...remoteEn }));
-        }
+    // 1. Écoute Firestore & BroadcastChannel en direct (site_content/fr)
+    const unsubFr = subscribeWebsiteContent('fr', (remoteFr) => {
+      if (remoteFr && !isSavingContent) {
+        setContentFr((prev) => deepMergeWebsiteContent(prev, remoteFr));
       }
-    })();
+    });
+
+    // 2. Écoute Firestore & BroadcastChannel en direct (site_content/en)
+    const unsubEn = subscribeWebsiteContent('en', (remoteEn) => {
+      if (remoteEn && !isSavingContent) {
+        setContentEn((prev) => deepMergeWebsiteContent(prev, remoteEn));
+      }
+    });
+
+    // 3. Écouteur HMR Vite local instantané (Port 3001 ⇄ Port 3000)
+    if (import.meta.hot) {
+      import.meta.hot.on('fct-cms-update', (data: any) => {
+        if (data?.type === 'CMS_CONTENT_UPDATE' && data.lang && data.content && !isSavingContent) {
+          if (data.lang === 'fr') {
+            setContentFr((prev) => deepMergeWebsiteContent(prev, data.content));
+          } else if (data.lang === 'en') {
+            setContentEn((prev) => deepMergeWebsiteContent(prev, data.content));
+          }
+        }
+      });
+    }
+
     return () => {
-      isMounted = false;
+      unsubFr();
+      unsubEn();
     };
-  }, []);
+  }, [isSavingContent]);
 
   const activeContent = contentLang === 'fr' ? contentFr : contentEn;
   const setActiveContent = contentLang === 'fr' ? setContentFr : setContentEn;
@@ -223,6 +242,39 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
   const [visitorFilter, setVisitorFilter] = useState<'all' | 'active' | 'mobile' | 'desktop'>('all');
   const [searchVisitor, setSearchVisitor] = useState('');
+  const [isPurgingBots, setIsPurgingBots] = useState(false);
+  const [isConsolidatingBots, setIsConsolidatingBots] = useState(false);
+
+  const handleConsolidateBots = async () => {
+    setIsConsolidatingBots(true);
+    try {
+      const res = await consolidateLinuxBotVisits();
+      const msg = `Regroupement réussi : tous les bots Linux ont été regroupés en 1 seul appareil totalisant ${res.consolidatedVisits} visites.`;
+      if (onNotify) onNotify(msg);
+      else alert(msg);
+    } catch (err) {
+      alert('Erreur lors du regroupement : ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsConsolidatingBots(false);
+    }
+  };
+
+  const handlePurgeBots = async () => {
+    if (!confirm('Voulez-vous supprimer les visites parasites provenant des robots Vercel / serveurs Linux et réinitialiser les statistiques réelles ?')) {
+      return;
+    }
+    setIsPurgingBots(true);
+    try {
+      const { deletedCount } = await purgeBotAndLinuxVisits();
+      const msg = `Nettoyage réussi : ${deletedCount} visites de robots / serveurs Linux ont été purgées.`;
+      if (onNotify) onNotify(msg);
+      else alert(msg);
+    } catch (err) {
+      alert('Erreur lors du nettoyage : ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsPurgingBots(false);
+    }
+  };
 
   useEffect(() => {
     seedDemoAnalyticsIfEmpty();
@@ -230,6 +282,12 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
     const unsubVisitors = subscribeVisitors((data) => {
       setVisitors(data);
       setIsLoadingAnalytics(false);
+
+      // Si plusieurs documents individuels pour Linux existent dans la base, les consolider automatiquement en 1 seul appareil
+      const linuxDocs = data.filter((v) => v.device === 'Linux' || v.deviceModel === 'Linux Desktop');
+      if (linuxDocs.length > 1) {
+        consolidateLinuxBotVisits().catch(() => {});
+      }
     });
 
     const unsubDaily = subscribeDailyStats((data) => {
@@ -255,6 +313,11 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
 
   const activeVisitorsNow = visitors.filter((v) => v.isActive);
   const totalRevisits = visitors.reduce((acc, v) => acc + Math.max(0, (v.visitCount || 1) - 1), 0);
+  const linuxTotalVisits = useMemo(() => {
+    return visitors
+      .filter((v) => v.device === 'Linux' || v.id === 'vis_crawler_linux_vercel' || (v.deviceModel && v.deviceModel.includes('Linux')))
+      .reduce((acc, v) => acc + (v.visitCount || 1), 0);
+  }, [visitors]);
 
   // Répartition par appareil
   const deviceCounts = useMemo(() => {
@@ -654,13 +717,14 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
 
             {openSections.home && (
               <div className="p-5 space-y-4 text-xs">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
                     <label className="block text-slate-500 font-semibold mb-1">Badge Surtitre Héro</label>
                     <input
                       type="text"
                       value={activeContent.home?.badge || ''}
                       onChange={(e) => handleTextChange('home', 'badge', e.target.value)}
+                      placeholder="DOUALA · CARREFOUR SANTA BARBARA..."
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-bold"
                     />
                   </div>
@@ -670,6 +734,7 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       type="text"
                       value={activeContent.home?.exploreFleet || ''}
                       onChange={(e) => handleTextChange('home', 'exploreFleet', e.target.value)}
+                      placeholder="Explorer la Flotte"
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                     />
                   </div>
@@ -679,6 +744,17 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                       type="text"
                       value={activeContent.home?.viewSales || ''}
                       onChange={(e) => handleTextChange('home', 'viewSales', e.target.value)}
+                      placeholder="Véhicules en Vente"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-semibold mb-1">Bouton Carnet de Santé</label>
+                    <input
+                      type="text"
+                      value={activeContent.home?.healthPassportBtn || ''}
+                      onChange={(e) => handleTextChange('home', 'healthPassportBtn', e.target.value)}
+                      placeholder="Carnet de Santé"
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                     />
                   </div>
@@ -1255,16 +1331,148 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                {/* Campagnes WhatsApp, Sélecteur de Véhicules & Pitch d'Affiliation */}
+                <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200/80 space-y-3">
+                  <div className="flex items-center gap-2 font-bold text-slate-800 text-xs border-b border-emerald-200/60 pb-2">
+                    <Share2 className="w-4 h-4 text-emerald-600" />
+                    <span>Campagnes WhatsApp, Sélecteur de Véhicules & Pitch d'Affiliation</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-500 font-semibold mb-1">Titre Sélecteur de Véhicule</label>
+                      <input
+                        type="text"
+                        value={activeContent.partners?.selectVehicleToShare || ''}
+                        onChange={(e) => handleTextChange('partners', 'selectVehicleToShare', e.target.value)}
+                        placeholder="Ex: Sélectionnez un véhicule à promouvoir"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 font-semibold mb-1">Consigne de Partage WhatsApp</label>
+                      <input
+                        type="text"
+                        value={activeContent.partners?.selectVehicleDesc || ''}
+                        onChange={(e) => handleTextChange('partners', 'selectVehicleDesc', e.target.value)}
+                        placeholder="Ex: Sélectionnez un véhicule pour publier une annonce calibrée..."
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white"
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-slate-500 font-semibold mb-1">Bouton Statut WhatsApp</label>
-                    <input
-                      type="text"
-                      value={activeContent.partners?.shareWhatsappBtn || ''}
-                      onChange={(e) => handleTextChange('partners', 'shareWhatsappBtn', e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-semibold text-emerald-800"
+                    <label className="block text-slate-500 font-semibold mb-1">Alerte Anti-Spam & Quota 24h</label>
+                    <textarea
+                      rows={2}
+                      value={activeContent.partners?.antiSpamNotice || ''}
+                      onChange={(e) => handleTextChange('partners', 'antiSpamNotice', e.target.value)}
+                      placeholder="Ex: Anti-spam actif : Déjà comptabilisé aujourd'hui (1 max/véhicule/24h)..."
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white"
                     />
                   </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-slate-500 font-semibold mb-1">Bouton Statut WhatsApp</label>
+                      <input
+                        type="text"
+                        value={activeContent.partners?.shareWhatsappBtn || ''}
+                        onChange={(e) => handleTextChange('partners', 'shareWhatsappBtn', e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-semibold text-emerald-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 font-semibold mb-1">Bouton Partager le Lien</label>
+                      <input
+                        type="text"
+                        value={activeContent.partners?.shareUniversalBtn || ''}
+                        onChange={(e) => handleTextChange('partners', 'shareUniversalBtn', e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-semibold text-blue-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 font-semibold mb-1">Bouton Copier Lien Affilié</label>
+                      <input
+                        type="text"
+                        value={activeContent.partners?.copyLinkBtn || ''}
+                        onChange={(e) => handleTextChange('partners', 'copyLinkBtn', e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-semibold text-slate-700"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pitch / Modèle de message pré-rédigé */}
+                  <div className="pt-2 border-t border-emerald-200/60 space-y-2">
+                    <span className="font-bold text-slate-700 block text-[11px]">
+                      Modèles d'Annonces & Textes Pré-rédigés (Pitch WhatsApp) :
+                    </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-500 font-semibold mb-1">En-tête Annonce Location</label>
+                        <input
+                          type="text"
+                          value={activeContent.partners?.sharePitchRentHeader || ''}
+                          onChange={(e) => handleTextChange('partners', 'sharePitchRentHeader', e.target.value)}
+                          placeholder="Ex: *LOCATION VÉHICULE CERTIFIÉ - FCT AUTOMOBILE DOUALA*"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-500 font-semibold mb-1">En-tête Annonce Vente</label>
+                        <input
+                          type="text"
+                          value={activeContent.partners?.sharePitchSaleHeader || ''}
+                          onChange={(e) => handleTextChange('partners', 'sharePitchSaleHeader', e.target.value)}
+                          placeholder="Ex: *VÉHICULE CERTIFIÉ À VENDRE - FCT AUTOMOBILE DOUALA*"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-500 font-semibold mb-1">Mention Garantie & Entretien</label>
+                        <input
+                          type="text"
+                          value={activeContent.partners?.sharePitchWarranty || ''}
+                          onChange={(e) => handleTextChange('partners', 'sharePitchWarranty', e.target.value)}
+                          placeholder="Ex: Garantie : Assurance complète & Entretien certifié FCT"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-500 font-semibold mb-1">Mention Disponibilité / Délai</label>
+                        <input
+                          type="text"
+                          value={activeContent.partners?.sharePitchAvailability || ''}
+                          onChange={(e) => handleTextChange('partners', 'sharePitchAvailability', e.target.value)}
+                          placeholder="Ex: Disponibilité : Immédiate à Douala (avec ou sans chauffeur)"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-500 font-semibold mb-1">Mention Statut Véhicule Vente</label>
+                        <input
+                          type="text"
+                          value={activeContent.partners?.sharePitchSaleStatus || ''}
+                          onChange={(e) => handleTextChange('partners', 'sharePitchSaleStatus', e.target.value)}
+                          placeholder="Ex: Statut : Certifié FCT, révisé et prêt à rouler"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-500 font-semibold mb-1">Mention Emplacement Showroom</label>
+                        <input
+                          type="text"
+                          value={activeContent.partners?.sharePitchSaleLocation || ''}
+                          onChange={(e) => handleTextChange('partners', 'sharePitchSaleLocation', e.target.value)}
+                          placeholder="Ex: Emplacement : Showroom Bonamoussadi, Carrefour Santa Barbara"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   <div>
                     <label className="block text-slate-500 font-semibold mb-1">Bouton Retrait Mobile Money</label>
                     <input
@@ -1671,6 +1879,54 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
       {/* ==================================================== */}
       {currentSubTab === 'analytics' && (
         <div className="space-y-6">
+          {/* Alerte Détection Robots Vercel / Linux */}
+          {deviceCounts.Linux > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm animate-in fade-in duration-300">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-amber-950 flex items-center gap-2">
+                    <span>
+                      {deviceCounts.Linux > 1
+                        ? `${deviceCounts.Linux} documents robots détectés (${linuxTotalVisits} visites)`
+                        : `1 appareil unique regroupé pour les robots Linux (${linuxTotalVisits} visites cumulées)`}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-800 uppercase">
+                      {deviceCounts.Linux > 1 ? 'À regrouper' : 'Groupé en 1 appareil'}
+                    </span>
+                  </h4>
+                  <p className="text-xs text-amber-800 mt-1 max-w-2xl leading-relaxed">
+                    Toutes les visites des tests de déploiement Vercel et crawlers Linux sont regroupées dans un seul et même appareil, avec le total cumulé de leurs visites ({linuxTotalVisits} visites).
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {deviceCounts.Linux > 1 && (
+                  <button
+                    type="button"
+                    onClick={handleConsolidateBots}
+                    disabled={isConsolidatingBots}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isConsolidatingBots ? 'animate-spin' : ''}`} />
+                    <span>{isConsolidatingBots ? 'Regroupement...' : 'Regrouper en 1 seul appareil'}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handlePurgeBots}
+                  disabled={isPurgingBots}
+                  className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 bg-amber-200/70 hover:bg-amber-300 text-amber-950 rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isPurgingBots ? 'Purger...' : 'Purger'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Cartes KPI Analytiques en temps réel */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden">
@@ -1758,8 +2014,14 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                   { label: 'Apple iPhone (iOS Safari)', count: deviceCounts.iPhone, color: 'bg-blue-500' },
                   { label: 'Windows PC (Chrome, Edge)', count: deviceCounts.Windows, color: 'bg-indigo-500' },
                   { label: 'Apple Mac (macOS)', count: deviceCounts.Mac, color: 'bg-violet-500' },
-                  { label: 'Apple iPad & Tablettes', count: deviceCounts.iPad, color: 'bg-amber-500' },
-                  { label: 'Linux & Autres', count: deviceCounts.Linux + deviceCounts.Autre, color: 'bg-slate-400' },
+                  {
+                    label:
+                      deviceCounts.Linux > 0
+                        ? `Robots Linux & Vercel (1 appareil groupé · ${linuxTotalVisits} visites)`
+                        : 'Linux & Autres',
+                    count: deviceCounts.Linux + deviceCounts.Autre,
+                    color: 'bg-slate-400',
+                  },
                 ].map((item, idx) => {
                   const pct = visitors.length > 0 ? Math.round((item.count / visitors.length) * 100) : 0;
                   return (
@@ -1842,6 +2104,17 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                   <option value="mobile">Mobiles ({deviceCounts.Android + deviceCounts.iPhone})</option>
                   <option value="desktop">Ordinateurs ({deviceCounts.Windows + deviceCounts.Mac})</option>
                 </select>
+
+                <button
+                  type="button"
+                  onClick={handlePurgeBots}
+                  disabled={isPurgingBots || deviceCounts.Linux === 0}
+                  title="Supprimer les visites des robots et runners Vercel (Linux)"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition disabled:opacity-40"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Purger Robots ({deviceCounts.Linux})</span>
+                </button>
               </div>
             </div>
 
@@ -1882,6 +2155,11 @@ const WebsiteAdminTabInner: React.FC<WebsiteAdminTabProps> = ({ onNotify }) => {
                             <Laptop className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                           )}
                           <span className="font-bold text-slate-800">{v.deviceModel}</span>
+                          {(v.device === 'Linux' || v.deviceModel === 'Linux Desktop') && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                              Robot Vercel
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="py-2.5 px-3 text-slate-600">{v.browser}</td>

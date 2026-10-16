@@ -467,7 +467,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                     type="button"
                     onClick={resetControls}
                     className="px-1 text-[11px] text-slate-300 font-mono hover:text-white"
-                    title="Réinitialiser"
+                    title={isEn ? 'Reset' : 'Réinitialiser'}
                   >
                     {Math.round(zoom * 100)}%
                   </button>
@@ -498,7 +498,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage <= 1}
                     className="p-1 hover:bg-slate-700 disabled:opacity-30 rounded cursor-pointer"
-                    title="Page précédente"
+                    title={isEn ? 'Previous page' : 'Page précédente'}
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -509,7 +509,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                     type="button"
                     onClick={() => setCurrentPage((p) => p + 1)}
                     className="p-1 hover:bg-slate-700 rounded cursor-pointer"
-                    title="Page suivante"
+                    title={isEn ? 'Next page' : 'Page suivante'}
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -525,7 +525,9 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                   }
                   className="text-[11px] text-blue-400 hover:text-blue-300 underline font-medium cursor-pointer"
                 >
-                  {pdfRenderMode === 'IMAGE_PAGE' ? 'Vue navigateur' : 'Vue HD Cloudinary'}
+                  {pdfRenderMode === 'IMAGE_PAGE'
+                    ? isEn ? 'Browser view' : 'Vue navigateur'
+                    : isEn ? 'HD Cloudinary view' : 'Vue HD Cloudinary'}
                 </button>
               )}
             </div>

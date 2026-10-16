@@ -589,32 +589,80 @@ export function calculatePartnerCommission(
 }
 
 /**
- * Génère le texte pré-rédigé idéal pour WhatsApp et les réseaux sociaux
+ * Génère le texte pré-rédigé idéal pour WhatsApp et les réseaux sociaux (bilingue FR / EN & personnalisable CMS)
  */
-export function generateShareCopyText(vehicle: Vehicle, affiliateUrl: string, isRent: boolean): string {
+export function generateShareCopyText(
+  vehicle: Vehicle,
+  affiliateUrl: string,
+  isRent: boolean,
+  lang: 'fr' | 'en' = 'fr',
+  customLabels?: Record<string, string>
+): string {
+  const isEn = lang === 'en';
   const price = isRent
     ? (vehicle.rentalDailyRate || 0)
     : (vehicle.salePrice || (vehicle as any).sellingPrice || 0);
+  const formattedPrice = price.toLocaleString(isEn ? 'en-US' : 'fr-FR');
 
   if (isRent) {
-    return `*LOCATION VÉHICULE CERTIFIÉ - FCT AUTOMOBILE DOUALA*\n\n` +
-      `• Modèle : *${vehicle.brand} ${vehicle.model} (${vehicle.year})*\n` +
-      `• Tarif : *${price.toLocaleString('fr-FR')} FCFA / jour*\n` +
-      `• Garantie : Assurance complète & Entretien certifié FCT\n` +
-      `• Disponibilité : Immédiate à Douala (avec ou sans chauffeur)\n\n` +
-      `*Consulter la fiche et réserver en ligne :*\n` +
+    const header = customLabels?.sharePitchRentHeader || (isEn
+      ? '*CERTIFIED VEHICLE RENTAL - FCT AUTOMOBILE DOUALA*'
+      : '*LOCATION VÉHICULE CERTIFIÉ - FCT AUTOMOBILE DOUALA*');
+    const modelLabel = isEn ? 'Model' : 'Modèle';
+    const rateLabel = isEn ? 'Rate' : 'Tarif';
+    const rateUnit = isEn ? 'FCFA / day' : 'FCFA / jour';
+    const warranty = customLabels?.sharePitchWarranty || (isEn
+      ? 'Warranty : Comprehensive insurance & FCT certified maintenance'
+      : 'Garantie : Assurance complète & Entretien certifié FCT');
+    const availability = customLabels?.sharePitchAvailability || (isEn
+      ? 'Availability : Immediate in Douala (with or without driver)'
+      : 'Disponibilité : Immédiate à Douala (avec ou sans chauffeur)');
+    const cta = isEn
+      ? '*View vehicle details and book online :*'
+      : '*Consulter la fiche et réserver en ligne :*';
+    const contact = isEn
+      ? 'Direct agency contact : (+237) 674 38 68 81 / 699 90 28 89'
+      : 'Contact direct agence : (+237) 674 38 68 81 / 699 90 28 89';
+    const location = isEn
+      ? 'FCT Douala - Carrefour Santa Barbara, Bonamoussadi'
+      : 'FCT Douala - Carrefour Santa Barbara, Bonamoussadi';
+
+    return `${header}\n\n` +
+      `• ${modelLabel} : *${vehicle.brand} ${vehicle.model} (${vehicle.year})*\n` +
+      `• ${rateLabel} : *${formattedPrice} ${rateUnit}*\n` +
+      `• ${warranty}\n` +
+      `• ${availability}\n\n` +
+      `${cta}\n` +
       `${affiliateUrl}\n\n` +
-      `Contact direct agence : (+237) 674 38 68 81 / 699 90 28 89\n` +
-      `FCT Douala - Carrefour Santa Barbara, Bonamoussadi`;
+      `${contact}\n` +
+      `${location}`;
   }
 
-  return `*VÉHICULE CERTIFIÉ À VENDRE - FCT AUTOMOBILE DOUALA*\n\n` +
-    `• Modèle : *${vehicle.brand} ${vehicle.model} (${vehicle.year})*\n` +
-    `• Prix : *${price.toLocaleString('fr-FR')} FCFA*\n` +
-    `• Statut : Certifié FCT, révisé et prêt à rouler\n` +
-    `• Emplacement : Showroom Bonamoussadi, Carrefour Santa Barbara\n\n` +
-    `*Consulter les photos et demander une proforma officielle :*\n` +
+  const header = customLabels?.sharePitchSaleHeader || (isEn
+    ? '*CERTIFIED VEHICLE FOR SALE - FCT AUTOMOBILE DOUALA*'
+    : '*VÉHICULE CERTIFIÉ À VENDRE - FCT AUTOMOBILE DOUALA*');
+  const modelLabel = isEn ? 'Model' : 'Modèle';
+  const priceLabel = isEn ? 'Price' : 'Prix';
+  const status = customLabels?.sharePitchSaleStatus || (isEn
+    ? 'Status : FCT certified, inspected and ready to drive'
+    : 'Statut : Certifié FCT, révisé et prêt à rouler');
+  const location = customLabels?.sharePitchSaleLocation || (isEn
+    ? 'Location : Bonamoussadi Showroom, Carrefour Santa Barbara'
+    : 'Emplacement : Showroom Bonamoussadi, Carrefour Santa Barbara');
+  const cta = isEn
+    ? '*View photos and request an official proforma :*'
+    : '*Consulter les photos et demander une proforma officielle :*';
+  const contact = isEn
+    ? 'Direct agency contact : (+237) 674 38 68 81 / 699 90 28 89'
+    : 'Contact direct agence : (+237) 674 38 68 81 / 699 90 28 89';
+
+  return `${header}\n\n` +
+    `• ${modelLabel} : *${vehicle.brand} ${vehicle.model} (${vehicle.year})*\n` +
+    `• ${priceLabel} : *${formattedPrice} FCFA*\n` +
+    `• ${status}\n` +
+    `• ${location}\n\n` +
+    `${cta}\n` +
     `${affiliateUrl}\n\n` +
-    `Contact direct agence : (+237) 674 38 68 81 / 699 90 28 89\n` +
+    `${contact}\n` +
     `FCT Douala - Carrefour Santa Barbara, Bonamoussadi`;
 }

@@ -59,7 +59,11 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
         const uploadedUrls: string[] = [];
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
-          setUploadStatus(`Téléversement du fichier ${i + 1}/${files.length} (${file.name})…`);
+          setUploadStatus(
+            isEn
+              ? `Uploading file ${i + 1}/${files.length} (${file.name})…`
+              : `Téléversement du fichier ${i + 1}/${files.length} (${file.name})…`
+          );
           const res = await uploadToCloudinary(file, {
             folder,
             onProgress: (p) => setProgress(Math.round(((i + p / 100) / files.length) * 100)),
@@ -74,13 +78,20 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
         }
       } else {
         const file = files[0];
-        setUploadStatus(`Téléversement de ${file.name}…`);
+        setUploadStatus(
+          isEn ? `Uploading ${file.name}…` : `Téléversement de ${file.name}…`
+        );
         const res = await uploadToCloudinary(file, { folder, onProgress: setProgress });
         setUploadedUrl(res.secure_url);
         onUploadSuccess(res.secure_url, res);
       }
     } catch (err: any) {
-      setError(err.message || 'Erreur lors du téléversement vers Cloudinary');
+      setError(
+        err.message ||
+          (isEn
+            ? 'Error uploading file to Cloudinary'
+            : 'Erreur lors du téléversement vers Cloudinary')
+      );
     } finally {
       setIsUploading(false);
       setUploadStatus('');
@@ -164,7 +175,7 @@ export const CloudinaryUploadDropzone: React.FC<CloudinaryUploadDropzoneProps> =
             ) : (
               <img
                 src={getOptimizedCloudinaryUrl(uploadedUrl, { width: 80, height: 80 })}
-                alt="Aperçu"
+                alt={isEn ? 'Preview' : 'Aperçu'}
                 className="w-10 h-10 rounded-lg object-cover border border-emerald-300 shrink-0 bg-white"
               />
             )}

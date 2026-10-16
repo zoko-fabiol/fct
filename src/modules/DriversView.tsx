@@ -65,6 +65,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
 }) => {
   const currentUser = dbStore.getCurrentUser();
   const t = translations[lang];
+  const isEn = lang === 'en';
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
@@ -585,36 +586,36 @@ export const DriversView: React.FC<DriversViewProps> = ({
               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-blue-900" />
-                  <span>État Civil &amp; Coordonnées Professionnelles</span>
+                  <span>{isEn ? 'Civil Identity & Professional Contacts' : 'État Civil & Coordonnées Professionnelles'}</span>
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Nom complet</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Full Name' : 'Nom complet'}</div>
                     <div className="font-black text-sm text-slate-900 mt-1">{selectedDriver.fullName}</div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Téléphone professionnel</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Work Phone' : 'Téléphone professionnel'}</div>
                     <div className="font-bold text-sm text-blue-900 mt-1 flex items-center justify-between">
                       <span>{selectedDriver.phone}</span>
                       <a
                         href={`tel:${selectedDriver.phone}`}
                         className="text-xs text-blue-700 hover:underline inline-flex items-center gap-1 font-semibold"
                       >
-                        <Phone className="w-3.5 h-3.5" /> Appeler
+                        <Phone className="w-3.5 h-3.5" /> {isEn ? 'Call' : 'Appeler'}
                       </a>
                     </div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Statut d'activité</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Activity Status' : "Statut d'activité"}</div>
                     <div className="mt-1">
                       <EntityStatusBadge status={selectedDriver.status} size="sm" />
                     </div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Note d'évaluation FCT</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'FCT Evaluation Rating' : "Note d'évaluation FCT"}</div>
                     <div className="font-black text-sm text-amber-600 mt-1 flex items-center gap-1">
                       <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
-                      <span>{selectedDriver.rating} / 5.0 (Recommandé)</span>
+                      <span>{selectedDriver.rating} / 5.0 {isEn ? '(Recommended)' : '(Recommandé)'}</span>
                     </div>
                   </div>
                 </div>
@@ -623,15 +624,15 @@ export const DriversView: React.FC<DriversViewProps> = ({
               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                   <FileText className="w-4 h-4 text-emerald-600" />
-                  <span>Détails du Permis de Conduire &amp; Aptitude Médicale</span>
+                  <span>{isEn ? 'Driver License Details & Medical Fitness' : 'Détails du Permis de Conduire & Aptitude Médicale'}</span>
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Numéro d'immatriculation du Permis</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Driver License Registration Number' : "Numéro d'immatriculation du Permis"}</div>
                     <div className="font-mono font-black text-sm text-slate-900 mt-1">{selectedDriver.licenseNumber}</div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Catégories autorisées</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Authorized Categories' : 'Catégories autorisées'}</div>
                     <div className="font-bold text-sm text-blue-900 mt-1 flex gap-1">
                       {selectedDriver.licenseCategories.map((c) => (
                         <span key={c} className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-mono text-xs">
@@ -641,13 +642,13 @@ export const DriversView: React.FC<DriversViewProps> = ({
                     </div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Date d'expiration Permis</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'License Expiration Date' : "Date d'expiration Permis"}</div>
                     <div className="font-bold text-sm text-slate-900 mt-1">{selectedDriver.licenseExpiryDate}</div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200">
-                    <div className="text-[10px] text-emerald-800 font-bold uppercase">Visite Médicale Périodique</div>
+                    <div className="text-[10px] text-emerald-800 font-bold uppercase">{isEn ? 'Periodic Medical Examination' : 'Visite Médicale Périodique'}</div>
                     <div className="font-black text-sm text-emerald-950 mt-1">{selectedDriver.medicalExamExpiryDate}</div>
-                    <div className="text-[10px] text-emerald-700 mt-0.5">Certificat valide délivré par médecin agréé</div>
+                    <div className="text-[10px] text-emerald-700 mt-0.5">{isEn ? 'Valid certificate issued by approved physician' : 'Certificat valide délivré par médecin agréé'}</div>
                   </div>
                 </div>
               </div>
@@ -708,14 +709,14 @@ export const DriversView: React.FC<DriversViewProps> = ({
                 ) : (
                   <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300 space-y-2">
                     <Car className="w-8 h-8 text-slate-300 mx-auto" />
-                    <p className="text-xs text-slate-500">Aucun véhicule affecté en permanence.</p>
+                    <p className="text-xs text-slate-500">{isEn ? 'No permanent vehicle assigned.' : 'Aucun véhicule affecté en permanence.'}</p>
                     {hasEffectivePermission(currentUser, 'drivers', 'update') && (
                       <button
                         type="button"
                         onClick={() => setIsAssignVehicleModalOpen(true)}
                         className="px-3 py-1.5 rounded-lg bg-blue-900 text-white text-xs font-bold cursor-pointer hover:bg-blue-800 transition"
                       >
-                        Assigner un véhicule
+                        {isEn ? 'Assign a vehicle' : 'Assigner un véhicule'}
                       </button>
                     )}
                   </div>
@@ -730,9 +731,9 @@ export const DriversView: React.FC<DriversViewProps> = ({
           <div className="space-y-6">
             <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex items-center justify-between flex-wrap gap-4">
               <div>
-                <h3 className="text-base font-black text-slate-900">Dossier Documentaire &amp; Pièces Numérisées</h3>
+                <h3 className="text-base font-black text-slate-900">{isEn ? 'Documentary File & Digitized Records' : 'Dossier Documentaire & Pièces Numérisées'}</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Permis de conduire officiel, certificat de visite médicale, contrat de travail et pièces d'identité
+                  {isEn ? 'Official driver license, medical examination certificate, employment contract and ID documents' : "Permis de conduire officiel, certificat de visite médicale, contrat de travail et pièces d'identité"}
                 </p>
               </div>
               <button
@@ -741,7 +742,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-xs transition cursor-pointer"
               >
                 <Upload className="w-4 h-4" />
-                <span>Rattacher un Nouveau Document</span>
+                <span>{isEn ? 'Attach a New Document' : 'Rattacher un Nouveau Document'}</span>
               </button>
             </div>
 
@@ -750,19 +751,19 @@ export const DriversView: React.FC<DriversViewProps> = ({
               <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-900">
-                    Permis de Conduire
+                    {isEn ? 'Driving License' : 'Permis de Conduire'}
                   </span>
                   <span className="text-[10px] font-mono text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded">
-                    Valide
+                    {isEn ? 'Valid' : 'Valide'}
                   </span>
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Permis {selectedDriver.licenseCategories.join('+')}</h4>
+                  <h4 className="font-bold text-slate-900 text-sm">{isEn ? 'License' : 'Permis'} {selectedDriver.licenseCategories.join('+')}</h4>
                   <p className="text-xs font-mono text-slate-500 mt-0.5">{selectedDriver.licenseNumber}</p>
                 </div>
                 <div className="text-xs text-slate-600 space-y-1 pt-2 border-t border-slate-100">
-                  <div>Titulaire : <strong>{selectedDriver.fullName}</strong></div>
-                  <div>Expiration : <strong>{selectedDriver.licenseExpiryDate}</strong></div>
+                  <div>{isEn ? 'Holder:' : 'Titulaire :'} <strong>{selectedDriver.fullName}</strong></div>
+                  <div>{isEn ? 'Expiry:' : 'Expiration :'} <strong>{selectedDriver.licenseExpiryDate}</strong></div>
                 </div>
                 <div className="pt-2 flex items-center gap-2">
                   {selectedDriver.licenseDocumentUrl ? (
@@ -773,11 +774,11 @@ export const DriversView: React.FC<DriversViewProps> = ({
                       className="flex-1 text-center py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold transition flex items-center justify-center gap-1.5"
                     >
                       <Eye className="w-3.5 h-3.5" />
-                      <span>Consulter le scan</span>
+                      <span>{isEn ? 'View scan' : 'Consulter le scan'}</span>
                     </a>
                   ) : (
                     <span className="flex-1 text-center py-2 rounded-lg bg-slate-50 text-slate-400 text-xs italic">
-                      Scan de permis non fourni
+                      {isEn ? 'License scan not provided' : 'Scan de permis non fourni'}
                     </span>
                   )}
                 </div>
@@ -787,19 +788,19 @@ export const DriversView: React.FC<DriversViewProps> = ({
               <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900">
-                    Aptitude Médicale
+                    {isEn ? 'Medical Fitness' : 'Aptitude Médicale'}
                   </span>
                   <span className="text-[10px] font-mono text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded">
-                    Conforme
+                    {isEn ? 'Compliant' : 'Conforme'}
                   </span>
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Certificat Médical d'Aptitude à la Conduite</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">Visite obligatoire FCT Fleet Safety</p>
+                  <h4 className="font-bold text-slate-900 text-sm">{isEn ? 'Medical Certificate of Fitness to Drive' : "Certificat Médical d'Aptitude à la Conduite"}</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">{isEn ? 'Mandatory FCT Fleet Safety check' : 'Visite obligatoire FCT Fleet Safety'}</p>
                 </div>
                 <div className="text-xs text-slate-600 space-y-1 pt-2 border-t border-slate-100">
-                  <div>Médecin : <strong>Centre Médical Agréé Bonanjo</strong></div>
-                  <div>Validité jusqu'au : <strong>{selectedDriver.medicalExamExpiryDate}</strong></div>
+                  <div>{isEn ? 'Doctor:' : 'Médecin :'} <strong>{isEn ? 'Bonanjo Approved Medical Center' : 'Centre Médical Agréé Bonanjo'}</strong></div>
+                  <div>{isEn ? 'Valid until:' : "Validité jusqu'au :"} <strong>{selectedDriver.medicalExamExpiryDate}</strong></div>
                 </div>
                 <div className="pt-2 flex items-center gap-2">
                   {selectedDriver.medicalCertificateUrl ? (
@@ -810,11 +811,11 @@ export const DriversView: React.FC<DriversViewProps> = ({
                       className="flex-1 text-center py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold transition flex items-center justify-center gap-1.5"
                     >
                       <Eye className="w-3.5 h-3.5" />
-                      <span>Consulter le certificat</span>
+                      <span>{isEn ? 'View certificate' : 'Consulter le certificat'}</span>
                     </a>
                   ) : (
                     <span className="flex-1 text-center py-2 rounded-lg bg-slate-50 text-slate-400 text-xs italic">
-                      Certificat médical non téléversé
+                      {isEn ? 'Medical certificate not uploaded' : 'Certificat médical non téléversé'}
                     </span>
                   )}
                 </div>
@@ -836,8 +837,8 @@ export const DriversView: React.FC<DriversViewProps> = ({
                     <p className="text-xs text-slate-500 mt-0.5">{doc.fileType} • {doc.fileSizeMb || 1.0} Mo</p>
                   </div>
                   <div className="text-xs text-slate-600 space-y-1 pt-2 border-t border-slate-100">
-                    <div>Enregistré le : <strong>{doc.createdAt}</strong></div>
-                    {doc.expiryDate && <div>Expire le : <strong>{doc.expiryDate}</strong></div>}
+                    <div>{isEn ? 'Registered on:' : 'Enregistré le :'} <strong>{doc.createdAt}</strong></div>
+                    {doc.expiryDate && <div>{isEn ? 'Expires on:' : 'Expire le :'} <strong>{doc.expiryDate}</strong></div>}
                   </div>
                   <div className="pt-2 flex items-center gap-2">
                     <button
@@ -846,7 +847,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                       className="flex-1 text-center py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5" />
-                      <span>Visualiser</span>
+                      <span>{isEn ? 'View' : 'Visualiser'}</span>
                     </button>
                     {doc.fileUrl && (
                       <a
@@ -855,7 +856,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                         rel="noreferrer"
                         download={doc.title}
                         className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs transition"
-                        title="Télécharger"
+                        title={isEn ? 'Download' : 'Télécharger'}
                       >
                         <Download className="w-3.5 h-3.5" />
                       </a>
@@ -891,7 +892,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                         className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-xs transition cursor-pointer flex items-center gap-1.5"
                       >
                         <Car className="w-4 h-4" />
-                        <span>Ouvrir Fiche Complète du Véhicule</span>
+                        <span>{isEn ? 'Open Full Vehicle Sheet' : 'Ouvrir Fiche Complète du Véhicule'}</span>
                       </button>
                     )}
                     {hasEffectivePermission(currentUser, 'drivers', 'update') && (
@@ -900,7 +901,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                         onClick={() => handleAssignVehicle('')}
                         className="px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition cursor-pointer"
                       >
-                        Dissocier le véhicule
+                        {isEn ? 'Unlink vehicle' : 'Dissocier le véhicule'}
                       </button>
                     )}
                   </div>
@@ -908,19 +909,19 @@ export const DriversView: React.FC<DriversViewProps> = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Kilométrage actuel</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Current Mileage' : 'Kilométrage actuel'}</div>
                     <div className="text-lg font-black text-slate-900 mt-1">{assignedVehicle.mileage.toLocaleString()} km</div>
                   </div>
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Motorisation &amp; Boîte</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Engine & Gearbox' : 'Motorisation & Boîte'}</div>
                     <div className="text-lg font-black text-slate-900 mt-1">{assignedVehicle.fuel} • {assignedVehicle.transmission}</div>
                   </div>
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Places assises</div>
-                    <div className="text-lg font-black text-slate-900 mt-1">{assignedVehicle.seats} Places</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Seats' : 'Places assises'}</div>
+                    <div className="text-lg font-black text-slate-900 mt-1">{assignedVehicle.seats} {isEn ? 'Seats' : 'Places'}</div>
                   </div>
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Statut flotte</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Fleet status' : 'Statut flotte'}</div>
                     <div className="mt-1">
                       <EntityStatusBadge status={assignedVehicle.status} size="sm" />
                     </div>
@@ -945,9 +946,9 @@ export const DriversView: React.FC<DriversViewProps> = ({
             ) : (
               <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-xs space-y-4">
                 <Car className="w-12 h-12 text-slate-300 mx-auto" />
-                <h3 className="text-base font-bold text-slate-800">Aucun véhicule actuellement rattaché</h3>
+                <h3 className="text-base font-bold text-slate-800">{isEn ? 'No vehicle currently assigned' : 'Aucun véhicule actuellement rattaché'}</h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Ce chauffeur peut être assigné ponctuellement aux contrats de location ou recevoir un véhicule de fonction permanent.
+                  {isEn ? 'This driver can be assigned occasionally to rental contracts or receive a permanent company vehicle.' : 'Ce chauffeur peut être assigné ponctuellement aux contrats de location ou recevoir un véhicule de fonction permanent.'}
                 </p>
                 {hasEffectivePermission(currentUser, 'drivers', 'update') && (
                   <button
@@ -955,7 +956,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                     onClick={() => setIsAssignVehicleModalOpen(true)}
                     className="px-5 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                   >
-                    Sélectionner un véhicule disponible
+                    {isEn ? 'Select an available vehicle' : 'Sélectionner un véhicule disponible'}
                   </button>
                 )}
               </div>
@@ -968,14 +969,14 @@ export const DriversView: React.FC<DriversViewProps> = ({
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-black text-slate-900">Missions &amp; Contrats d'Affectation ({driverTrips.length})</h3>
-                <p className="text-xs text-slate-500">Traçabilité complète des prestations avec chauffeur assuré</p>
+                <h3 className="text-base font-black text-slate-900">{isEn ? 'Missions & Assigned Contracts' : "Missions & Contrats d'Affectation"} ({driverTrips.length})</h3>
+                <p className="text-xs text-slate-500">{isEn ? 'Full traceability of services provided with insured driver' : 'Traçabilité complète des prestations avec chauffeur assuré'}</p>
               </div>
             </div>
 
             {driverTrips.length === 0 ? (
               <div className="py-12 text-center text-slate-400 font-semibold text-xs">
-                Aucun contrat ou mission n'a encore été attribué à ce chauffeur.
+                {isEn ? 'No contract or mission has yet been assigned to this driver.' : "Aucun contrat ou mission n'a encore été attribué à ce chauffeur."}
               </div>
             ) : (
               <div className="border border-slate-200 rounded-xl overflow-hidden">
@@ -983,12 +984,12 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   <table className="w-full text-xs text-left min-w-[600px]">
                   <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                     <tr>
-                      <th className="py-3 px-4">N° Contrat</th>
-                      <th className="py-3 px-4">Client</th>
-                      <th className="py-3 px-4">Véhicule</th>
-                      <th className="py-3 px-4">Dates</th>
-                      <th className="py-3 px-4 text-center">Statut</th>
-                      <th className="py-3 px-4 text-right">Action</th>
+                      <th className="py-3 px-4">{isEn ? 'Contract #' : 'N° Contrat'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Client' : 'Client'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Vehicle' : 'Véhicule'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Dates' : 'Dates'}</th>
+                      <th className="py-3 px-4 text-center">{isEn ? 'Status' : 'Statut'}</th>
+                      <th className="py-3 px-4 text-right">{isEn ? 'Action' : 'Action'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1010,7 +1011,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                               onClick={() => onNavigate('rentals', contract.id)}
                               className="text-xs text-blue-700 hover:underline font-bold inline-flex items-center gap-1 cursor-pointer"
                             >
-                              <span>Voir Contrat</span>
+                              <span>{isEn ? 'View Contract' : 'Voir Contrat'}</span>
                               <ChevronRight className="w-3.5 h-3.5" />
                             </button>
                           )}
@@ -1030,7 +1031,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
             <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
               <div className="flex items-center justify-between border-b pb-3">
-                <h3 className="text-base font-bold text-slate-900">Rattacher un Document au Chauffeur</h3>
+                <h3 className="text-base font-bold text-slate-900">{isEn ? 'Attach Document to Driver' : 'Rattacher un Document au Chauffeur'}</h3>
                 <button
                   onClick={() => setIsAddDocModalOpen(false)}
                   className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
@@ -1041,11 +1042,11 @@ export const DriversView: React.FC<DriversViewProps> = ({
 
               <form onSubmit={handleAddDocumentToDriver} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Titre du document *</label>
+                  <label className="block text-slate-600 font-bold mb-1">{isEn ? 'Document title *' : 'Titre du document *'}</label>
                   <input
                     type="text"
                     required
-                    placeholder="Ex: Permis de conduire recto-verso, Attestation médicale..."
+                    placeholder={isEn ? 'E.g.: Driver license both sides, Medical certificate...' : 'Ex: Permis de conduire recto-verso, Attestation médicale...'}
                     value={docForm.title}
                     onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg outline-hidden focus:border-blue-900"
@@ -1054,23 +1055,23 @@ export const DriversView: React.FC<DriversViewProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-600 font-bold mb-1">Type de Document</label>
+                    <label className="block text-slate-600 font-bold mb-1">{isEn ? 'Document Type' : 'Type de Document'}</label>
                     <select
                       value={docForm.category}
                       onChange={(e) => setDocForm({ ...docForm, category: e.target.value })}
                       className="w-full px-3 py-2 border rounded-lg bg-white"
                     >
-                      <option value="PERMIS_CONDUIRE">Permis de Conduire</option>
-                      <option value="VISITE_MEDICALE">Visite Médicale</option>
-                      <option value="CONTRAT_TRAVAIL">Contrat de Travail</option>
-                      <option value="PIECE_IDENTITE">CNI / Passeport</option>
-                      <option value="CASIER_JUDICIAIRE">Casier Judiciaire</option>
-                      <option value="AUTRE">Autre Justificatif</option>
+                      <option value="PERMIS_CONDUIRE">{isEn ? 'Driving License' : 'Permis de Conduire'}</option>
+                      <option value="VISITE_MEDICALE">{isEn ? 'Medical Exam' : 'Visite Médicale'}</option>
+                      <option value="CONTRAT_TRAVAIL">{isEn ? 'Employment Contract' : 'Contrat de Travail'}</option>
+                      <option value="PIECE_IDENTITE">{isEn ? 'ID Card / Passport' : 'CNI / Passeport'}</option>
+                      <option value="CASIER_JUDICIAIRE">{isEn ? 'Criminal Record' : 'Casier Judiciaire'}</option>
+                      <option value="AUTRE">{isEn ? 'Other Supporting Doc' : 'Autre Justificatif'}</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 font-bold mb-1">Date d'expiration</label>
+                    <label className="block text-slate-600 font-bold mb-1">{isEn ? 'Expiration Date' : "Date d'expiration"}</label>
                     <input
                       type="date"
                       value={docForm.expiryDate}
@@ -1082,20 +1083,20 @@ export const DriversView: React.FC<DriversViewProps> = ({
 
                 <CloudinaryUploadDropzone
                   folder="fct_automobile/drivers"
-                  label="Document numérisé (Téléversement Cloudinary FCT) :"
-                  helperText="Glissez ou sélectionnez le scan du permis, CNI ou attestation (PDF, PNG, JPG)"
+                  label={isEn ? 'Digitized Document (FCT Cloudinary Upload):' : 'Document numérisé (Téléversement Cloudinary FCT) :'}
+                  helperText={isEn ? 'Drag or select license, ID card or certificate scan (PDF, PNG, JPG)' : 'Glissez ou sélectionnez le scan du permis, CNI ou attestation (PDF, PNG, JPG)'}
                   currentValue={docForm.fileUrl}
                   onUploadSuccess={(url) => setDocForm({ ...docForm, fileUrl: url })}
                   onClear={() => setDocForm({ ...docForm, fileUrl: '' })}
                 />
 
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Observations / Notes</label>
+                  <label className="block text-slate-600 font-bold mb-1">{isEn ? 'Observations / Notes' : 'Observations / Notes'}</label>
                   <textarea
                     rows={2}
                     value={docForm.notes}
                     onChange={(e) => setDocForm({ ...docForm, notes: e.target.value })}
-                    placeholder="Notes de vérification administrative..."
+                    placeholder={isEn ? 'Administrative verification notes...' : 'Notes de vérification administrative...'}
                     className="w-full px-3 py-2 border rounded-lg outline-hidden"
                   />
                 </div>
@@ -1106,13 +1107,13 @@ export const DriversView: React.FC<DriversViewProps> = ({
                     onClick={() => setIsAddDocModalOpen(false)}
                     className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer font-semibold"
                   >
-                    Annuler
+                    {isEn ? 'Cancel' : 'Annuler'}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 rounded-lg bg-blue-900 text-white font-bold hover:bg-blue-800 cursor-pointer"
                   >
-                    Enregistrer le Document
+                    {isEn ? 'Save Document' : 'Enregistrer le Document'}
                   </button>
                 </div>
               </form>
@@ -1125,7 +1126,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
               <div className="flex items-center justify-between border-b pb-3">
-                <h3 className="text-base font-bold text-slate-900">Affecter un Véhicule au Chauffeur</h3>
+                <h3 className="text-base font-bold text-slate-900">{isEn ? 'Assign Vehicle to Driver' : 'Affecter un Véhicule au Chauffeur'}</h3>
                 <button
                   onClick={() => setIsAssignVehicleModalOpen(false)}
                   className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
@@ -1145,7 +1146,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                       <div className="font-bold text-slate-900">{v.brand} {v.model} ({v.year})</div>
                       <div className="text-[11px] font-mono text-slate-500">{v.licensePlate} • {v.status}</div>
                     </div>
-                    <span className="text-blue-700 font-bold text-xs">Sélectionner</span>
+                    <span className="text-blue-700 font-bold text-xs">{isEn ? 'Select' : 'Sélectionner'}</span>
                   </div>
                 ))}
               </div>
@@ -1156,7 +1157,7 @@ export const DriversView: React.FC<DriversViewProps> = ({
                   onClick={() => setIsAssignVehicleModalOpen(false)}
                   className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer font-semibold text-xs"
                 >
-                  Fermer
+                  {isEn ? 'Close' : 'Fermer'}
                 </button>
               </div>
             </div>

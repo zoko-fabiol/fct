@@ -266,8 +266,34 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
   const isEn = lang === 'en';
   const currentUser = dbStore.getCurrentUser();
 
-  // Navigation par sous-onglets du module
-  const [activeTab, setActiveTab] = useState<MainTab>('USERS');
+  // Navigation par sous-onglets du module avec persistance F5
+  const [activeTab, setActiveTab] = useState<MainTab>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const urlSub = new URLSearchParams(window.location.search).get('subtab');
+        if (urlSub && ['USERS', 'ROLES', 'OVERRIDES', 'AUDIT'].includes(urlSub)) {
+          return urlSub as MainTab;
+        }
+        const saved = sessionStorage.getItem('fct_active_users_tab') || localStorage.getItem('fct_active_users_tab');
+        if (saved && ['USERS', 'ROLES', 'OVERRIDES', 'AUDIT'].includes(saved)) {
+          return saved as MainTab;
+        }
+      }
+    } catch {}
+    return 'USERS';
+  });
+
+  React.useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('fct_active_users_tab', activeTab);
+        localStorage.setItem('fct_active_users_tab', activeTab);
+        const url = new URL(window.location.href);
+        url.searchParams.set('subtab', activeTab);
+        window.history.replaceState({}, '', url.toString());
+      }
+    } catch {}
+  }, [activeTab]);
 
   // Alertes contextuelles
   const [actionAlert, setActionAlert] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null);
@@ -1207,10 +1233,10 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                             openOverrideModal(usr);
                           }}
                           className="px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-[11px] border border-purple-200 flex items-center gap-1.5 transition cursor-pointer"
-                          title="Assigner des onglets supplémentaires ou restreindre les droits"
+                          title={isEn ? 'Assign additional tabs or restrict permissions' : 'Assigner des onglets supplémentaires ou restreindre les droits'}
                         >
                           <Sliders className="w-3.5 h-3.5" />
-                          <span>Onglets &amp; Droits</span>
+                          <span>{isEn ? 'Tabs & Rights' : 'Onglets & Droits'}</span>
                         </button>
                       ) : <span />}
                       <div className="flex items-center gap-1 text-blue-700 font-bold group-hover:text-blue-800">
@@ -1254,7 +1280,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                           </div>
                           <span>{usr.fullName}</span>
                         </td>
-                        <td className="py-3 px-4 text-slate-600">{usr.jobTitle || 'Collaborateur'}</td>
+                        <td className="py-3 px-4 text-slate-600">{usr.jobTitle || (isEn ? 'Staff Member' : 'Collaborateur')}</td>
                         <td className="py-3 px-4 text-slate-600 font-mono">{usr.email}</td>
                         <td className="py-3 px-4 text-slate-600">{usr.phone}</td>
                         <td className="py-3 px-4">
@@ -1271,7 +1297,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                                 setUserDetailTab('OVERVIEW');
                               }}
                               className="p-1 rounded bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 transition"
-                              title="Voir la fiche détaillée"
+                              title={isEn ? 'View detailed profile' : 'Voir la fiche détaillée'}
                             >
                               <Eye className="w-3.5 h-3.5" />
                             </button>
@@ -1333,7 +1359,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold transition cursor-pointer"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Rétablir les valeurs par défaut</span>
+                  <span>{isEn ? 'Restore Defaults' : 'Rétablir les valeurs par défaut'}</span>
                 </button>
               )}
             </div>
@@ -1375,13 +1401,15 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
             {/* Barre de comparaison des rôles */}
             <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-600">Comparer avec un autre rôle :</span>
+                <span className="font-bold text-slate-600">
+                  {isEn ? 'Compare with another role :' : 'Comparer avec un autre rôle :'}
+                </span>
                 <select
                   value={compareRole || ''}
                   onChange={(e) => setCompareRole((e.target.value as UserRole) || null)}
                   className="py-1 px-2.5 rounded-lg border border-slate-200 text-xs bg-white text-slate-800"
                 >
-                  <option value="">-- Aucun (Vue standard) --</option>
+                  <option value="">{isEn ? '-- None (Standard view) --' : '-- Aucun (Vue standard) --'}</option>
                   {ROLE_DEFINITIONS.filter((r) => r.id !== selectedRole).map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.name}
@@ -1393,7 +1421,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                     onClick={() => setCompareRole(null)}
                     className="text-rose-600 font-bold hover:underline cursor-pointer"
                   >
-                    Fermer la comparaison
+                    {isEn ? 'Close comparison' : 'Fermer la comparaison'}
                   </button>
                 )}
               </div>
@@ -1401,12 +1429,12 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
               {isDraftDirty && (
                 <div className="flex items-center gap-2 bg-amber-50 border border-amber-300 px-3 py-1.5 rounded-lg text-amber-900 font-bold">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  <span>Modifications non enregistrées</span>
+                  <span>{isEn ? 'Unsaved changes' : 'Modifications non enregistrées'}</span>
                   <button
                     onClick={() => setShowSaveImpactModal(true)}
                     className="ml-2 px-2.5 py-0.5 rounded bg-amber-600 text-white hover:bg-amber-700 text-xs font-bold transition cursor-pointer"
                   >
-                    Enregistrer ({impactedUsersCount} impacté(s))
+                    {isEn ? `Save (${impactedUsersCount} impacted)` : `Enregistrer (${impactedUsersCount} impacté(s))`}
                   </button>
                 </div>
               )}
@@ -1498,7 +1526,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 <Search className="w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Filtrer les modules..."
+                  placeholder={isEn ? 'Filter modules...' : 'Filtrer les modules...'}
                   value={matrixSearch}
                   onChange={(e) => setMatrixSearch(e.target.value)}
                   className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-500"
@@ -1506,7 +1534,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
-                <span className="text-slate-500 mr-1">Catégorie :</span>
+                <span className="text-slate-500 mr-1">{isEn ? 'Category :' : 'Catégorie :'}</span>
                 {(['ALL', 'FLEET', 'COMMERCIAL', 'FINANCE', 'SYSTEM'] as const).map((cat) => (
                   <button
                     key={cat}
@@ -1518,14 +1546,14 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                     }`}
                   >
                     {cat === 'ALL'
-                      ? 'Tous (18)'
+                      ? (isEn ? 'All (18)' : 'Tous (18)')
                       : cat === 'FLEET'
-                      ? 'Flotte'
+                      ? (isEn ? 'Fleet' : 'Flotte')
                       : cat === 'COMMERCIAL'
-                      ? 'Commercial'
+                      ? (isEn ? 'Commercial' : 'Commercial')
                       : cat === 'FINANCE'
-                      ? 'Finance'
-                      : 'Système'}
+                      ? (isEn ? 'Finance' : 'Finance')
+                      : (isEn ? 'System' : 'Système')}
                   </button>
                 ))}
               </div>
@@ -1536,15 +1564,15 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
               <table className="w-full text-xs text-left">
                 <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                   <tr>
-                    <th className="py-3 px-4 w-44">Module Métier</th>
-                    <th className="py-3 px-3 text-center">Lire</th>
-                    <th className="py-3 px-3 text-center">Créer</th>
-                    <th className="py-3 px-3 text-center">Modifier</th>
-                    <th className="py-3 px-3 text-center">Supprimer</th>
-                    <th className="py-3 px-3 text-center">Approuver</th>
-                    <th className="py-3 px-3 text-center">Exporter</th>
-                    <th className="py-3 px-3 text-center">Données Sensibles</th>
-                    <th className="py-3 px-4 text-center">Actions Rapides</th>
+                    <th className="py-3 px-4 w-44">{isEn ? 'Business Module' : 'Module Métier'}</th>
+                    <th className="py-3 px-3 text-center">{isEn ? 'Read' : 'Lire'}</th>
+                    <th className="py-3 px-3 text-center">{isEn ? 'Create' : 'Créer'}</th>
+                    <th className="py-3 px-3 text-center">{isEn ? 'Edit' : 'Modifier'}</th>
+                    <th className="py-3 px-3 text-center">{isEn ? 'Delete' : 'Supprimer'}</th>
+                    <th className="py-3 px-3 text-center">{isEn ? 'Approve' : 'Approuver'}</th>
+                    <th className="py-3 px-3 text-center">{isEn ? 'Export' : 'Exporter'}</th>
+                    <th className="py-3 px-3 text-center">{isEn ? 'Sensitive Data' : 'Données Sensibles'}</th>
+                    <th className="py-3 px-4 text-center">{isEn ? 'Quick Actions' : 'Actions Rapides'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1578,7 +1606,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                             onClick={() => setRowAll(mod, !isAllSelected)}
                             className="text-[10px] font-bold text-blue-700 hover:underline cursor-pointer"
                           >
-                            {isAllSelected ? 'Tout décocher' : 'Tout cocher'}
+                            {isAllSelected ? (isEn ? 'Uncheck all' : 'Tout décocher') : (isEn ? 'Check all' : 'Tout cocher')}
                           </button>
                         </td>
                       </tr>
@@ -1599,12 +1627,26 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
           <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
             <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-purple-600" />
-              <span>Gestion des Exceptions Individuelles (Surcharges Allow &amp; Deny)</span>
+              <span>
+                {isEn
+                  ? 'Individual Exception Management (Allow & Deny Overrides)'
+                  : 'Gestion des Exceptions Individuelles (Surcharges Allow & Deny)'}
+              </span>
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Le principe d’attribution applique la règle de priorité stricte :
-              <strong className="text-slate-800"> Invariant de sécurité &gt; Restriction individuelle (Deny) &gt; Rôle par défaut &gt; Autorisation individuelle (Allow)</strong>.
-              Une exception permet d’octroyer un droit ponctuel (ex: lecture de Maintenance pour un commercial) ou de restreindre l’accès à des données confidentielles.
+              {isEn
+                ? 'The assignment model enforces strict priority:'
+                : 'Le principe d’attribution applique la règle de priorité stricte :'}
+              <strong className="text-slate-800">
+                {' '}
+                {isEn
+                  ? 'Security Invariant > Individual Restriction (Deny) > Default Role > Individual Grant (Allow)'
+                  : 'Invariant de sécurité > Restriction individuelle (Deny) > Rôle par défaut > Autorisation individuelle (Allow)'}
+              </strong>
+              .
+              {isEn
+                ? ' An exception allows granting temporary access (e.g., read Maintenance for a sales agent) or restricting confidential data.'
+                : ' Une exception permet d’octroyer un droit ponctuel (ex: lecture de Maintenance pour un commercial) ou de restreindre l’accès à des données confidentielles.'}
             </p>
           </div>
 
@@ -1636,7 +1678,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                     <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
                       <div className="text-[11px] font-bold text-emerald-800 flex items-center gap-1">
                         <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Autorisations supplémentaires (Allow) :</span>
+                        <span>{isEn ? 'Additional permissions (Allow) :' : 'Autorisations supplémentaires (Allow) :'}</span>
                       </div>
                       {hasAllows ? (
                         <div className="flex flex-wrap gap-1">
@@ -1649,7 +1691,9 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                           )}
                         </div>
                       ) : (
-                        <span className="text-[10px] text-slate-400 italic">Aucune autorisation spécifique</span>
+                        <span className="text-[10px] text-slate-400 italic">
+                          {isEn ? 'No specific permission' : 'Aucune autorisation spécifique'}
+                        </span>
                       )}
                     </div>
 
@@ -1657,7 +1701,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                     <div className="mt-2 pt-2 border-t border-slate-100 space-y-1.5">
                       <div className="text-[11px] font-bold text-rose-800 flex items-center gap-1">
                         <X className="w-3.5 h-3.5 text-rose-600" />
-                        <span>Restrictions explicites (Deny) :</span>
+                        <span>{isEn ? 'Explicit restrictions (Deny) :' : 'Restrictions explicites (Deny) :'}</span>
                       </div>
                       {hasDenies ? (
                         <div className="flex flex-wrap gap-1">
@@ -1670,7 +1714,9 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                           )}
                         </div>
                       ) : (
-                        <span className="text-[10px] text-slate-400 italic">Aucune restriction spécifique</span>
+                        <span className="text-[10px] text-slate-400 italic">
+                          {isEn ? 'No specific restriction' : 'Aucune restriction spécifique'}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -1682,7 +1728,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                         className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
                       >
                         <Sliders className="w-3.5 h-3.5" />
-                        <span>Gérer les Exceptions</span>
+                        <span>{isEn ? 'Manage Exceptions' : 'Gérer les Exceptions'}</span>
                       </button>
                     )}
                   </div>
@@ -1716,29 +1762,29 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 onChange={(e) => setAuditActionFilter(e.target.value)}
                 className="py-1.5 px-3 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 font-medium"
               >
-                <option value="ALL">Tous les types d'événements</option>
-                <option value="USER_CREATE">Création de compte</option>
-                <option value="USER_INVITE">Invitation</option>
-                <option value="USER_UPDATE">Modification de profil</option>
-                <option value="USER_STATUS_CHANGE">Changement de statut</option>
-                <option value="ROLE_CHANGE">Attribution de rôle</option>
-                <option value="ROLE_PERMISSIONS_UPDATE">Mise à jour matrice RBAC</option>
-                <option value="USER_OVERRIDE_UPDATE">Surcharge individuelle</option>
-                <option value="UNAUTHORIZED_ACCESS_ATTEMPT">Tentative non autorisée</option>
+                <option value="ALL">{isEn ? 'All event types' : "Tous les types d'événements"}</option>
+                <option value="USER_CREATE">{isEn ? 'Account creation' : 'Création de compte'}</option>
+                <option value="USER_INVITE">{isEn ? 'Invitation' : 'Invitation'}</option>
+                <option value="USER_UPDATE">{isEn ? 'Profile update' : 'Modification de profil'}</option>
+                <option value="USER_STATUS_CHANGE">{isEn ? 'Status change' : 'Changement de statut'}</option>
+                <option value="ROLE_CHANGE">{isEn ? 'Role assignment' : 'Attribution de rôle'}</option>
+                <option value="ROLE_PERMISSIONS_UPDATE">{isEn ? 'RBAC matrix update' : 'Mise à jour matrice RBAC'}</option>
+                <option value="USER_OVERRIDE_UPDATE">{isEn ? 'Individual override' : 'Surcharge individuelle'}</option>
+                <option value="UNAUTHORIZED_ACCESS_ATTEMPT">{isEn ? 'Unauthorized attempt' : 'Tentative non autorisée'}</option>
               </select>
             </div>
 
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded bg-slate-100 text-slate-700 text-[11px] font-bold flex items-center gap-1 border border-slate-200">
                 <Lock className="w-3 h-3 text-slate-500" />
-                <span>Append-Only Immuable</span>
+                <span>{isEn ? 'Immutable Append-Only' : 'Append-Only Immuable'}</span>
               </span>
               <button
                 onClick={handleExportAuditExcel}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shadow-xs cursor-pointer"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>Export Excel (.xlsx)</span>
+                <span>{isEn ? 'Excel Export (.xlsx)' : 'Export Excel (.xlsx)'}</span>
               </button>
             </div>
           </div>
@@ -1748,18 +1794,18 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
               <table className="w-full text-xs text-left">
                 <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                   <tr>
-                    <th className="py-3 px-4">Date &amp; Heure (DLA)</th>
-                    <th className="py-3 px-4">Auteur</th>
-                    <th className="py-3 px-4">Type Événement</th>
-                    <th className="py-3 px-4">Cible</th>
-                    <th className="py-3 px-4">Description de l'Action</th>
+                    <th className="py-3 px-4">{isEn ? 'Date & Time (DLA)' : 'Date & Heure (DLA)'}</th>
+                    <th className="py-3 px-4">{isEn ? 'Actor' : 'Auteur'}</th>
+                    <th className="py-3 px-4">{isEn ? 'Event Type' : 'Type Événement'}</th>
+                    <th className="py-3 px-4">{isEn ? 'Target' : 'Cible'}</th>
+                    <th className="py-3 px-4">{isEn ? 'Action Description' : "Description de l'Action"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredSecurityLogs.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="py-8 text-center text-slate-400">
-                        Aucun événement de sécurité ne correspond aux filtres.
+                        {isEn ? 'No security events match the filters.' : 'Aucun événement de sécurité ne correspond aux filtres.'}
                       </td>
                     </tr>
                   ) : (
@@ -1889,22 +1935,22 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Coordonnées Professionnelles</div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{isEn ? 'Professional Contact Info' : 'Coordonnées Professionnelles'}</div>
                       <div className="space-y-1.5 text-slate-700">
-                        <div>E-mail professionnel : <span className="font-mono font-bold text-slate-900">{selectedUser.email}</span></div>
-                        <div>Téléphone direct : <span className="font-bold text-slate-900">{selectedUser.phone}</span></div>
-                        <div>Fonction : <span className="font-semibold text-slate-900">{selectedUser.jobTitle || 'Non renseignée'}</span></div>
-                        <div>Rôle attribué : <span className="font-bold text-blue-900">{t.roles[selectedUser.role]}</span></div>
+                        <div>{isEn ? 'Work email:' : 'E-mail professionnel :'} <span className="font-mono font-bold text-slate-900">{selectedUser.email}</span></div>
+                        <div>{isEn ? 'Direct phone:' : 'Téléphone direct :'} <span className="font-bold text-slate-900">{selectedUser.phone}</span></div>
+                        <div>{isEn ? 'Job title:' : 'Fonction :'} <span className="font-semibold text-slate-900">{selectedUser.jobTitle || (isEn ? 'Not specified' : 'Non renseignée')}</span></div>
+                        <div>{isEn ? 'Assigned role:' : 'Rôle attribué :'} <span className="font-bold text-blue-900">{t.roles[selectedUser.role]}</span></div>
                       </div>
                     </div>
 
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">État &amp; Traçabilité Compte</div>
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{isEn ? 'Account Status & Traceability' : 'État & Traçabilité Compte'}</div>
                       <div className="space-y-1.5 text-slate-700">
-                        <div>Statut du compte : {getStatusBadge(selectedUser.status)}</div>
-                        <div>Date d'enregistrement : <span className="font-semibold text-slate-900">{selectedUser.createdAt ? selectedUser.createdAt.split('T')[0] : '2026-01-01'}</span></div>
-                        <div>Dernière connexion : <span className="font-semibold text-slate-900">{selectedUser.lastLoginAt || 'Jamais connecté'}</span></div>
-                        <div>Créé par : <span className="font-semibold text-slate-900">{selectedUser.createdByName || 'Directeur Systèmes'}</span></div>
+                        <div>{isEn ? 'Account status:' : 'Statut du compte :'} {getStatusBadge(selectedUser.status)}</div>
+                        <div>{isEn ? 'Registration date:' : "Date d'enregistrement :"} <span className="font-semibold text-slate-900">{selectedUser.createdAt ? selectedUser.createdAt.split('T')[0] : '2026-01-01'}</span></div>
+                        <div>{isEn ? 'Last login:' : 'Dernière connexion :'} <span className="font-semibold text-slate-900">{selectedUser.lastLoginAt || (isEn ? 'Never logged in' : 'Jamais connecté')}</span></div>
+                        <div>{isEn ? 'Created by:' : 'Créé par :'} <span className="font-semibold text-slate-900">{selectedUser.createdByName || (isEn ? 'Systems Director' : 'Directeur Systèmes')}</span></div>
                       </div>
                     </div>
                   </div>
@@ -2025,16 +2071,16 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                                 return (
                                   <td key={act} className="py-2.5 px-2 text-center">
                                     {origin === 'INDIVIDUAL_DENY' ? (
-                                      <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 font-bold text-[9px] border border-rose-300" title="Interdiction explicite (Deny)">
+                                      <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 font-bold text-[9px] border border-rose-300" title={isEn ? 'Explicit restriction (Deny)' : 'Interdiction explicite (Deny)'}>
                                         Deny
                                       </span>
                                     ) : origin === 'INDIVIDUAL_ALLOW' ? (
-                                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[9px] border border-emerald-300" title="Autorisation supplémentaire (Allow)">
+                                      <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[9px] border border-emerald-300" title={isEn ? 'Additional permission (Allow)' : 'Autorisation supplémentaire (Allow)'}>
                                         Allow
                                       </span>
                                     ) : origin === 'ROLE_DEFAULT' ? (
-                                      <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[9px] border border-blue-200" title="Droit hérité du rôle">
-                                        Rôle
+                                      <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[9px] border border-blue-200" title={isEn ? 'Inherited role right' : 'Droit hérité du rôle'}>
+                                        {isEn ? 'Role' : 'Rôle'}
                                       </span>
                                     ) : (
                                       <span className="text-slate-300 text-xs">-</span>
@@ -2057,15 +2103,15 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-bold text-slate-900">Surcharges Actives</h4>
-                      <p className="text-slate-500">Gérez les exceptions spécifiques à ce compte sans modifier le rôle</p>
+                      <h4 className="font-bold text-slate-900">{isEn ? 'Active Overrides' : 'Surcharges Actives'}</h4>
+                      <p className="text-slate-500">{isEn ? 'Manage specific account overrides without altering the role' : 'Gérez les exceptions spécifiques à ce compte sans modifier le rôle'}</p>
                     </div>
                     {hasEffectivePermission(currentUser, 'users', 'update') && (
                       <button
                         onClick={() => openOverrideModal(selectedUser)}
                         className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold transition cursor-pointer"
                       >
-                        Modifier les exceptions
+                        {isEn ? 'Edit overrides' : 'Modifier les exceptions'}
                       </button>
                     )}
                   </div>
@@ -2074,7 +2120,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                     <div className="bg-emerald-50/40 p-4 rounded-xl border border-emerald-200 space-y-2">
                       <div className="font-bold text-emerald-900 flex items-center gap-1.5">
                         <Check className="w-4 h-4 text-emerald-700" />
-                        <span>Autorisations Complémentaires (Allow)</span>
+                        <span>{isEn ? 'Complementary Permissions (Allow)' : 'Autorisations Complémentaires (Allow)'}</span>
                       </div>
                       <div className="space-y-1">
                         {Object.entries(selectedUser.permissionsOverrides?.allow || {}).map(([mod, acts]) => (
@@ -2084,7 +2130,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                           </div>
                         ))}
                         {(!selectedUser.permissionsOverrides?.allow || Object.keys(selectedUser.permissionsOverrides.allow).length === 0) && (
-                          <p className="text-slate-400 italic">Aucune autorisation supplémentaire active.</p>
+                          <p className="text-slate-400 italic">{isEn ? 'No additional permission active.' : 'Aucune autorisation supplémentaire active.'}</p>
                         )}
                       </div>
                     </div>
@@ -2092,7 +2138,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                     <div className="bg-rose-50/40 p-4 rounded-xl border border-rose-200 space-y-2">
                       <div className="font-bold text-rose-900 flex items-center gap-1.5">
                         <X className="w-4 h-4 text-rose-700" />
-                        <span>Restrictions Explicites (Deny)</span>
+                        <span>{isEn ? 'Explicit Restrictions (Deny)' : 'Restrictions Explicites (Deny)'}</span>
                       </div>
                       <div className="space-y-1">
                         {Object.entries(selectedUser.permissionsOverrides?.deny || {}).map(([mod, acts]) => (
@@ -2102,7 +2148,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                           </div>
                         ))}
                         {(!selectedUser.permissionsOverrides?.deny || Object.keys(selectedUser.permissionsOverrides.deny).length === 0) && (
-                          <p className="text-slate-400 italic">Aucune restriction individuelle active.</p>
+                          <p className="text-slate-400 italic">{isEn ? 'No individual restriction active.' : 'Aucune restriction individuelle active.'}</p>
                         )}
                       </div>
                     </div>
@@ -2113,7 +2159,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
               {/* Onglet 4 : Historique d'Activité */}
               {userDetailTab === 'AUDIT' && (
                 <div className="space-y-3">
-                  <h4 className="font-bold text-slate-900">Événements liés à ce collaborateur</h4>
+                  <h4 className="font-bold text-slate-900">{isEn ? 'Events linked to this staff member' : 'Événements liés à ce collaborateur'}</h4>
                   <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
                     {(state.securityAuditLogs || [])
                       .filter((l) => l.targetUserId === selectedUser.id || l.performedById === selectedUser.id)
@@ -2225,7 +2271,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
             <form onSubmit={handleCreateUserSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Prénom *</label>
+                  <label className="font-bold text-slate-700">{isEn ? 'First Name *' : 'Prénom *'}</label>
                   <input
                     type="text"
                     required
@@ -2236,7 +2282,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Nom *</label>
+                  <label className="font-bold text-slate-700">{isEn ? 'Last Name *' : 'Nom *'}</label>
                   <input
                     type="text"
                     required
@@ -2249,7 +2295,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">E-mail Professionnel *</label>
+                <label className="font-bold text-slate-700">{isEn ? 'Work Email *' : 'E-mail Professionnel *'}</label>
                 <input
                   type="email"
                   required
@@ -2258,12 +2304,12 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   className="w-full border border-slate-300 rounded-lg p-2 font-mono focus:ring-2 focus:ring-emerald-500"
                   placeholder="collaborateur@fct-automobile.cm"
                 />
-                <p className="text-[10px] text-slate-400">Normalisé en minuscules, vérification anti-doublon stricte.</p>
+                <p className="text-[10px] text-slate-400">{isEn ? 'Normalized to lowercase, strict duplicate check.' : 'Normalisé en minuscules, vérification anti-doublon stricte.'}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Téléphone *</label>
+                  <label className="font-bold text-slate-700">{isEn ? 'Phone *' : 'Téléphone *'}</label>
                   <input
                     type="text"
                     required
@@ -2274,7 +2320,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Fonction / Poste</label>
+                  <label className="font-bold text-slate-700">{isEn ? 'Job Title / Position' : 'Fonction / Poste'}</label>
                   <input
                     type="text"
                     value={createForm.jobTitle}
@@ -2287,7 +2333,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Rôle Principal *</label>
+                  <label className="font-bold text-slate-700">{isEn ? 'Primary Role *' : 'Rôle Principal *'}</label>
                   <select
                     value={createForm.role}
                     onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as UserRole })}
@@ -2304,14 +2350,14 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Statut Initial *</label>
+                  <label className="font-bold text-slate-700">{isEn ? 'Initial Status *' : 'Statut Initial *'}</label>
                   <select
                     value={createForm.status}
                     onChange={(e) => setCreateForm({ ...createForm, status: e.target.value as UserAccountStatus })}
                     className="w-full border border-slate-300 rounded-lg p-2 bg-white focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="ACTIVE">Actif immédiatement</option>
-                    <option value="INVITED">Invitation en attente</option>
+                    <option value="ACTIVE">{isEn ? 'Active immediately' : 'Actif immédiatement'}</option>
+                    <option value="INVITED">{isEn ? 'Pending invitation' : 'Invitation en attente'}</option>
                   </select>
                 </div>
               </div>
@@ -2321,7 +2367,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-slate-800 font-bold">
                     <Lock className="w-4 h-4 text-emerald-600" />
-                    <span>Sécurité & Identifiants de Connexion *</span>
+                    <span>{isEn ? 'Security & Login Credentials *' : 'Sécurité & Identifiants de Connexion *'}</span>
                   </div>
                   <button
                     type="button"
@@ -2329,14 +2375,14 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                     className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 hover:bg-emerald-100 transition"
                   >
                     <RefreshCw className="w-3 h-3" />
-                    <span>Générer mot de passe fort</span>
+                    <span>{isEn ? 'Generate strong password' : 'Générer mot de passe fort'}</span>
                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Mot de passe */}
                   <div className="space-y-1">
-                    <label className="font-bold text-slate-700">Mot de passe de connexion *</label>
+                    <label className="font-bold text-slate-700">{isEn ? 'Login password *' : 'Mot de passe de connexion *'}</label>
                     <div className="relative">
                       <input
                         type={createForm.showPassword ? 'text' : 'password'}
@@ -2344,14 +2390,14 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                         value={createForm.password}
                         onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                         className="w-full border border-slate-300 rounded-lg p-2 pr-8 font-mono text-xs focus:ring-2 focus:ring-emerald-500 bg-white"
-                        placeholder="Min. 6 caractères"
+                        placeholder={isEn ? 'Min. 6 characters' : 'Min. 6 caractères'}
                         minLength={6}
                       />
                       <button
                         type="button"
                         onClick={() => setCreateForm({ ...createForm, showPassword: !createForm.showPassword })}
                         className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
-                        title={createForm.showPassword ? 'Masquer' : 'Afficher'}
+                        title={createForm.showPassword ? (isEn ? 'Hide' : 'Masquer') : (isEn ? 'Show' : 'Afficher')}
                       >
                         {createForm.showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
@@ -2360,14 +2406,14 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
 
                   {/* Confirmation mot de passe */}
                   <div className="space-y-1">
-                    <label className="font-bold text-slate-700">Confirmer le mot de passe *</label>
+                    <label className="font-bold text-slate-700">{isEn ? 'Confirm password *' : 'Confirmer le mot de passe *'}</label>
                     <input
                       type={createForm.showPassword ? 'text' : 'password'}
                       required
                       value={createForm.confirmPassword}
                       onChange={(e) => setCreateForm({ ...createForm, confirmPassword: e.target.value })}
                       className="w-full border border-slate-300 rounded-lg p-2 font-mono text-xs focus:ring-2 focus:ring-emerald-500 bg-white"
-                      placeholder="Ressaisir le mot de passe"
+                      placeholder={isEn ? 'Re-enter password' : 'Ressaisir le mot de passe'}
                       minLength={6}
                     />
                   </div>
@@ -2378,7 +2424,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   <div className="space-y-1">
                     <label className="font-bold text-slate-700 flex items-center gap-1">
                       <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Code PIN de Session (4 chiffres)</span>
+                      <span>{isEn ? 'Session PIN (4 digits)' : 'Code PIN de Session (4 chiffres)'}</span>
                     </label>
                     <input
                       type="text"
@@ -2393,7 +2439,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                     />
                   </div>
                   <div className="text-[11px] text-slate-500 flex items-center leading-relaxed">
-                    <span>Permet le déverrouillage instantané lors des pauses et la certification des écritures de caisse.</span>
+                    <span>{isEn ? 'Allows quick unlock during breaks and cash register certification.' : 'Permet le déverrouillage instantané lors des pauses et la certification des écritures de caisse.'}</span>
                   </div>
                 </div>
               </div>
@@ -2404,14 +2450,14 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   onClick={() => setIsCreateModalOpen(false)}
                   className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
                 >
-                  Annuler
+                  {isEn ? 'Cancel' : 'Annuler'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
                 >
                   <Lock className="w-3.5 h-3.5" />
-                  <span>Créer le Compte & Identifiants</span>
+                  <span>{isEn ? 'Create Account & Credentials' : 'Créer le Compte & Identifiants'}</span>
                 </button>
               </div>
             </form>
@@ -2428,26 +2474,26 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-black text-slate-800 text-base">Compte Créé avec Succès !</h3>
-                <p className="text-xs text-slate-500">Identifiants officiels FCT Automobile</p>
+                <h3 className="font-black text-slate-800 text-base">{isEn ? 'Account Created Successfully!' : 'Compte Créé avec Succès !'}</h3>
+                <p className="text-xs text-slate-500">{isEn ? 'Official FCT Automobile credentials' : 'Identifiants officiels FCT Automobile'}</p>
               </div>
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed">
-              Le compte collaborateur de <strong>{createdCredentials.fullName}</strong> est actif. Transmettez-lui ses identifiants de connexion :
+              {isEn ? `The staff account for ${createdCredentials.fullName} is active. Share these login credentials:` : `Le compte collaborateur de ${createdCredentials.fullName} est actif. Transmettez-lui ses identifiants de connexion :`}
             </p>
 
             <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 font-mono text-xs">
               <div className="flex justify-between items-center py-1 border-b border-slate-200">
-                <span className="text-slate-500 font-sans font-medium">E-mail :</span>
+                <span className="text-slate-500 font-sans font-medium">{isEn ? 'Email:' : 'E-mail :'}</span>
                 <span className="font-bold text-slate-800">{createdCredentials.email}</span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-slate-200">
-                <span className="text-slate-500 font-sans font-medium">Rôle FCT :</span>
+                <span className="text-slate-500 font-sans font-medium">{isEn ? 'FCT Role:' : 'Rôle FCT :'}</span>
                 <span className="font-bold text-emerald-700 font-sans">{createdCredentials.roleName}</span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-slate-200">
-                <span className="text-slate-500 font-sans font-medium">Mot de passe :</span>
+                <span className="text-slate-500 font-sans font-medium">{isEn ? 'Password:' : 'Mot de passe :'}</span>
                 <span className="font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
                   {createdCredentials.password}
                 </span>
@@ -2510,7 +2556,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
             <form onSubmit={handleEditUserSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Prénom</label>
+                  <label className="font-bold text-slate-700">{isEn ? 'First Name' : 'Prénom'}</label>
                   <input
                     type="text"
                     value={editingUser.firstName || ''}
@@ -2519,7 +2565,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Nom</label>
+                  <label className="font-bold text-slate-700">{isEn ? 'Last Name' : 'Nom'}</label>
                   <input
                     type="text"
                     value={editingUser.lastName || ''}
@@ -2530,7 +2576,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">E-mail Professionnel *</label>
+                <label className="font-bold text-slate-700">{isEn ? 'Work Email *' : 'E-mail Professionnel *'}</label>
                 <input
                   type="email"
                   required
@@ -2542,7 +2588,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Téléphone</label>
+                  <label className="font-bold text-slate-700">{isEn ? 'Phone' : 'Téléphone'}</label>
                   <input
                     type="text"
                     value={editingUser.phone}
@@ -2551,7 +2597,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Fonction</label>
+                  <label className="font-bold text-slate-700">{isEn ? 'Job Title' : 'Fonction'}</label>
                   <input
                     type="text"
                     value={editingUser.jobTitle || ''}
@@ -2562,7 +2608,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Rôle Principal</label>
+                <label className="font-bold text-slate-700">{isEn ? 'Primary Role' : 'Rôle Principal'}</label>
                 <select
                   value={editingUser.role}
                   onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value as UserRole })}
@@ -2584,13 +2630,13 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   onClick={() => setIsEditModalOpen(false)}
                   className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
                 >
-                  Annuler
+                  {isEn ? 'Cancel' : 'Annuler'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-xs cursor-pointer"
                 >
-                  Enregistrer les Modifications
+                  {isEn ? 'Save Changes' : 'Enregistrer les Modifications'}
                 </button>
               </div>
             </form>
@@ -2613,14 +2659,14 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-black text-base text-slate-900">
-                      Assignation d'Onglets &amp; Droits
+                      {isEn ? 'Tabs & Rights Assignment' : "Assignation d'Onglets & Droits"}
                     </h3>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getRoleBadgeColor(overrideModalUser.role)}`}>
                       {t.roles[overrideModalUser.role] || overrideModalUser.role}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500">
-                    Collaborateur : <strong className="text-slate-900">{overrideModalUser.fullName}</strong> ({overrideModalUser.email})
+                    {isEn ? 'Staff member:' : 'Collaborateur :'} <strong className="text-slate-900">{overrideModalUser.fullName}</strong> ({overrideModalUser.email})
                   </p>
                 </div>
               </div>
@@ -2631,10 +2677,10 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   type="button"
                   onClick={handleResetAllOverridesToRoleDefault}
                   className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                  title="Réinitialiser toutes les exceptions pour hériter du rôle standard"
+                  title={isEn ? 'Reset all overrides to inherit standard role' : 'Réinitialiser toutes les exceptions pour hériter du rôle standard'}
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Rétablir Rôle Standard</span>
+                  <span>{isEn ? 'Restore Standard Role' : 'Rétablir Rôle Standard'}</span>
                 </button>
                 <button
                   onClick={() => setOverrideModalUser(null)}
@@ -2649,10 +2695,10 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-3 shrink-0 text-xs">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-700">Visibilité effective :</span>
+                  <span className="font-bold text-slate-700">{isEn ? 'Effective visibility:' : 'Visibilité effective :'}</span>
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-black text-xs border border-emerald-300 flex items-center gap-1">
                     <Eye className="w-3.5 h-3.5" />
-                    <span>{draftVisibleModules.length} / 18 onglets visibles</span>
+                    <span>{draftVisibleModules.length} / 18 {isEn ? 'visible tabs' : 'onglets visibles'}</span>
                   </span>
                   {(() => {
                     const addedCount = ALL_APP_MODULES.filter((m) => {
@@ -2879,10 +2925,10 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                                   ? 'bg-amber-600 text-white shadow-xs'
                                   : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
                               }`}
-                              title="Peut consulter toutes les données de l'onglet mais ne peut rien modifier ni supprimer"
+                              title={isEn ? 'Can view all tab data but cannot edit or delete' : "Peut consulter toutes les données de l'onglet mais ne peut rien modifier ni supprimer"}
                             >
                               <Eye className="w-3 h-3" />
-                              <span>Lecture Seule</span>
+                              <span>{isEn ? 'Read Only' : 'Lecture Seule'}</span>
                             </button>
 
                             <button
@@ -2893,10 +2939,10 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                                   ? 'bg-blue-600 text-white shadow-xs'
                                   : 'bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100'
                               }`}
-                              title="Peut consulter et ajouter de nouvelles fiches sans modifier ni supprimer l'existant"
+                              title={isEn ? 'Can view and add records without modifying existing data' : "Peut consulter et ajouter de nouvelles fiches sans modifier ni supprimer l'existant"}
                             >
                               <Plus className="w-3 h-3" />
-                              <span>Lecture + Ajout</span>
+                              <span>{isEn ? 'Read + Create' : 'Lecture + Ajout'}</span>
                             </button>
 
                             <button
@@ -2907,10 +2953,10 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                                   ? 'bg-emerald-700 text-white shadow-xs'
                                   : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
                               }`}
-                              title="Création, consultation et modification complètes"
+                              title={isEn ? 'Full creation, view, and modification' : 'Création, consultation et modification complètes'}
                             >
                               <Sparkles className="w-3 h-3" />
-                              <span>Complet (Créer &amp; Modifier)</span>
+                              <span>{isEn ? 'Full (Create & Edit)' : 'Complet (Créer & Modifier)'}</span>
                             </button>
 
                             <button
@@ -2921,9 +2967,9 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                                   ? 'bg-slate-800 text-white'
                                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                               }`}
-                              title="Réinitialiser pour hériter des droits standard du rôle"
+                              title={isEn ? 'Reset to inherit standard role rights' : 'Réinitialiser pour hériter des droits standard du rôle'}
                             >
-                              <span>Standard Rôle</span>
+                              <span>{isEn ? 'Role Standard' : 'Standard Rôle'}</span>
                             </button>
                           </div>
                         </div>
@@ -2931,7 +2977,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                         {/* Actions Effectives Résumées & Bouton Accordéon */}
                         <div className="flex items-center justify-between pt-1 text-[11px]">
                           <div className="flex flex-wrap items-center gap-1 text-slate-600">
-                            <span className="font-semibold text-slate-500">Actions effectives :</span>
+                            <span className="font-semibold text-slate-500">{isEn ? 'Effective actions:' : 'Actions effectives :'}</span>
                             {effActions.map((act) => {
                               const isAllow = allows.includes(act);
                               const isDeny = denies.includes(act);
@@ -2962,7 +3008,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                             }
                             className="text-purple-700 hover:text-purple-900 font-bold flex items-center gap-1 cursor-pointer shrink-0"
                           >
-                            <span>Détails 7 actions</span>
+                            <span>{isEn ? '7 Actions Details' : 'Détails 7 actions'}</span>
                             <ChevronDown
                               className={`w-3.5 h-3.5 transition-transform ${
                                 isExpanded ? 'rotate-180' : ''
@@ -3036,9 +3082,9 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
             {/* Footer Modal avec Résumé et Boutons d'Action */}
             <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
               <div className="text-xs text-slate-500">
-                <span>Règle de sécurité : </span>
+                <span>{isEn ? 'Security rule: ' : 'Règle de sécurité : '}</span>
                 <strong className="text-slate-800">
-                  Deny l'emporte toujours sur Allow et sur le rôle par défaut.
+                  {isEn ? 'Deny always takes precedence over Allow and default role.' : "Deny l'emporte toujours sur Allow et sur le rôle par défaut."}
                 </strong>
               </div>
 
@@ -3048,7 +3094,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   onClick={() => setOverrideModalUser(null)}
                   className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer text-xs transition"
                 >
-                  Annuler
+                  {isEn ? 'Cancel' : 'Annuler'}
                 </button>
                 <button
                   type="button"
@@ -3056,7 +3102,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                   className="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-xs cursor-pointer text-xs flex items-center gap-1.5 transition"
                 >
                   <Check className="w-4 h-4" />
-                  <span>Enregistrer les Assignations</span>
+                  <span>{isEn ? 'Save Assignments' : 'Enregistrer les Assignations'}</span>
                 </button>
               </div>
             </div>
@@ -3074,29 +3120,27 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
               <AlertTriangle className="w-5 h-5 text-amber-600" />
               <span>
                 {statusTargetAction === 'ACTIVE'
-                  ? 'Réactiver le compte collaborateur'
-                  : 'Suspendre l’accès du collaborateur'}
+                  ? (isEn ? 'Reactivate staff account' : 'Réactiver le compte collaborateur')
+                  : (isEn ? 'Suspend staff account access' : 'Suspendre l’accès du collaborateur')}
               </span>
             </h3>
 
             <p className="text-xs text-slate-600 leading-relaxed">
-              Êtes-vous sûr de vouloir changer le statut de{' '}
-              <strong className="text-slate-900">{statusTargetUser.fullName}</strong> en{' '}
-              <strong className="text-slate-900">"{statusTargetAction}"</strong> ?
+              {isEn ? `Are you sure you want to change the status of ${statusTargetUser.fullName} to "${statusTargetAction}"?` : `Êtes-vous sûr de vouloir changer le statut de ${statusTargetUser.fullName} en "${statusTargetAction}" ?`}
               {statusTargetAction !== 'ACTIVE' && (
                 <span className="block mt-1 text-rose-600">
-                  L'utilisateur ne pourra plus se connecter ni effectuer d'opérations sur les modules de l'ERP.
+                  {isEn ? 'The user will no longer be able to log in or perform operations on ERP modules.' : "L'utilisateur ne pourra plus se connecter ni effectuer d'opérations sur les modules de l'ERP."}
                 </span>
               )}
             </p>
 
             <div className="space-y-1 text-xs">
-              <label className="font-bold text-slate-700">Motif de l'action (consigné dans l'audit) :</label>
+              <label className="font-bold text-slate-700">{isEn ? 'Action reason (recorded in audit):' : "Motif de l'action (consigné dans l'audit) :"}</label>
               <textarea
                 value={statusReason}
                 onChange={(e) => setStatusReason(e.target.value)}
                 rows={2}
-                placeholder="Ex: Fin de contrat, mission temporaire terminée, demande RH..."
+                placeholder={isEn ? 'E.g.: End of contract, temp assignment completed, HR request...' : 'Ex: Fin de contrat, mission temporaire terminée, demande RH...'}
                 className="w-full border border-slate-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-emerald-500"
               />
             </div>
@@ -3109,7 +3153,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 }}
                 className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
               >
-                Annuler
+                {isEn ? 'Cancel' : 'Annuler'}
               </button>
               <button
                 onClick={handleConfirmStatusToggle}
@@ -3119,7 +3163,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                     : 'bg-orange-600 hover:bg-orange-500'
                 }`}
               >
-                Confirmer le Changement
+                {isEn ? 'Confirm Change' : 'Confirmer le Changement'}
               </button>
             </div>
           </div>
@@ -3132,24 +3176,23 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-4 sm:p-6 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              <span>Confirmation de la Matrice RBAC</span>
+              <span>{isEn ? 'RBAC Matrix Confirmation' : 'Confirmation de la Matrice RBAC'}</span>
             </h3>
 
             <p className="text-xs text-slate-600 leading-relaxed">
-              Vous allez enregistrer les modifications apportées au rôle{' '}
-              <strong className="text-slate-900">{t.roles[selectedRole]}</strong>.
+              {isEn ? `You are about to save changes for role ${t.roles[selectedRole]}.` : `Vous allez enregistrer les modifications apportées au rôle ${t.roles[selectedRole]}.`}
             </p>
 
             <div className="bg-blue-50 p-3.5 rounded-xl border border-blue-200 text-xs space-y-1">
-              <div className="font-bold text-blue-900">Conséquences immédiates :</div>
+              <div className="font-bold text-blue-900">{isEn ? 'Immediate consequences:' : 'Conséquences immédiates :'}</div>
               <div className="text-slate-700">
-                • <strong>{impactedUsersCount} utilisateur(s)</strong> actifs rattachés à ce rôle verront leurs permissions actualisées en temps réel.
+                • <strong>{impactedUsersCount} {isEn ? 'active user(s)' : 'utilisateur(s)'}</strong> {isEn ? 'assigned to this role will have their permissions updated in real-time.' : 'actifs rattachés à ce rôle verront leurs permissions actualisées en temps réel.'}
               </div>
               <div className="text-slate-700">
-                • Les exceptions individuelles (Allow / Deny) existantes restent préservées.
+                • {isEn ? 'Existing individual overrides (Allow / Deny) are preserved.' : 'Les exceptions individuelles (Allow / Deny) existantes restent préservées.'}
               </div>
               <div className="text-slate-700">
-                • Un événement officiel sera inscrit dans le journal d'audit immuable.
+                • {isEn ? 'An official event will be recorded in the immutable audit log.' : "Un événement officiel sera inscrit dans le journal d'audit immuable."}
               </div>
             </div>
 
@@ -3158,13 +3201,13 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 onClick={() => setShowSaveImpactModal(false)}
                 className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
               >
-                Annuler
+                {isEn ? 'Cancel' : 'Annuler'}
               </button>
               <button
                 onClick={handleSaveRolePermissions}
                 className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-xs cursor-pointer"
               >
-                Confirmer &amp; Appliquer
+                {isEn ? 'Confirm & Apply' : 'Confirmer & Appliquer'}
               </button>
             </div>
           </div>
@@ -3175,10 +3218,10 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
       {deleteConfirmUser && (
         <DeleteConfirmModal
           isOpen={true}
-          title="Révoquer le compte collaborateur"
+          title={isEn ? 'Revoke staff account' : 'Révoquer le compte collaborateur'}
           itemName={deleteConfirmUser.fullName}
           itemDetails={`E-mail: ${deleteConfirmUser.email} (${deleteConfirmUser.role})`}
-          warningMessage="Le collaborateur sera immédiatement désactivé et archivé dans le journal d'audit."
+          warningMessage={isEn ? 'The staff member will be immediately deactivated and archived in the audit log.' : "Le collaborateur sera immédiatement désactivé et archivé dans le journal d'audit."}
           onConfirm={handleConfirmDeleteUser}
           onCancel={() => setDeleteConfirmUser(null)}
         />
@@ -3190,11 +3233,10 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
           <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-slate-200">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <RefreshCw className="w-5 h-5 text-amber-600" />
-              <span>Rétablir les Permissions d'Origine</span>
+              <span>{isEn ? 'Restore Original Permissions' : "Rétablir les Permissions d'Origine"}</span>
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Voulez-vous vraiment rétablir les permissions par défaut officielles FCT pour le rôle{' '}
-              <strong className="text-slate-900">{t.roles[selectedRole]}</strong> ? Toutes les modifications locales sur ce rôle seront réinitialisées.
+              {isEn ? `Do you really want to restore official FCT default permissions for role ${t.roles[selectedRole]}? All local modifications will be reset.` : `Voulez-vous vraiment rétablir les permissions par défaut officielles FCT pour le rôle ${t.roles[selectedRole]} ? Toutes les modifications locales sur ce rôle seront réinitialisées.`}
             </p>
             <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2 text-xs">
               <button
@@ -3202,14 +3244,14 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
                 onClick={() => setShowResetRoleModal(false)}
                 className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
               >
-                Annuler
+                {isEn ? 'Cancel' : 'Annuler'}
               </button>
               <button
                 type="button"
                 onClick={handleConfirmResetRoleDefault}
                 className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-xs cursor-pointer"
               >
-                Confirmer &amp; Rétablir
+                {isEn ? 'Confirm & Restore' : 'Confirmer & Rétablir'}
               </button>
             </div>
           </div>
@@ -3222,7 +3264,7 @@ export const UsersView: React.FC<UsersViewProps> = ({ state, lang, onNavigate })
           <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-slate-200">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-rose-600" />
-              <span>Modifications Non Enregistrées</span>
+              <span>{isEn ? 'Unsaved Changes' : 'Modifications Non Enregistrées'}</span>
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed">
               Vous avez des modifications non enregistrées pour le rôle{' '}

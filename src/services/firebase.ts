@@ -21,6 +21,7 @@ import {
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  persistentSingleTabManager,
   getFirestore,
   Firestore,
   doc,
@@ -56,10 +57,14 @@ export const auth: Auth = getAuth(app);
 function initFirestoreInstance(): Firestore {
   try {
     if (typeof window !== 'undefined' && typeof indexedDB !== 'undefined') {
+      const isMobileApp = Boolean((window as any).Capacitor?.isNativePlatform?.());
+      const hasWebLocks = typeof navigator !== 'undefined' && 'locks' in navigator;
+      const tabManager = (!isMobileApp && hasWebLocks)
+        ? persistentMultipleTabManager()
+        : persistentSingleTabManager({ forceOwnership: true });
+
       return initializeFirestore(app, {
-        localCache: persistentLocalCache({
-          tabManager: persistentMultipleTabManager(),
-        }),
+        localCache: persistentLocalCache({ tabManager }),
       });
     }
   } catch (err) {

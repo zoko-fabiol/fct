@@ -148,20 +148,61 @@ export function applyWebsiteThemeToDOM(theme: Partial<WebsiteTheme>): void {
 }
 
 /**
- * Sauvegarde le thème dans Firestore (site_settings/theme)
+ * Sauvegarde le thème dans Firestore (site_settings/theme) avec diffusion multi-canal immédiate
  */
 export async function saveWebsiteTheme(theme: Partial<WebsiteTheme>): Promise<void> {
-  const docRef = doc(db, 'site_settings', 'theme');
-  await setDoc(docRef, theme, { merge: true });
+  try {
+    const docRef = doc(db, 'site_settings', 'theme');
+    await setDoc(docRef, theme, { merge: true });
+  } catch (err) {
+    console.warn('[FCT CMS] Erreur sauvegarde Firestore thème:', err);
+  }
+
+  // 1. Cache LocalStorage immédiat
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('fct_cms_theme', JSON.stringify(theme));
+    }
+  } catch {
+    // Ignore
+  }
+
+  // 2. Diffusion BroadcastChannel (onglets même origine)
+  try {
+    if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel('fct_cms_channel');
+      bc.postMessage({ type: 'CMS_THEME_UPDATE', theme });
+      setTimeout(() => bc.close(), 100);
+    }
+  } catch {
+    // Ignore
+  }
+
+  // 3. Pont temps réel local inter-ports (Port 3000 ⇄ Port 3001)
+  try {
+    if (typeof window !== 'undefined' && window.location) {
+      const ports = ['3000', '3001', '3002'].filter((p) => p !== window.location.port);
+      for (const port of ports) {
+        fetch(`http://${window.location.hostname}:${port}/__cms_sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'CMS_THEME_UPDATE', theme }),
+        }).catch(() => {});
+      }
+    }
+  } catch {
+    // Ignore
+  }
 }
 
 /**
- * Écoute en temps réel les changements de thème
+ * Écoute en temps réel les changements de thème (Firestore + BroadcastChannel + Storage)
  */
 export function subscribeWebsiteTheme(callback: (theme: WebsiteTheme) => void): () => void {
+  let unsubFirestore: () => void = () => {};
   try {
     const docRef = doc(db, 'site_settings', 'theme');
-    return onSnapshot(
+    unsubFirestore = onSnapshot(
       docRef,
       (snap) => {
         if (snap.exists()) {
@@ -178,28 +219,90 @@ export function subscribeWebsiteTheme(callback: (theme: WebsiteTheme) => void): 
   } catch (err) {
     console.warn('[FCT CMS] Erreur initialisation écouteur thème:', err);
     callback(DEFAULT_WEBSITE_THEME);
-    return () => {};
   }
+
+  let bc: BroadcastChannel | null = null;
+  try {
+    if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
+      bc = new BroadcastChannel('fct_cms_channel');
+      bc.onmessage = (event) => {
+        const data = event.data;
+        if (data?.type === 'CMS_THEME_UPDATE' && data.theme) {
+          callback({ ...DEFAULT_WEBSITE_THEME, ...(data.theme as Partial<WebsiteTheme>) });
+        }
+      };
+    }
+  } catch {
+    // Ignore
+  }
+
+  return () => {
+    unsubFirestore();
+    if (bc) bc.close();
+  };
 }
 
 /**
  * Sauvegarde les textes du site pour une langue donnée (site_content/fr ou site_content/en)
+ * avec diffusion multi-canal immédiate sans rechargement
  */
 export async function saveWebsiteContent(lang: 'fr' | 'en', content: Record<string, unknown>): Promise<void> {
-  const docRef = doc(db, 'site_content', lang);
-  await setDoc(docRef, content, { merge: true });
+  // 1. Sauvegarde Cloud Firestore
+  try {
+    const docRef = doc(db, 'site_content', lang);
+    await setDoc(docRef, content, { merge: true });
+  } catch (err) {
+    console.warn(`[FCT CMS] Erreur écriture Firestore contenu (${lang}):`, err);
+  }
+
+  // 2. Cache LocalStorage
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(`fct_cms_content_${lang}`, JSON.stringify(content));
+    }
+  } catch {
+    // Ignore
+  }
+
+  // 3. Diffusion BroadcastChannel (onglets même origine)
+  try {
+    if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel('fct_cms_channel');
+      bc.postMessage({ type: 'CMS_CONTENT_UPDATE', lang, content });
+      setTimeout(() => bc.close(), 100);
+    }
+  } catch {
+    // Ignore
+  }
+
+  // 4. Pont temps réel local inter-ports (Port 3000 ⇄ Port 3001)
+  try {
+    if (typeof window !== 'undefined' && window.location) {
+      const ports = ['3000', '3001', '3002'].filter((p) => p !== window.location.port);
+      for (const port of ports) {
+        fetch(`http://${window.location.hostname}:${port}/__cms_sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'CMS_CONTENT_UPDATE', lang, content }),
+        }).catch(() => {});
+      }
+    }
+  } catch {
+    // Ignore
+  }
 }
 
 /**
- * Écoute en temps réel les textes d'une langue
+ * Écoute en temps réel les textes d'une langue (Firestore + BroadcastChannel + Storage)
  */
 export function subscribeWebsiteContent(
   lang: 'fr' | 'en',
   callback: (content: Record<string, unknown> | null) => void
 ): () => void {
+  let unsubFirestore: () => void = () => {};
   try {
     const docRef = doc(db, 'site_content', lang);
-    return onSnapshot(
+    unsubFirestore = onSnapshot(
       docRef,
       (snap) => {
         if (snap.exists()) {
@@ -210,14 +313,45 @@ export function subscribeWebsiteContent(
       },
       (err) => {
         console.warn(`[FCT CMS] Erreur écoute contenu (${lang}):`, err);
-        callback(null);
       }
     );
   } catch (err) {
     console.warn(`[FCT CMS] Erreur init écouteur contenu (${lang}):`, err);
-    callback(null);
-    return () => {};
   }
+
+  let bc: BroadcastChannel | null = null;
+  try {
+    if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
+      bc = new BroadcastChannel('fct_cms_channel');
+      bc.onmessage = (event) => {
+        const data = event.data;
+        if (data?.type === 'CMS_CONTENT_UPDATE' && data.lang === lang && data.content) {
+          callback(data.content as Record<string, unknown>);
+        }
+      };
+    }
+  } catch {
+    // Ignore
+  }
+
+  const storageHandler = (e: StorageEvent) => {
+    if (e.key === `fct_cms_content_${lang}` && e.newValue) {
+      try {
+        callback(JSON.parse(e.newValue));
+      } catch {}
+    }
+  };
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', storageHandler);
+  }
+
+  return () => {
+    unsubFirestore();
+    if (bc) bc.close();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('storage', storageHandler);
+    }
+  };
 }
 
 /**
@@ -227,11 +361,21 @@ export async function getWebsiteContent(lang: 'fr' | 'en'): Promise<Record<strin
   try {
     const docRef = doc(db, 'site_content', lang);
     const snap = await getDoc(docRef);
-    return snap.exists() ? (snap.data() as Record<string, unknown>) : null;
+    if (snap.exists()) {
+      return snap.data() as Record<string, unknown>;
+    }
   } catch (err) {
-    console.warn(`[FCT CMS] Erreur lecture contenu (${lang}):`, err);
-    return null;
+    console.warn(`[FCT CMS] Erreur lecture Firestore contenu (${lang}):`, err);
   }
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const cached = localStorage.getItem(`fct_cms_content_${lang}`);
+      if (cached) return JSON.parse(cached);
+    }
+  } catch {
+    // Ignore
+  }
+  return null;
 }
 
 export type WebsiteLanguage = 'fr' | 'en';
@@ -268,11 +412,12 @@ export const DEFAULT_WEBSITE_TRANSLATIONS = {
       officialPortal: 'Portail Officiel FCT Cameroun · RC/DLA/2020/B/1458',
     },
     home: {
-      badge: 'PRESTIGE & CONFIANCE AUTOMOBILE À DOUALA',
-      heroTitle: 'Louez ou Achetez des Véhicules d\'Exception à Douala',
+      badge: 'DOUALA · CARREFOUR SANTA BARBARA, BONAMOUSSADI',
+      heroTitle: "L'Automobile de Prestige à Douala, en Location & Vente Certifiée.",
       heroSubtitle: 'Parc automobile haut de gamme certifié, service chauffeur VIP bilingue, transparence comptable et carnet de santé numérique infalsifiable.',
       exploreFleet: 'Explorer la Flotte',
       viewSales: 'Véhicules en Vente',
+      healthPassportBtn: 'Carnet de Santé',
       kpi1Title: 'Véhicules Certifiés',
       kpi1Sub: 'Inspectés en 110 points',
       kpi2Title: 'Caution Sécurisée',
@@ -445,9 +590,17 @@ export const DEFAULT_WEBSITE_TRANSLATIONS = {
       activeContracts: 'Ventes & Locations Validées',
       balanceAvailable: 'Commissions Disponibles',
       selectVehicleToShare: 'Sélectionnez un véhicule à promouvoir',
+      selectVehicleDesc: 'Sélectionnez un véhicule pour publier une annonce calibrée avec votre lien d’affiliation sur WhatsApp.',
+      antiSpamNotice: 'Anti-spam actif : Déjà comptabilisé aujourd’hui (1 max/véhicule/24h). Nouveau quota dans ~24h (vous pouvez continuer à le partager librement).',
       shareWhatsappBtn: 'Statut WhatsApp',
       shareUniversalBtn: 'Partager le Lien',
       copyLinkBtn: 'Copier le Lien Affilié',
+      sharePitchRentHeader: '*LOCATION VÉHICULE CERTIFIÉ - FCT AUTOMOBILE DOUALA*',
+      sharePitchSaleHeader: '*VÉHICULE CERTIFIÉ À VENDRE - FCT AUTOMOBILE DOUALA*',
+      sharePitchWarranty: 'Garantie : Assurance complète & Entretien certifié FCT',
+      sharePitchAvailability: 'Disponibilité : Immédiate à Douala (avec ou sans chauffeur)',
+      sharePitchSaleStatus: 'Statut : Certifié FCT, révisé et prêt à rouler',
+      sharePitchSaleLocation: 'Emplacement : Showroom Bonamoussadi, Carrefour Santa Barbara',
       requestPayoutBtn: 'Demander un Retrait Mobile Money',
       payoutNotice: 'Paiement exécuté sous 24h ouvrées sur votre compte certifié.',
     },
@@ -519,11 +672,12 @@ export const DEFAULT_WEBSITE_TRANSLATIONS = {
       officialPortal: 'Official FCT Cameroon Portal · RC/DLA/2020/B/1458',
     },
     home: {
-      badge: 'PRESTIGE & AUTOMOTIVE TRUST IN DOUALA',
-      heroTitle: 'Rent or Buy Premium Vehicles in Douala',
+      badge: 'DOUALA · SANTA BARBARA JUNCTION, BONAMOUSSADI',
+      heroTitle: 'Executive Automotive in Douala, Certified Rental & Sales.',
       heroSubtitle: 'Certified high-end vehicle fleet, bilingual VIP chauffeur services, full accounting transparency and tamper-proof digital health records.',
       exploreFleet: 'Explore Fleet',
       viewSales: 'Vehicles for Sale',
+      healthPassportBtn: 'Health Record',
       kpi1Title: 'Certified Fleet',
       kpi1Sub: '110-point technical check',
       kpi2Title: 'Secured Deposit',
@@ -696,9 +850,17 @@ export const DEFAULT_WEBSITE_TRANSLATIONS = {
       activeContracts: 'Validated Deals',
       balanceAvailable: 'Available Commissions',
       selectVehicleToShare: 'Select a vehicle to promote',
+      selectVehicleDesc: 'Select a vehicle to publish an ad formatted with your affiliate link on WhatsApp.',
+      antiSpamNotice: 'Anti-spam active: Already counted today (1 max/vehicle/24h). Next quota in ~24h (you may keep sharing freely).',
       shareWhatsappBtn: 'WhatsApp Status',
       shareUniversalBtn: 'Share Link',
       copyLinkBtn: 'Copy Affiliate Link',
+      sharePitchRentHeader: '*CERTIFIED VEHICLE RENTAL - FCT AUTOMOBILE DOUALA*',
+      sharePitchSaleHeader: '*CERTIFIED VEHICLE FOR SALE - FCT AUTOMOBILE DOUALA*',
+      sharePitchWarranty: 'Warranty : Comprehensive insurance & FCT certified maintenance',
+      sharePitchAvailability: 'Availability : Immediate in Douala (with or without driver)',
+      sharePitchSaleStatus: 'Status : FCT certified, inspected and ready to drive',
+      sharePitchSaleLocation: 'Location : Bonamoussadi Showroom, Carrefour Santa Barbara',
       requestPayoutBtn: 'Request Mobile Money Payout',
       payoutNotice: 'Transfers processed within 24 business hours to your verified account.',
     },

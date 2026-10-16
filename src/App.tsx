@@ -14,6 +14,7 @@ import { Sidebar } from './components/Sidebar.tsx';
 import { DocumentModal, DocumentPrintData } from './components/DocumentModal.tsx';
 import { ProfileSecurityModal } from './components/ProfileSecurityModal.tsx';
 import { LockScreenModal } from './components/LockScreenModal.tsx';
+import { PrivacyUnlockModal } from './components/PrivacyUnlockModal.tsx';
 import { AppLoader } from './components/auth/AppLoader.tsx';
 import { LoginView } from './components/auth/LoginView.tsx';
 import { authService } from './services/firebase.ts';
@@ -91,20 +92,182 @@ export default function App() {
     }
   };
 
-  // Active Module & Showroom State (Navigation directe sans petits onglets en haut)
+  // Active Module & Showroom State (Persistance intégrale au rafraîchissement F5)
   const [currentModule, setCurrentModule] = useState<AppModule | 'showroom'>(() => {
     try {
-      const m = new URLSearchParams(window.location.search).get('module');
-      if (m) return m as AppModule;
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const m = urlParams.get('module');
+        if (m) return m as AppModule | 'showroom';
+        const saved = sessionStorage.getItem('fct_active_module') || localStorage.getItem('fct_active_module');
+        if (saved) return saved as AppModule | 'showroom';
+      }
     } catch {}
     return 'dashboard';
   });
   const [activeShowroomVehicle, setActiveShowroomVehicle] = useState<Vehicle | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+  // Synchronisation continue du module actif dans le stockage persistant et l'URL
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && currentModule) {
+        sessionStorage.setItem('fct_active_module', currentModule);
+        localStorage.setItem('fct_active_module', currentModule);
+
+        // Mettre à jour l'URL sans rechargement pour que F5 recharge le même onglet
+        const url = new URL(window.location.href);
+        if (currentModule !== 'dashboard') {
+          url.searchParams.set('module', currentModule);
+        } else {
+          url.searchParams.delete('module');
+        }
+        window.history.replaceState({}, '', url.toString());
+      }
+    } catch {}
+  }, [currentModule]);
+
   const [printDocData, setPrintDocData] = useState<DocumentPrintData | null>(null);
-  const [isSessionLocked, setIsSessionLocked] = useState(false);
   const [isProfileSecurityOpen, setIsProfileSecurityOpen] = useState(false);
+  const [isPrivacyUnlockOpen, setIsPrivacyUnlockOpen] = useState(false);
+
+  // Verrouillage de Session Persistant (Protection stricte contre le rafraîchissement F5 / rechargement)
+  const [isSessionLocked, setIsSessionLocked] = useState<boolean>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        if (new URLSearchParams(window.location.search).get('demo') === 'true') {
+          return false;
+        }
+        return (
+          sessionStorage.getItem('fct_session_locked') === 'true' ||
+          localStorage.getItem('fct_session_locked') === 'true'
+        );
+      }
+    } catch {
+      // Ignore
+    }
+    return false;
+  });
+
+  // Synchronisation continue du verrouillage de session dans le stockage persistant
+  useEffect(() => {
+    try {
+      if (isSessionLocked) {
+        sessionStorage.setItem('fct_session_locked', 'true');
+        localStorage.setItem('fct_session_locked', 'true');
+      } else {
+        sessionStorage.removeItem('fct_session_locked');
+        localStorage.removeItem('fct_session_locked');
+      }
+    } catch {
+      // Ignore
+    }
+  }, [isSessionLocked]);
+
+  // Mode Discrétion / Confidentialité des Chiffres & Montants (Privacy Mode)
+  const [isPrivacyMode, setIsPrivacyMode] = useState<boolean>(() => {
+    try {
+      return (
+        sessionStorage.getItem('fct_privacy_mode') === 'true' ||
+        localStorage.getItem('fct_privacy_mode') === 'true'
+      );
+    } catch {
+      return false;
+    }
+  });
+
+  // Basculement intelligent : 1 clic pour masquer, mais demande obligatoire du PIN pour démasquer
+  const handleTogglePrivacyMode = () => {
+    if (!isPrivacyMode) {
+      // Masquage immédiat sans code PIN requis
+      setIsPrivacyMode(true);
+    } else {
+      // Révélation : demande de code PIN si configuré sur le compte collaborateur
+      if (currentUser?.securityPin) {
+        setIsPrivacyUnlockOpen(true);
+      } else {
+        setIsPrivacyMode(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    if (isPrivacyMode) {
+      document.body.classList.add('privacy-mode');
+    } else {
+      document.body.classList.remove('privacy-mode');
+    }
+    try {
+      localStorage.setItem('fct_privacy_mode', isPrivacyMode ? 'true' : 'false');
+      sessionStorage.setItem('fct_privacy_mode', isPrivacyMode ? 'true' : 'false');
+    } catch {
+      // Ignore
+    }
+
+    if (!isPrivacyMode) {
+      // Nettoyage immédiat des éléments balisés dynamiquement
+      try {
+        document.querySelectorAll('.privacy-blur-auto').forEach((el) => {
+          el.classList.remove('privacy-blur', 'privacy-blur-auto');
+        });
+      } catch {
+        // Ignore
+      }
+      return;
+    }
+
+    // Détection universelle STRICTE : Uniquement les montants chiffrés (ex: "50 000 FCFA", "1 200 000 XAF")
+    // Protège expressément les onglets de navigation, les titres H1/H2 et le menu latéral
+    const monetaryRegex = /\d[\d\s\u00a0.,]*\s*(?:FCFA|XAF)/i;
+    const monetaryPrefixRegex = /(?:FCFA|XAF)\s*[\d\s\u00a0.,]*\d/i;
+
+    const tagMonetaryElements = () => {
+      try {
+        const walker = document.createTreeWalker(
+          document.body,
+          NodeFilter.SHOW_TEXT,
+          null
+        );
+        let node: Node | null;
+        while ((node = walker.nextNode())) {
+          const val = node.nodeValue;
+          if (val && (monetaryRegex.test(val) || monetaryPrefixRegex.test(val))) {
+            const parent = node.parentElement;
+            if (
+              parent &&
+              !parent.classList.contains('privacy-blur') &&
+              !parent.closest('nav, aside, header, h1, h2, h3, [role="tablist"], [role="navigation"]') &&
+              parent.tagName !== 'SCRIPT' &&
+              parent.tagName !== 'STYLE' &&
+              parent.tagName !== 'OPTION' &&
+              parent.tagName !== 'H1' &&
+              parent.tagName !== 'H2' &&
+              parent.tagName !== 'H3'
+            ) {
+              parent.classList.add('privacy-blur', 'privacy-blur-auto');
+            }
+          }
+        }
+      } catch {}
+    };
+
+    tagMonetaryElements();
+    const observer = new MutationObserver(() => {
+      tagMonetaryElements();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isPrivacyMode]);
 
   // Support démonstration & génération de documentation officielle FCT
   useEffect(() => {
@@ -411,8 +574,34 @@ export default function App() {
     | 'rentals'
     | 'modules'
     | 'users'
+    | 'partners'
+    | 'website-admin'
     | undefined
-  >(undefined);
+  >(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const urlTab = new URLSearchParams(window.location.search).get('tab');
+        if (urlTab) return urlTab as any;
+        const savedTab = sessionStorage.getItem('fct_active_settings_tab') || localStorage.getItem('fct_active_settings_tab');
+        if (savedTab) return savedTab as any;
+      }
+    } catch {}
+    return undefined;
+  });
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        if (settingsTab) {
+          sessionStorage.setItem('fct_active_settings_tab', settingsTab);
+          localStorage.setItem('fct_active_settings_tab', settingsTab);
+        } else {
+          sessionStorage.removeItem('fct_active_settings_tab');
+          localStorage.removeItem('fct_active_settings_tab');
+        }
+      }
+    } catch {}
+  }, [settingsTab]);
 
   // Sidebar / Navigation Module selection with optional context entity ID
   const handleNavigate = (module: AppModule, entityId?: string) => {
@@ -497,6 +686,9 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      sessionStorage.removeItem('fct_session_locked');
+      localStorage.removeItem('fct_session_locked');
+      setIsSessionLocked(false);
       await authService.logout();
     } catch (e) {
       console.warn('Erreur déconnexion:', e);
@@ -539,6 +731,8 @@ export default function App() {
         onOpenProfileSecurity={() => setIsProfileSecurityOpen(true)}
         onLockNow={() => setIsSessionLocked(true)}
         onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        isPrivacyMode={isPrivacyMode}
+        onTogglePrivacyMode={handleTogglePrivacyMode}
       />
 
       {/* Offline Alert Strip when disconnected */}
@@ -779,8 +973,30 @@ export default function App() {
         <LockScreenModal
           isLocked={isSessionLocked}
           currentUser={currentUser}
-          onUnlock={() => setIsSessionLocked(false)}
+          onUnlock={() => {
+            try {
+              sessionStorage.removeItem('fct_session_locked');
+              localStorage.removeItem('fct_session_locked');
+            } catch {
+              // Ignore
+            }
+            setIsSessionLocked(false);
+          }}
           onLogout={handleLogout}
+          lang={lang}
+        />
+      )}
+
+      {/* Modale de déverrouillage sécurisé par code PIN pour lever le mode discrétion */}
+      {currentUser && (
+        <PrivacyUnlockModal
+          isOpen={isPrivacyUnlockOpen}
+          onClose={() => setIsPrivacyUnlockOpen(false)}
+          onSuccess={() => {
+            setIsPrivacyMode(false);
+            setIsPrivacyUnlockOpen(false);
+          }}
+          currentUser={currentUser}
           lang={lang}
         />
       )}

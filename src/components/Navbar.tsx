@@ -1,26 +1,25 @@
 /**
  * @license
- * FCT ERP & CRM AUTOMOBILE - Top Navigation Bar
+ * FCT ERP & CRM AUTOMOBILE - Top Navigation Bar (Design Épuré & Ultra-Aéré)
  * Franchise Conseils Trading - Douala, Cameroun
  */
 
 import React from 'react';
 import { dbStore, DatabaseState } from '../services/dbStore.ts';
 import { Language, translations } from '../services/i18n.ts';
-import { UserProfile, UserRole } from '../../packages/shared-types/index.ts';
+import { UserProfile } from '../../packages/shared-types/index.ts';
 import {
   Wifi,
   WifiOff,
-  Globe,
-  Shield,
-  UserCheck,
-  User,
   Building2,
-  Clock,
   Menu,
   LogOut,
   Lock,
-  Sparkles,
+  Eye,
+  EyeOff,
+  Coins,
+  Clock,
+  Globe,
 } from 'lucide-react';
 import { FCT_LOGO_BASE64 } from '../utils/logoBase64.ts';
 
@@ -33,6 +32,8 @@ interface NavbarProps {
   onOpenProfileSecurity?: () => void;
   onLockNow?: () => void;
   onToggleMobileSidebar?: () => void;
+  isPrivacyMode?: boolean;
+  onTogglePrivacyMode?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -44,10 +45,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenProfileSecurity,
   onLockNow,
   onToggleMobileSidebar,
+  isPrivacyMode = false,
+  onTogglePrivacyMode,
 }) => {
   const t = translations[lang];
   const pendingSyncCount = state.syncQueue.filter((q) => q.status === 'PENDING').length;
   const activeSession = state.cashSessions.find((s) => s.status === 'OPEN');
+  const isEn = lang === 'en';
 
   const toggleOnline = () => {
     dbStore.setOnlineStatus(!state.isOnline);
@@ -55,163 +59,236 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-30 bg-[#0f2a4a] text-white border-b border-blue-900/60 shadow-md pt-[env(safe-area-inset-top,0px)]">
-      <div className="px-3 sm:px-4 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
-        {/* Brand & Agency Title with Mobile Hamburger Toggle */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Mobile Menu Hamburger Button */}
+      {/* ============================================================== */}
+      {/* ÉTAGE 1 : IDENTITÉ DE MARQUE, CONCESSION & STATUT DE CAISSE   */}
+      {/* ============================================================== */}
+      <div className="px-3 sm:px-4 py-2 flex items-center justify-between gap-3 border-b border-blue-900/40">
+        {/* Identité FCT & Hamburger Mobile */}
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          {/* Menu Mobile Hamburger */}
           <button
             type="button"
             onClick={onToggleMobileSidebar}
             title={lang === 'fr' ? 'Ouvrir le menu de navigation' : 'Open navigation menu'}
-            className="lg:hidden p-2 rounded-lg bg-blue-900/80 hover:bg-blue-800 text-white transition cursor-pointer border border-blue-700/60 shadow-sm"
+            className="lg:hidden p-1.5 rounded-lg bg-blue-900/80 hover:bg-blue-800 text-white transition cursor-pointer border border-blue-700/60 shadow-xs shrink-0"
           >
-            <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
+            <Menu className="w-4 h-4 text-emerald-400" />
           </button>
 
-          <div className="bg-white px-2 py-1 rounded-lg border border-white/20 shadow-sm flex items-center justify-center shrink-0">
+          {/* Logo officiel concessionnaire */}
+          <div className="bg-white px-2 py-0.5 rounded-lg border border-white/20 shadow-xs flex items-center justify-center shrink-0">
             <img
               src={FCT_LOGO_BASE64}
               alt="FCT Automobile Douala"
-              className="h-7 sm:h-8 w-auto max-w-[120px] object-contain"
+              className="h-6 sm:h-7 w-auto max-w-[110px] object-contain"
             />
           </div>
-          <div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-black text-sm sm:text-base tracking-wide text-white truncate max-w-[150px] sm:max-w-none">
+
+          {/* Titre & Localisation Concession */}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-black text-xs sm:text-sm tracking-wide text-white truncate">
                 FRANCHISE CONSEILS TRADING
               </span>
-              <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30 shrink-0">
+              <span className="hidden sm:inline-block text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30 shrink-0">
                 ERP / CRM
               </span>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-slate-300">
-              <Building2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400 shrink-0" />
-              <span className="hidden md:inline">{t.agencyLocation}</span>
-              <span className="md:hidden">Douala, Santa Barbara</span>
-              <span className="text-slate-400 hidden sm:inline">|</span>
-              <span className="hidden sm:inline-flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-blue-300" />
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-300 truncate">
+              <Building2 className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span className="truncate">Douala • Bonamoussadi</span>
+              <span className="text-slate-500 hidden md:inline">•</span>
+              <span className="hidden md:inline-flex items-center gap-1 text-slate-400">
+                <Clock className="w-3 h-3 text-blue-300" />
                 <span>UTC+1</span>
               </span>
             </div>
           </div>
         </div>
 
-        {/* Center / Right Control Panel */}
-        <div className="flex items-center flex-wrap gap-2.5 text-xs">
-          {/* Caisse Status Badge */}
+        {/* Étage 1 Droite : Statut de Caisse Actif / Fermé */}
+        <div className="shrink-0">
           <div
-            className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full border text-[11px] sm:text-xs shrink-0 ${
+            className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs transition shadow-xs ${
               activeSession
-                ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
-                : 'bg-rose-950/80 border-rose-500/50 text-rose-200'
+                ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
+                : 'bg-slate-800/80 border-slate-700 text-slate-400'
             }`}
+            title={
+              activeSession
+                ? `${t.activeSession} : ${activeSession.sessionNumber}`
+                : t.noActiveSession
+            }
           >
-            <div
-              className={`w-2 h-2 rounded-full ${
-                activeSession ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
-              }`}
-            />
-            <span className="font-medium hidden sm:inline">
-              {activeSession ? `${t.activeSession} (${activeSession.sessionNumber})` : t.noActiveSession}
-            </span>
-            <span className="font-medium sm:hidden">
-              {activeSession ? t.activeSession : t.noActiveSession}
-            </span>
+            <Coins className={`w-3.5 h-3.5 shrink-0 ${activeSession ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`} />
+            <div className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${activeSession ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-slate-500'}`} />
+              <span className="font-semibold text-xs">
+                {activeSession ? (
+                  <>
+                    <span className="hidden sm:inline">{isEn ? 'Cash Session' : 'Session Caisse'} </span>
+                    <span className="font-mono font-bold text-white">
+                      ({activeSession.sessionNumber.replace(/^CS-\d{4}-/, 'CS-')})
+                    </span>
+                  </>
+                ) : (
+                  <span>{isEn ? 'Register Closed' : 'Caisse Fermée'}</span>
+                )}
+              </span>
+            </div>
           </div>
+        </div>
+      </div>
 
-          {/* Network / Offline Mode Switch */}
+      {/* ============================================================== */}
+      {/* ÉTAGE 2 : COMMANDES SYSTÈME, OUTILS & COMPTE COLLABORATEUR      */}
+      {/* ============================================================== */}
+      <div className="px-3 sm:px-4 py-1.5 bg-[#0a1e35]/85 flex items-center justify-between gap-3 text-xs">
+        {/* Étage 2 Gauche : Connectivité Firestore, Langue, Mode Discrétion */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* Statut Réseau / Hors-ligne avec toggle On/Off */}
           <button
+            type="button"
             onClick={toggleOnline}
-            title={lang === 'fr' ? 'Bascule Mode En Ligne / Hors-Ligne' : 'Toggle Online / Offline Mode'}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition font-medium border cursor-pointer ${
+            title={
               state.isOnline
-                ? 'bg-blue-900/60 hover:bg-blue-900 border-blue-700/60 text-blue-200'
-                : 'bg-amber-950/90 hover:bg-amber-900 border-amber-600/70 text-amber-200'
+                ? isEn
+                  ? 'Online — Cloud Firestore real-time active'
+                  : 'En ligne — Synchronisation Cloud Firestore active'
+                : isEn
+                  ? 'Offline mode (local cache active)'
+                  : 'Mode Hors-Ligne (cache local actif)'
+            }
+            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[11px] font-medium transition cursor-pointer shrink-0 ${
+              state.isOnline
+                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25'
+                : 'bg-amber-500/20 border-amber-500/60 text-amber-300 hover:bg-amber-500/30'
             }`}
           >
             {state.isOnline ? (
               <>
                 <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{t.online}</span>
+                <span className="hidden sm:inline font-semibold">{isEn ? 'Online' : 'En ligne'}</span>
               </>
             ) : (
               <>
-                <WifiOff className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                <span>{t.offline}</span>
-                {pendingSyncCount > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-bold text-[10px]">
-                    {pendingSyncCount}
-                  </span>
-                )}
+                <div className="relative flex items-center">
+                  <WifiOff className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                  {pendingSyncCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 w-3.5 h-3.5 rounded-full bg-amber-500 text-slate-950 font-black text-[9px] flex items-center justify-center">
+                      {pendingSyncCount}
+                    </span>
+                  )}
+                </div>
+                <span className="hidden sm:inline font-semibold">{isEn ? 'Offline' : 'Hors-ligne'}</span>
               </>
             )}
           </button>
 
-          {/* Language Switcher */}
-          <div className="flex items-center bg-slate-800/80 rounded-md border border-slate-700 p-0.5">
-            <Globe className="w-3.5 h-3.5 text-slate-400 ml-1.5 mr-1" />
+          {/* Séparateur */}
+          <div className="h-3.5 w-px bg-blue-800/60 shrink-0" />
+
+          {/* Sélecteur de Langue Compact (FR / EN) */}
+          <div className="flex items-center bg-slate-900/80 rounded-md border border-slate-700/80 p-0.5 shrink-0">
+            <Globe className="w-3 h-3 text-slate-400 ml-1 mr-0.5" />
             <button
+              type="button"
               onClick={() => onLanguageChange('fr')}
-              className={`px-2 py-0.5 rounded text-xs font-semibold transition ${
+              className={`px-1.5 py-0.2 rounded text-[10px] font-bold transition cursor-pointer ${
                 lang === 'fr'
-                  ? 'bg-emerald-600 text-white shadow'
-                  : 'text-slate-300 hover:text-white'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               FR
             </button>
             <button
+              type="button"
               onClick={() => onLanguageChange('en')}
-              className={`px-2 py-0.5 rounded text-xs font-semibold transition ${
+              className={`px-1.5 py-0.2 rounded text-[10px] font-bold transition cursor-pointer ${
                 lang === 'en'
-                  ? 'bg-emerald-600 text-white shadow'
-                  : 'text-slate-300 hover:text-white'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               EN
             </button>
           </div>
 
-          {/* Collaborateur Authentifié & Rôle RBAC (Cliquable pour ouvrir Profil & PIN) */}
+          {/* Mode Discrétion / Confidentialité des Chiffres */}
+          {onTogglePrivacyMode && (
+            <>
+              <div className="h-3.5 w-px bg-blue-800/60 shrink-0 hidden sm:block" />
+              <button
+                type="button"
+                onClick={onTogglePrivacyMode}
+                title={
+                  lang === 'fr'
+                    ? isPrivacyMode
+                      ? 'Désactiver le mode discrétion (Afficher les montants)'
+                      : 'Activer le mode discrétion (Masquer les montants)'
+                    : isPrivacyMode
+                      ? 'Disable privacy mode (Show amounts)'
+                      : 'Enable privacy mode (Hide amounts)'
+                }
+                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[11px] transition cursor-pointer shrink-0 ${
+                  isPrivacyMode
+                    ? 'bg-amber-500/25 text-amber-300 border-amber-500/60 shadow-xs'
+                    : 'bg-slate-900/60 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-700/80'
+                }`}
+              >
+                {isPrivacyMode ? (
+                  <>
+                    <EyeOff className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="hidden md:inline font-semibold">{isEn ? 'Private' : 'Discrétion'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="hidden md:inline font-medium text-slate-400">{isEn ? 'Visible' : 'Montants'}</span>
+                  </>
+                )}
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Étage 2 Droite : Compte Collaborateur AÉRÉ (sans titre de poste), Cadenas & Déconnexion */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Nom du Collaborateur (sans le poste encombrant, épuré comme demandé) */}
           <button
             type="button"
             onClick={onOpenProfileSecurity}
-            title={t.navbar.myProfile}
-            className="flex items-center bg-slate-800/90 hover:bg-slate-700/90 rounded-lg border border-slate-700/80 px-2.5 py-1 gap-2 text-xs transition cursor-pointer text-left"
+            title={`${currentUser.fullName} (${t.roles[currentUser.role]}) — ${t.navbar.myProfile}`}
+            className="flex items-center bg-slate-900/80 hover:bg-slate-800 rounded-lg border border-slate-700/80 px-2.5 py-1 gap-2 text-xs transition cursor-pointer text-left shrink-0"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-            <div className="max-w-[130px] sm:max-w-[180px] truncate">
-              <span className="font-bold text-white truncate block">
-                {currentUser.fullName}
-              </span>
-            </div>
-            <span className="hidden md:inline px-1.5 py-0.5 rounded bg-blue-900/90 text-[10px] text-blue-200 font-bold uppercase shrink-0">
-              {t.roles[currentUser.role]}
+            <span className="font-semibold text-white truncate max-w-[140px] sm:max-w-[220px]">
+              {currentUser.fullName}
             </span>
           </button>
 
-          {/* Bouton Verrouiller l'écran maintenant */}
+          {/* Bouton Verrouiller l'écran */}
           {onLockNow && (
             <button
               type="button"
               onClick={onLockNow}
               title={t.navbar.lockSession}
-              className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-amber-600/20 text-slate-300 hover:text-amber-300 border border-slate-700 transition cursor-pointer"
+              className="p-1 rounded-md bg-slate-900/70 hover:bg-amber-600/20 text-slate-300 hover:text-amber-300 border border-slate-700/80 transition cursor-pointer shrink-0"
             >
               <Lock className="w-3.5 h-3.5" />
             </button>
           )}
 
-          {/* Déconnexion de la session Firebase */}
+          {/* Bouton Déconnexion */}
           <button
             type="button"
             onClick={onLogout}
             title={t.navbar.logout}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-800/60 text-rose-200 hover:text-white font-bold text-xs transition cursor-pointer"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-rose-950/70 hover:bg-rose-900 border border-rose-800/60 text-rose-300 hover:text-white font-medium text-xs transition cursor-pointer shrink-0"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{t.lockScreen.logout}</span>
+            <span className="hidden sm:inline text-[11px]">{t.lockScreen.logout}</span>
           </button>
         </div>
       </div>

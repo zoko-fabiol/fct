@@ -127,8 +127,10 @@ export const EntityCard: React.FC<EntityCardProps> = ({
                   </div>
                   <div
                     className={`font-black text-xs mt-0.5 truncate ${
-                      m.highlight ? 'text-blue-900' : 'text-slate-900'
-                    }`}
+                      typeof m.value === 'string' && (m.value.includes('FCFA') || m.value.includes('XAF'))
+                        ? 'privacy-blur '
+                        : ''
+                    }${m.highlight ? 'text-blue-900' : 'text-slate-900'}`}
                   >
                     {m.value}
                   </div>

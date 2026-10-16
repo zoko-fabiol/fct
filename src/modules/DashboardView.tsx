@@ -127,7 +127,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
             </div>
           </div>
           <div className="mt-2">
-            <span className="text-2xl font-black text-emerald-700">
+            <span className="text-2xl font-black text-emerald-700 privacy-blur">
               {formatXAF(currentCashBalance)}
             </span>
           </div>
@@ -151,7 +151,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
             </div>
           </div>
           <div className="mt-2">
-            <span className="text-2xl font-black text-slate-900">
+            <span className="text-2xl font-black text-slate-900 privacy-blur">
               {formatXAF(totalInflows)}
             </span>
           </div>
@@ -190,7 +190,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
             <div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
                 <KeyRound className="w-4 h-4 text-emerald-600" />
-                <span>Locations &amp; Missions en Cours</span>
+                <span>{t.dashboard.activeRentalsTitle}</span>
               </div>
               <div className="flex items-center gap-3">
                 {/* Switch Cartes vs Tableau */}
@@ -218,7 +218,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
                   onClick={() => onNavigate('rentals')}
                   className="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 cursor-pointer"
                 >
-                  <span>Voir tout</span>
+                  <span>{t.dashboard.viewAll}</span>
                   <ArrowUpRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -245,11 +245,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
                       <div className="font-semibold text-slate-800">{ctr.vehicleName}</div>
                       <div className="text-[11px] text-slate-500 font-mono">{ctr.licensePlate}</div>
                       <div className="text-[11px] text-slate-500">
-                        {ctr.startDate} au {ctr.endDate} ({ctr.totalDays} jours)
+                        {ctr.startDate} {t.dashboard.dateTo} {ctr.endDate} ({ctr.totalDays} {t.dashboard.daysCount})
                       </div>
                     </div>
                     <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-xs">
-                      <span className="text-[10px] text-slate-400 font-medium">Total Contrat</span>
+                      <span className="text-[10px] text-slate-400 font-medium">{t.dashboard.totalContract}</span>
                       <span className="font-bold text-slate-900">{formatXAF(ctr.totalAmountXAF)}</span>
                     </div>
                   </div>
@@ -260,12 +260,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
                 <table className="w-full text-xs text-left">
                   <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-[10px]">
                     <tr>
-                      <th className="py-2.5 px-4">Contrat</th>
-                      <th className="py-2.5 px-4">Véhicule</th>
-                      <th className="py-2.5 px-4">Client</th>
-                      <th className="py-2.5 px-4">Période</th>
-                      <th className="py-2.5 px-4 text-right">Montant</th>
-                      <th className="py-2.5 px-4 text-center">Statut</th>
+                      <th className="py-2.5 px-4">{t.rentalsPage.contractNumCol}</th>
+                      <th className="py-2.5 px-4">{t.rentalsPage.vehicleCol}</th>
+                      <th className="py-2.5 px-4">{t.rentalsPage.clientCol}</th>
+                      <th className="py-2.5 px-4">{t.rentalsPage.periodCol}</th>
+                      <th className="py-2.5 px-4 text-right">{t.amount}</th>
+                      <th className="py-2.5 px-4 text-center">{t.status}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -278,10 +278,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
                         </td>
                         <td className="py-3 px-4 text-slate-700">{ctr.customerName}</td>
                         <td className="py-3 px-4 text-slate-600">
-                          <div>{ctr.startDate} au {ctr.endDate}</div>
-                          <div className="text-[10px] text-slate-400">{ctr.totalDays} jours</div>
+                          <div>{ctr.startDate} {t.dashboard.dateTo} {ctr.endDate}</div>
+                          <div className="text-[10px] text-slate-400">{ctr.totalDays} {t.dashboard.daysCount}</div>
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-slate-900">
+                        <td className="py-3 px-4 text-right font-bold text-slate-900 privacy-blur">
                           {formatXAF(ctr.totalAmountXAF)}
                         </td>
                         <td className="py-3 px-4 text-center">
@@ -301,7 +301,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
             <h3 className="font-bold text-sm text-slate-900 mb-3 flex items-center gap-2">
               <Car className="w-4 h-4 text-blue-600" />
-              <span>Disponibilité Immédiate - Agence Santa Barbara</span>
+              <span>{t.dashboard.immediateAvailabilityAgency}</span>
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {state.vehicles.slice(0, 3).map((v) => (
@@ -330,8 +330,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
                     <div className="text-[11px] text-slate-500 font-mono">{v.licensePlate}</div>
                   </div>
                   <div className="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
-                    <span className="text-slate-500">Tarif / jour :</span>
-                    <span className="font-bold text-emerald-700">{formatXAF(v.rentalDailyRate)}</span>
+                    <span className="text-slate-500">{t.dashboard.dailyRateLabel}</span>
+                    <span className="font-bold text-emerald-700 privacy-blur">{formatXAF(v.rentalDailyRate)}</span>
                   </div>
                 </div>
               ))}
@@ -345,36 +345,36 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
           <div className="bg-gradient-to-br from-[#0f2a4a] to-[#1e3a8a] text-white rounded-xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs text-blue-200 font-semibold uppercase tracking-wider">
-                État de Caisse Certifiée
+                {t.dashboard.certifiedCashState}
               </span>
               <Wallet className="w-5 h-5 text-emerald-400" />
             </div>
 
             {activeCashSession ? (
               <div className="space-y-3">
-                <div className="text-2xl font-black text-white">
+                <div className="text-2xl font-black text-white privacy-blur">
                   {formatXAF(activeCashSession.calculatedExpectedBalanceXAF)}
                 </div>
                 <div className="text-xs text-slate-300 space-y-1">
                   <div className="flex justify-between">
-                    <span>Session :</span>
+                    <span>{t.dashboard.sessionLabel}</span>
                     <span className="font-bold text-white">{activeCashSession.sessionNumber}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Ouverte par :</span>
+                    <span>{t.dashboard.openedByLabel}</span>
                     <span>{activeCashSession.openedByName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Fonds de départ :</span>
-                    <span>{formatXAF(activeCashSession.openingBalanceXAF)}</span>
+                    <span>{t.dashboard.openingFloatLabel}</span>
+                    <span className="privacy-blur">{formatXAF(activeCashSession.openingBalanceXAF)}</span>
                   </div>
                   <div className="flex justify-between text-emerald-300">
-                    <span>Total Entrées :</span>
-                    <span>+{formatXAF(activeCashSession.currentCashInXAF)}</span>
+                    <span>{t.dashboard.totalInflowsLabel}</span>
+                    <span className="privacy-blur">+{formatXAF(activeCashSession.currentCashInXAF)}</span>
                   </div>
                   <div className="flex justify-between text-rose-300">
-                    <span>Total Sorties :</span>
-                    <span>-{formatXAF(activeCashSession.currentCashOutXAF)}</span>
+                    <span>{t.dashboard.totalOutflowsLabel}</span>
+                    <span className="privacy-blur">-{formatXAF(activeCashSession.currentCashOutXAF)}</span>
                   </div>
                 </div>
 
@@ -382,19 +382,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
                   onClick={() => onNavigate('cash')}
                   className="w-full mt-2 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition cursor-pointer text-center block shadow"
                 >
-                  Gérer la Caisse &amp; Écritures
+                  {t.dashboard.manageCashEntries}
                 </button>
               </div>
             ) : (
               <div className="text-center py-4">
                 <p className="text-xs text-slate-300 mb-3">
-                  Aucune session de caisse n'est actuellement ouverte.
+                  {t.dashboard.noCashSessionOpen}
                 </p>
                 <button
                   onClick={() => onNavigate('cash')}
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition cursor-pointer"
                 >
-                  Ouvrir une Session
+                  {t.dashboard.openSessionAction}
                 </button>
               </div>
             )}
@@ -405,13 +405,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ state, lang, onNav
             <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
               <span className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-slate-500" />
-                <span>Journal d'Activité Récent</span>
+                <span>{t.dashboard.recentActivityLog}</span>
               </span>
               <button
                 onClick={() => onNavigate('audit')}
                 className="text-[11px] text-blue-600 hover:underline cursor-pointer"
               >
-                Audit complet
+                {t.dashboard.fullAudit}
               </button>
             </div>
 

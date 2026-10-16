@@ -83,6 +83,12 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Ensure Environment Configuration
+        run: |
+          if [ ! -f .env ] && [ -f .env.example ]; then
+            cp .env.example .env
+          fi
+
       - name: Build Web Application (Vite Production)
         run: npm run build
 

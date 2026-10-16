@@ -92,18 +92,50 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
   const { settings } = state;
   const currentUser = dbStore.getCurrentUser();
   const t = translations[lang];
+  const isEn = lang === 'en';
 
   // RBAC permissions check
   const canEdit = hasEffectivePermission(currentUser, 'settings', 'update', state.rolePermissions);
 
   // Active category tab (null = Menu Hub principal des paramètres)
-  const [activeTab, setActiveTab] = useState<SettingsTab | null>(initialTab ?? null);
+  const [activeTab, setActiveTab] = useState<SettingsTab | null>(() => {
+    if (initialTab !== undefined && initialTab !== null) return initialTab;
+    try {
+      if (typeof window !== 'undefined') {
+        const urlTab = new URLSearchParams(window.location.search).get('tab');
+        if (urlTab) return urlTab as SettingsTab;
+        const savedTab = sessionStorage.getItem('fct_active_settings_tab') || localStorage.getItem('fct_active_settings_tab');
+        if (savedTab) return savedTab as SettingsTab;
+      }
+    } catch {}
+    return null;
+  });
 
   React.useEffect(() => {
     if (initialTab !== undefined) {
       setActiveTab(initialTab);
     }
   }, [initialTab]);
+
+  React.useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        if (activeTab) {
+          sessionStorage.setItem('fct_active_settings_tab', activeTab);
+          localStorage.setItem('fct_active_settings_tab', activeTab);
+          const url = new URL(window.location.href);
+          url.searchParams.set('tab', activeTab);
+          window.history.replaceState({}, '', url.toString());
+        } else {
+          sessionStorage.removeItem('fct_active_settings_tab');
+          localStorage.removeItem('fct_active_settings_tab');
+          const url = new URL(window.location.href);
+          url.searchParams.delete('tab');
+          window.history.replaceState({}, '', url.toString());
+        }
+      }
+    } catch {}
+  }, [activeTab]);
 
   // Search filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,12 +146,36 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
-  const [importJsonText, setImportJsonText] = useState('');
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  // Synchronize draft when external state changes (e.g. language or theme toggle from navbar)
+  React.useEffect(() => {
+    setFormData((prev) => {
+      const liveKeys: (keyof AgencySettings)[] = ['theme', 'density', 'defaultLanguage'];
+      const hasManualEdits = Object.keys(prev).some(
+        (key) =>
+          !liveKeys.includes(key as keyof AgencySettings) &&
+          JSON.stringify(prev[key as keyof AgencySettings]) !== JSON.stringify(settings[key as keyof AgencySettings])
+      );
+      if (!hasManualEdits) {
+        return { ...settings };
+      }
+      return {
+        ...prev,
+        theme: settings.theme,
+        density: settings.density,
+        defaultLanguage: settings.defaultLanguage,
+      };
+    });
+  }, [settings]);
 
   // Synchronize draft when external state changes, if not dirty
   const isDirty = useMemo(() => {
-    return JSON.stringify(formData) !== JSON.stringify(settings);
+    const liveKeys: (keyof AgencySettings)[] = ['theme', 'density', 'defaultLanguage'];
+    return Object.keys(formData).some(
+      (key) =>
+        !liveKeys.includes(key as keyof AgencySettings) &&
+        JSON.stringify(formData[key as keyof AgencySettings]) !== JSON.stringify(settings[key as keyof AgencySettings])
+    );
   }, [formData, settings]);
 
   const handleChange = <K extends keyof AgencySettings>(key: K, value: AgencySettings[K]) => {
@@ -186,24 +242,38 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
     try {
       const granted = await notificationEngine.requestPermissions();
       if (!granted) {
-        setNotificationMsg('Autorisation de notification non accordée sur l’appareil.');
+        setNotificationMsg(
+          isEn
+            ? 'Notification permission not granted on this device.'
+            : 'Autorisation de notification non accordée sur l’appareil.'
+        );
         setTimeout(() => setNotificationMsg(null), 4000);
         return;
       }
 
       await notificationEngine.dispatch({
         title: 'FCT Automobile — Douala',
-        body: 'Alerte sonore et notification système VIP opérationnelles !',
+        body: isEn
+          ? 'Audible alert and VIP system notification operational!'
+          : 'Alerte sonore et notification système VIP opérationnelles !',
       });
 
       setNotificationMsg(
         isNativeMobile()
-          ? 'Notification système VIP envoyée sur votre smartphone !'
+          ? isEn
+            ? 'VIP system notification dispatched to your smartphone!'
+            : 'Notification système VIP envoyée sur votre smartphone !'
+          : isEn
+          ? 'Notification successfully dispatched to your desktop!'
           : 'Notification envoyée avec succès sur votre bureau !'
       );
     } catch (e: any) {
       console.error('Erreur notification :', e);
-      setNotificationMsg('Erreur lors du déclenchement de la notification.');
+      setNotificationMsg(
+        isEn
+          ? 'Error while triggering system notification.'
+          : 'Erreur lors du déclenchement de la notification.'
+      );
     }
     setTimeout(() => setNotificationMsg(null), 4000);
   };
@@ -277,40 +347,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
       );
     } catch (err: unknown) {
       setSaveErrorMsg(err instanceof Error ? err.message : String(err));
-    }
-  };
-
-  const handleExportBackup = () => {
-    const jsonString = dbStore.exportDatabaseBackup();
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `fct-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImportBackup = () => {
-    if (!canEdit || !importJsonText.trim()) return;
-    const res = dbStore.importDatabaseBackup(importJsonText.trim());
-    if (res.success) {
-      setFormData({ ...dbStore.getSettings() });
-      setIsImportModalOpen(false);
-      setImportJsonText('');
-      setSaveSuccessMsg(
-        lang === 'fr'
-          ? res.message || 'Sauvegarde restaurée avec succès dans la base FCT.'
-          : 'Backup successfully restored into FCT database.'
-      );
-    } else {
-      setSaveErrorMsg(
-        lang === 'fr'
-          ? res.message || 'Échec de la restauration : format JSON invalide ou corrompu.'
-          : 'Restoration failed: invalid or corrupted JSON format.'
-      );
     }
   };
 
@@ -401,7 +437,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
     {
       id: 'general',
       rank: 1,
-      priorityLabel: '01 • Priorité Exploitation',
+      priorityLabel: isEn ? '01 • Operations Priority' : '01 • Priorité Exploitation',
       label: lang === 'en' ? 'General & Agency Identity' : 'Général & Identité de l’Agence',
       shortLabel: lang === 'en' ? 'Identity' : 'Identité',
       desc: lang === 'en'
@@ -416,7 +452,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
     {
       id: 'rentals',
       rank: 2,
-      priorityLabel: '02 • Règles Locatives',
+      priorityLabel: isEn ? '02 • Rental Rules' : '02 • Règles Locatives',
       label: lang === 'en' ? 'Rentals, Pricing & Deposits' : 'Locations, Tarification & Cautions',
       shortLabel: lang === 'en' ? 'Rentals' : 'Locations',
       desc: lang === 'en'
@@ -431,7 +467,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
     {
       id: 'finance',
       rank: 3,
-      priorityLabel: '03 • Caisse & Fiscalité',
+      priorityLabel: isEn ? '03 • Cash & Tax' : '03 • Caisse & Fiscalité',
       label: lang === 'en' ? 'Finance, Cash Desk & Tax' : 'Finances, Caisse & Fiscalité',
       shortLabel: lang === 'en' ? 'Finance' : 'Finances',
       desc: lang === 'en'
@@ -446,7 +482,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
     {
       id: 'fleet',
       rank: 4,
-      priorityLabel: '04 • Contrôle Flotte',
+      priorityLabel: isEn ? '04 • Fleet Control' : '04 • Contrôle Flotte',
       label: lang === 'en' ? 'Fleet Management & Alerts' : 'Parc Automobile & Alertes Sécurité',
       shortLabel: lang === 'en' ? 'Fleet' : 'Flotte',
       desc: lang === 'en'
@@ -455,13 +491,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
       icon: <Car className="w-5 h-5" />,
       colorBg: 'bg-cyan-50 border-cyan-200 text-cyan-700',
       colorText: 'text-cyan-700',
-      badgeValue: `${formData.insuranceAlertDays || 30}j Préavis`,
+      badgeValue: `${formData.insuranceAlertDays || 30}${isEn ? 'd Notice' : 'j Préavis'}`,
       keywords: ['assurance', 'visite technique', 'alerte', 'photos', 'flotte', 'véhicule', 'anticipation', 'contrôle'],
     },
     {
       id: 'maintenance',
       rank: 5,
-      priorityLabel: '05 • Atelier & Stocks',
+      priorityLabel: isEn ? '05 • Workshop & Stock' : '05 • Atelier & Stocks',
       label: lang === 'en' ? 'Maintenance & Spare Parts' : 'Maintenance, Atelier & Stocks',
       shortLabel: lang === 'en' ? 'Maintenance' : 'Maintenance',
       desc: lang === 'en'
@@ -476,7 +512,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
     {
       id: 'appearance',
       rank: 6,
-      priorityLabel: '06 • Confort Visuel',
+      priorityLabel: isEn ? '06 • Visual Comfort' : '06 • Confort Visuel',
       label: lang === 'en' ? 'Appearance & Preferences' : 'Apparence, Thème & Préférences',
       shortLabel: lang === 'en' ? 'Appearance' : 'Apparence',
       desc: lang === 'en'
@@ -485,13 +521,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
       icon: <Palette className="w-5 h-5" />,
       colorBg: 'bg-indigo-50 border-indigo-200 text-indigo-700',
       colorText: 'text-indigo-700',
-      badgeValue: `${formData.theme === 'dark' ? 'Sombre' : 'Clair'} • ${(formData.defaultLanguage || 'FR').toUpperCase()}`,
+      badgeValue: `${formData.theme === 'dark' ? (isEn ? 'Dark' : 'Sombre') : (isEn ? 'Light' : 'Clair')} • ${(formData.defaultLanguage || 'FR').toUpperCase()}`,
       keywords: ['thème', 'sombre', 'clair', 'langue', 'anglais', 'français', 'densité', 'son', 'bip', 'affichage'],
     },
     {
       id: 'numbering',
       rank: 7,
-      priorityLabel: '07 • Séquençage Pièces',
+      priorityLabel: isEn ? '07 • Document Sequencing' : '07 • Séquençage Pièces',
       label: lang === 'en' ? 'Numbering & Document Formats' : 'Numérotation des Documents Officiels',
       shortLabel: lang === 'en' ? 'Numbering' : 'Numérotation',
       desc: lang === 'en'
@@ -506,7 +542,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
     {
       id: 'modules',
       rank: 8,
-      priorityLabel: '08 • Modules FCT',
+      priorityLabel: isEn ? '08 • FCT Modules' : '08 • Modules FCT',
       label: lang === 'en' ? 'ERP Modules Controls' : 'Activation & Gestion des Modules',
       shortLabel: lang === 'en' ? 'Modules' : 'Modules',
       desc: lang === 'en'
@@ -515,43 +551,43 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
       icon: <Layers className="w-5 h-5" />,
       colorBg: 'bg-teal-50 border-teal-200 text-teal-700',
       colorText: 'text-teal-700',
-      badgeValue: '18 Modules',
+      badgeValue: isEn ? '18 Modules' : '18 Modules',
       keywords: ['modules', 'activation', 'désactivation', 'visibilité', 'menu', 'sidebar', 'fonctionnalités'],
     },
     {
       id: 'users',
       rank: 9,
-      priorityLabel: '09 • Gouvernance RH',
+      priorityLabel: isEn ? '09 • HR Governance' : '09 • Gouvernance RH',
       label: lang === 'en' ? 'Staff & RBAC Permissions' : 'Collaborateurs & Droits d’Accès (RBAC)',
-      shortLabel: lang === 'en' ? 'Staff' : 'Équipe & Accès',
+      shortLabel: lang === 'en' ? 'Staff' : 'Équipe',
       desc: lang === 'en'
         ? 'Employee accounts directory, password generation, 4-digit security PIN and granular role matrix.'
         : 'Création d’employés, génération sécurisée de mots de passe, codes PIN et matrice des privilèges.',
       icon: <ShieldCheck className="w-5 h-5" />,
       colorBg: 'bg-rose-50 border-rose-200 text-rose-700',
       colorText: 'text-rose-700',
-      badgeValue: `${state.users?.length || 0} Collaborateurs`,
+      badgeValue: `${state.users?.length || 0} ${isEn ? 'Staff Members' : 'Collaborateurs'}`,
       keywords: ['utilisateurs', 'collaborateurs', 'mot de passe', 'pin', 'rôles', 'rbac', 'droits', 'permissions', 'accès'],
     },
     {
       id: 'partners',
       rank: 10,
-      priorityLabel: '10 • Réseau Partenaires',
+      priorityLabel: isEn ? '10 • Partner Network' : '10 • Réseau Partenaires',
       label: lang === 'en' ? 'Partners & Business Introducers' : 'Gestion des Partenaires & Apporteurs',
-      shortLabel: lang === 'en' ? 'Partners' : 'Gestion Partenaires',
+      shortLabel: lang === 'en' ? 'Partners' : 'Partenaires',
       desc: lang === 'en'
         ? 'Website-registered partners, individual performance metrics, account approval, commission ledger and MoMo payouts.'
         : 'Partenaires enregistrés sur le site web, statistiques de chaque partenaire, validation, commissions et retraits Mobile Money.',
       icon: <Users className="w-5 h-5" />,
       colorBg: 'bg-amber-50 border-amber-200 text-amber-700',
       colorText: 'text-amber-700',
-      badgeValue: 'Gestion des Partenaires',
+      badgeValue: isEn ? 'Partners Management' : 'Gestion des Partenaires',
       keywords: ['partenaires', 'affiliation', 'apporteurs', 'statistiques', 'commissions', 'retrait', 'orange money', 'mtn momo'],
     },
     {
       id: 'website-admin',
       rank: 11,
-      priorityLabel: '11 • Vitrine & CMS',
+      priorityLabel: isEn ? '11 • Website & CMS' : '11 • Vitrine & CMS',
       label: lang === 'en' ? 'Website Administration & CMS' : 'Administration du Site Web & CMS',
       shortLabel: lang === 'en' ? 'Website' : 'Site Web',
       desc: lang === 'en'
@@ -560,7 +596,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
       icon: <Globe className="w-5 h-5" />,
       colorBg: 'bg-blue-50 border-blue-200 text-blue-700',
       colorText: 'text-blue-700',
-      badgeValue: 'CMS & Analytics Live',
+      badgeValue: isEn ? 'CMS & Live Analytics' : 'CMS & Analytics Live',
       keywords: ['site web', 'vitrine', 'cms', 'texte', 'visiteurs', 'statistiques', 'couleurs', 'thème', 'analytics'],
     },
   ];
@@ -605,7 +641,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                     ? lang === 'fr'
                       ? 'Menu Central des Paramètres FCT — Sélectionnez une rubrique ci-dessous'
                       : 'Central FCT Settings Hub — Select a category below'
-                    : `${currentCategory?.label || ''} — Douala, Cameroun`}
+                    : `${currentCategory?.label || ''} — Douala, ${isEn ? 'Cameroon' : 'Cameroun'}`}
                 </p>
               </div>
             </div>
@@ -701,53 +737,90 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
           </div>
         )}
 
-        {/* Navigation Drill-down : Si une catégorie est ouverte, barre de retour et raccourcis */}
+        {/* Navigation Drill-down : Si une catégorie est ouverte, barre de retour et barre d'onglets redessinée avec icônes */}
         {activeTab !== null ? (
-          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setActiveTab(null)}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black transition cursor-pointer shadow-xs group"
-                title="Retour au menu principal de tous les paramètres"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-emerald-700 transition group-hover:-translate-x-0.5" />
-                <span>{lang === 'fr' ? '← Retour au Menu des Paramètres' : '← Back to Settings Menu'}</span>
-              </button>
+          <div className="pt-3 border-t border-slate-100 space-y-2.5">
+            {/* Ligne 1 : Bouton retour menu, fil d'Ariane et badge priorité */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(null)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 text-slate-700 text-xs font-bold transition shadow-xs shrink-0 whitespace-nowrap cursor-pointer group"
+                  title={isEn ? 'Return to main settings menu' : 'Retour au menu principal de tous les paramètres'}
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-emerald-600 transition group-hover:-translate-x-0.5" />
+                  <span className="whitespace-nowrap">{isEn ? '← Settings Hub' : '← Menu des Paramètres'}</span>
+                </button>
 
-              <div className="text-xs text-slate-400 hidden md:flex items-center gap-1 font-semibold">
-                <span className="hover:underline cursor-pointer" onClick={() => setActiveTab(null)}>Paramètres FCT</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-                <span className="text-slate-800 font-bold">{currentCategory?.label}</span>
+                <div className="flex items-center gap-2 text-xs min-w-0">
+                  <span
+                    className="text-slate-400 font-medium hover:text-slate-700 cursor-pointer hidden md:inline whitespace-nowrap"
+                    onClick={() => setActiveTab(null)}
+                  >
+                    {isEn ? 'FCT Settings' : 'Paramètres FCT'}
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0 hidden md:inline" />
+                  <div className="flex items-center gap-1.5 font-black text-slate-900 truncate bg-slate-100/90 px-2.5 py-1 rounded-lg border border-slate-200/80">
+                    {currentCategory && (
+                      <span className="text-emerald-700 shrink-0">
+                        {React.isValidElement(currentCategory.icon)
+                          ? React.cloneElement(currentCategory.icon as React.ReactElement<any>, { className: 'w-3.5 h-3.5' })
+                          : currentCategory.icon}
+                      </span>
+                    )}
+                    <span className="truncate">{currentCategory?.label}</span>
+                  </div>
+                </div>
               </div>
+
+              {currentCategory && (
+                <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200/70 text-emerald-800 text-[11px] font-bold shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>{currentCategory.priorityLabel}</span>
+                </div>
+              )}
             </div>
 
-            {/* Raccourcis rapides d'onglets compacts */}
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1">
-              {categories.map((cat) => {
-                const isSelected = activeTab === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setActiveTab(cat.id)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
-                      isSelected
-                        ? 'bg-slate-900 text-white shadow-xs'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
-                  >
-                    <span>{cat.shortLabel}</span>
-                  </button>
-                );
-              })}
+            {/* Ligne 2 : Bande d'onglets panoramique moderne avec logos/icônes */}
+            <div className="relative">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1.5 px-1.5 bg-slate-100/80 rounded-xl border border-slate-200/80 shadow-inner">
+                {categories.map((cat) => {
+                  const isSelected = activeTab === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setActiveTab(cat.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-150 cursor-pointer flex items-center gap-2 shrink-0 ${
+                        isSelected
+                          ? 'bg-[#0f2a4a] text-white shadow-sm ring-1 ring-blue-900/40'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/90 bg-transparent'
+                      }`}
+                    >
+                      <span className={`shrink-0 transition-colors ${isSelected ? 'text-emerald-400' : 'text-slate-400'}`}>
+                        {React.isValidElement(cat.icon)
+                          ? React.cloneElement(cat.icon as React.ReactElement<any>, { className: 'w-3.5 h-3.5' })
+                          : cat.icon}
+                      </span>
+                      <span>{cat.shortLabel}</span>
+                      {isSelected && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         ) : (
           /* Indicateur de synthèse du Hub */
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
             <span className="font-semibold">
-              {filteredCategories.length} catégorie(s) de configuration disponible(s) • Ordonnées par priorité d’usage
+              {filteredCategories.length}{' '}
+              {isEn
+                ? 'configuration category/ies available • Ordered by usage priority'
+                : 'catégorie(s) de configuration disponible(s) • Ordonnées par priorité d’usage'}
             </span>
             <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full font-bold">
               Franchise Conseils Trading Automobile
@@ -794,7 +867,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                     {cat.badgeValue}
                   </div>
                   <div className="inline-flex items-center gap-1 font-black text-xs text-emerald-700 group-hover:translate-x-0.5 transition-transform">
-                    <span>Ouvrir</span>
+                    <span>{isEn ? 'Open' : 'Ouvrir'}</span>
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </div>
                 </div>
@@ -805,16 +878,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
           {filteredCategories.length === 0 && (
             <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-2">
               <Search className="w-8 h-8 text-slate-400 mx-auto" />
-              <h3 className="font-bold text-slate-800 text-sm">Aucun résultat trouvé</h3>
+              <h3 className="font-bold text-slate-800 text-sm">
+                {isEn ? 'No results found' : 'Aucun résultat trouvé'}
+              </h3>
               <p className="text-xs text-slate-500">
-                Aucune catégorie de paramètres ne correspond à « {searchQuery} ».
+                {isEn
+                  ? `No settings category matches "${searchQuery}".`
+                  : `Aucune catégorie de paramètres ne correspond à « ${searchQuery} ».`}
               </p>
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
                 className="mt-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
               >
-                Effacer la recherche
+                {isEn ? 'Clear search' : 'Effacer la recherche'}
               </button>
             </div>
           )}
@@ -832,15 +909,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
                 <Building2 className="w-4 h-4 text-blue-700" />
-                <span>Identité Légale & Raison Sociale</span>
+                <span>{isEn ? 'Legal Identity & Company Name' : 'Identité Légale & Raison Sociale'}</span>
               </div>
-              <span className="text-[11px] font-mono text-slate-400">Siège Social Douala</span>
+              <span className="text-[11px] font-mono text-slate-400">
+                {isEn ? 'Douala Head Office' : 'Siège Social Douala'}
+              </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <label className="block text-slate-500 font-semibold mb-1">
-                  Nom Officiel de l’Entreprise <span className="text-rose-500">*</span>
+                  {isEn ? 'Official Company Name' : 'Nom Officiel de l’Entreprise'} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -853,7 +932,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
               <div>
                 <label className="block text-slate-500 font-semibold mb-1">
-                  Nom Commercial / Sigle
+                  {isEn ? 'Trade Name / Acronym' : 'Nom Commercial / Sigle'}
                 </label>
                 <input
                   type="text"
@@ -866,7 +945,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
               <div>
                 <label className="block text-slate-500 font-semibold mb-1">
-                  Registre du Commerce (RCCM)
+                  {isEn ? 'Trade Registry (RCCM)' : 'Registre du Commerce (RCCM)'}
                 </label>
                 <input
                   type="text"
@@ -879,7 +958,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
               <div>
                 <label className="block text-slate-500 font-semibold mb-1">
-                  Numéro d’Identifiant Unique (NIU)
+                  {isEn ? 'Tax Identification Number (NIU)' : 'Numéro d’Identifiant Unique (NIU)'}
                 </label>
                 <input
                   type="text"
@@ -892,7 +971,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
               <div className="sm:col-span-2">
                 <label className="block text-slate-500 font-semibold mb-1">
-                  Adresse Principale & Quartier
+                  {isEn ? 'Main Address & Neighborhood' : 'Adresse Principale & Quartier'}
                 </label>
                 <input
                   type="text"
@@ -905,7 +984,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
               <div>
                 <label className="block text-slate-500 font-semibold mb-1">
-                  Point de Repère Local
+                  {isEn ? 'Local Landmark' : 'Point de Repère Local'}
                 </label>
                 <input
                   type="text"
@@ -918,7 +997,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-500 font-semibold mb-1">Ville</label>
+                  <label className="block text-slate-500 font-semibold mb-1">{isEn ? 'City' : 'Ville'}</label>
                   <input
                     type="text"
                     disabled={!canEdit}
@@ -928,7 +1007,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-500 font-semibold mb-1">Pays</label>
+                  <label className="block text-slate-500 font-semibold mb-1">{isEn ? 'Country' : 'Pays'}</label>
                   <input
                     type="text"
                     disabled={!canEdit}
@@ -940,7 +1019,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Téléphone Principal (Standard)</label>
+                <label className="block text-slate-500 font-semibold mb-1">
+                  {isEn ? 'Main Phone (Landline)' : 'Téléphone Principal (Standard)'}
+                </label>
                 <input
                   type="text"
                   disabled={!canEdit}
@@ -951,7 +1032,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Téléphone Secondaire / Mobile</label>
+                <label className="block text-slate-500 font-semibold mb-1">
+                  {isEn ? 'Secondary Phone / Mobile' : 'Téléphone Secondaire / Mobile'}
+                </label>
                 <input
                   type="text"
                   disabled={!canEdit}
@@ -962,7 +1045,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Email Officiel</label>
+                <label className="block text-slate-500 font-semibold mb-1">{isEn ? 'Official Email' : 'Email Officiel'}</label>
                 <input
                   type="email"
                   disabled={!canEdit}
@@ -973,7 +1056,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Site Web</label>
+                <label className="block text-slate-500 font-semibold mb-1">{isEn ? 'Website' : 'Site Web'}</label>
                 <input
                   type="text"
                   disabled={!canEdit}
@@ -985,7 +1068,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
               <div className="sm:col-span-2">
                 <label className="block text-slate-500 font-semibold mb-1">
-                  URL du Logo de l’Entreprise (Entêtes & Impressions)
+                  {isEn ? 'Company Logo URL (Headers & Printing)' : 'URL du Logo de l’Entreprise (Entêtes & Impressions)'}
                 </label>
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-28 bg-white border border-slate-200 rounded-xl p-1 shadow-xs flex items-center justify-center shrink-0">
@@ -1000,7 +1083,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                     disabled={!canEdit}
                     value={formData.logoUrl || ''}
                     onChange={(e) => handleChange('logoUrl', e.target.value)}
-                    placeholder="/fct-logo.png ou URL Cloudinary"
+                    placeholder={isEn ? '/fct-logo.png or Cloudinary URL' : '/fct-logo.png ou URL Cloudinary'}
                     className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-mono text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-60"
                   />
                 </div>
@@ -1008,7 +1091,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
               <div className="sm:col-span-2">
                 <label className="block text-slate-500 font-semibold mb-1">
-                  Mention Légale de Bas de Page (Factures & Contrats)
+                  {isEn ? 'Footer Legal Mention (Invoices & Contracts)' : 'Mention Légale de Bas de Page (Factures & Contrats)'}
                 </label>
                 <textarea
                   rows={2}
@@ -1030,11 +1113,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
               <div className="space-y-3 text-xs text-slate-300">
                 <div>
-                  <span className="text-slate-400 block text-[11px]">Raison Sociale :</span>
+                  <span className="text-slate-400 block text-[11px]">{isEn ? 'Company Name :' : 'Raison Sociale :'}</span>
                   <span className="font-bold text-white text-sm">{formData.agencyName}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[11px]">Localisation exacte :</span>
+                  <span className="text-slate-400 block text-[11px]">{isEn ? 'Exact location :' : 'Localisation exacte :'}</span>
                   <span className="text-slate-200 font-semibold">
                     {formData.address} ({formData.landmark}), {formData.city}, {formData.country}
                   </span>
@@ -1052,17 +1135,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
               <div className="p-3 bg-slate-800/90 rounded-xl border border-slate-700 text-[11px] text-slate-300 flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <span>Zone CEMAC — Fuseau {formData.timezone} (UTC+1)</span>
+                <span>{isEn ? `CEMAC Zone — Timezone ${formData.timezone} (UTC+1)` : `Zone CEMAC — Fuseau ${formData.timezone} (UTC+1)`}</span>
               </div>
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3 text-xs">
               <div className="font-bold text-slate-900 flex items-center gap-2">
                 <Shield className="w-4 h-4 text-emerald-600" />
-                <span>Protection des Données Légales</span>
+                <span>{isEn ? 'Legal Data Protection' : 'Protection des Données Légales'}</span>
               </div>
               <p className="text-slate-600 leading-relaxed text-[11px]">
-                Ces données sont directement imprimées sur tous les contrats de location, factures proforma et reçus de caisse remis aux clients à Douala.
+                {isEn
+                  ? 'This data is directly printed on all rental agreements, proforma invoices and cash receipts issued to customers in Douala.'
+                  : 'Ces données sont directement imprimées sur tous les contrats de location, factures proforma et reçus de caisse remis aux clients à Douala.'}
               </p>
             </div>
           </div>
@@ -1075,11 +1160,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
               <Palette className="w-4 h-4 text-indigo-600" />
-              <span>Apparence de l’Interface & Préférences Régionales</span>
+              <span>{isEn ? 'Interface Appearance & Regional Preferences' : 'Apparence de l’Interface & Préférences Régionales'}</span>
             </div>
             <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-emerald-600" />
-              Répercussion en temps réel
+              {isEn ? 'Live real-time reflection' : 'Répercussion en temps réel'}
             </span>
           </div>
 
@@ -1087,16 +1172,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             {/* 1. Theme */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="block text-slate-700 font-bold">Thème Visuel</label>
+                <label className="block text-slate-700 font-bold">{isEn ? 'Visual Theme' : 'Thème Visuel'}</label>
                 <span className="text-[10px] text-slate-400 font-semibold">
-                  Actif : {(formData.theme || 'light').toUpperCase()}
+                  {isEn ? 'Active :' : 'Actif :'} {(formData.theme || 'light').toUpperCase()}
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
-                  { value: 'light', label: 'Clair', desc: 'Bureau standard', icon: Sun, color: 'text-amber-500' },
-                  { value: 'dark', label: 'Sombre', desc: 'Contraste élevé', icon: Moon, color: 'text-indigo-400' },
-                  { value: 'system', label: 'Système', desc: 'Automatique OS', icon: Monitor, color: 'text-slate-500' },
+                  { value: 'light', label: isEn ? 'Light' : 'Clair', desc: isEn ? 'Standard desk' : 'Bureau standard', icon: Sun, color: 'text-amber-500' },
+                  { value: 'dark', label: isEn ? 'Dark' : 'Sombre', desc: isEn ? 'High contrast' : 'Contraste élevé', icon: Moon, color: 'text-indigo-400' },
+                  { value: 'system', label: isEn ? 'System' : 'Système', desc: isEn ? 'OS Automatic' : 'Automatique OS', icon: Monitor, color: 'text-slate-500' },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isSelected = (formData.theme || 'light') === item.value;
@@ -1129,15 +1214,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             {/* 2. Language */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="block text-slate-700 font-bold">Langue Principale de l’Application</label>
+                <label className="block text-slate-700 font-bold">{isEn ? 'Main Application Language' : 'Langue Principale de l’Application'}</label>
                 <span className="text-[10px] text-slate-400 font-semibold">
-                  Actif : {(formData.defaultLanguage || 'fr').toUpperCase()}
+                  {isEn ? 'Active :' : 'Actif :'} {(formData.defaultLanguage || 'fr').toUpperCase()}
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                  { code: 'fr', label: 'Français (Cameroun)', badge: 'FR' },
-                  { code: 'en', label: 'English (UK / US)', badge: 'EN' },
+                  { code: 'fr', label: isEn ? 'French (Cameroon)' : 'Français (Cameroun)', badge: 'FR' },
+                  { code: 'en', label: isEn ? 'English (UK / US)' : 'English (UK / US)', badge: 'EN' },
                 ].map((item) => {
                   const isSelected = (formData.defaultLanguage || 'fr') === item.code;
                   return (
@@ -1163,7 +1248,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                         </span>
                       </div>
                       <span className="text-[10px] text-slate-500 block mt-1">
-                        {item.code === 'fr' ? 'Interface et devises en FCFA' : 'English interface with CFA Franc'}
+                        {item.code === 'fr'
+                          ? (isEn ? 'Interface & FCFA currency' : 'Interface et devises en FCFA')
+                          : (isEn ? 'English interface with CFA Franc' : 'Interface en anglais avec Franc CFA')}
                       </span>
                     </button>
                   );
@@ -1174,16 +1261,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             {/* 3. Display Density */}
             <div className="space-y-2 md:col-span-2">
               <div className="flex items-center justify-between">
-                <label className="block text-slate-700 font-bold">Densité d’Affichage des Tableaux & Cartes</label>
+                <label className="block text-slate-700 font-bold">{isEn ? 'Tables & Cards Display Density' : 'Densité d’Affichage des Tableaux & Cartes'}</label>
                 <span className="text-[10px] text-slate-400 font-semibold">
-                  Niveau : {(formData.density || 'comfortable').toUpperCase()}
+                  {isEn ? 'Level :' : 'Niveau :'} {(formData.density || 'comfortable').toUpperCase()}
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
-                  { value: 'compact', label: 'Compacte', desc: 'Densité maximale pour écrans de bureau' },
-                  { value: 'comfortable', label: 'Confortable', desc: 'Densité équilibrée par défaut' },
-                  { value: 'spacious', label: 'Spacieuse', desc: 'Espacement tactile et aéré' },
+                  { value: 'compact', label: isEn ? 'Compact' : 'Compacte', desc: isEn ? 'Maximum density for desktop screens' : 'Densité maximale pour écrans de bureau' },
+                  { value: 'comfortable', label: isEn ? 'Comfortable' : 'Confortable', desc: isEn ? 'Balanced default spacing' : 'Densité équilibrée par défaut' },
+                  { value: 'spacious', label: isEn ? 'Spacious' : 'Spacieuse', desc: isEn ? 'Aired tactile spacing' : 'Espacement tactile et aéré' },
                 ].map((item) => {
                   const isSelected = (formData.density || 'comfortable') === item.value;
                   return (
@@ -1211,16 +1298,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               {/* Mini-aperçu en direct de la densité */}
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 mt-2">
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  Aperçu en temps réel selon la densité sélectionnée :
+                  {isEn ? 'Live real-time preview according to selected density :' : 'Aperçu en temps réel selon la densité sélectionnée :'}
                 </div>
                 <div className="border border-slate-200 rounded-lg overflow-hidden bg-white text-xs">
                   <table className="w-full text-left">
                     <thead className="bg-slate-100 text-[10px] text-slate-600 uppercase font-bold border-b border-slate-200">
                       <tr>
-                        <th className="px-3 py-2">Véhicule</th>
-                        <th className="px-3 py-2">Immatriculation</th>
-                        <th className="px-3 py-2">Tarif Journalier</th>
-                        <th className="px-3 py-2">Statut</th>
+                        <th className="px-3 py-2">{isEn ? 'Vehicle' : 'Véhicule'}</th>
+                        <th className="px-3 py-2">{isEn ? 'Registration' : 'Immatriculation'}</th>
+                        <th className="px-3 py-2">{isEn ? 'Daily Rate' : 'Tarif Journalier'}</th>
+                        <th className="px-3 py-2">{isEn ? 'Status' : 'Statut'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-medium">
@@ -1228,13 +1315,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                         <td className="px-3 py-2 font-bold text-slate-900">Toyota Land Cruiser Prado TX</td>
                         <td className="px-3 py-2 font-mono text-[11px]">LT-4589-AB</td>
                         <td className="px-3 py-2 text-emerald-700 font-bold">85 000 XAF</td>
-                        <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">Disponible</span></td>
+                        <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">{isEn ? 'Available' : 'Disponible'}</span></td>
                       </tr>
                       <tr>
                         <td className="px-3 py-2 font-bold text-slate-900">Mitsubishi Pajero Sport 4x4</td>
                         <td className="px-3 py-2 font-mono text-[11px]">LT-1284-CD</td>
                         <td className="px-3 py-2 text-emerald-700 font-bold">75 000 XAF</td>
-                        <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800 font-bold">En Location</span></td>
+                        <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800 font-bold">{isEn ? 'Rented' : 'En Location'}</span></td>
                       </tr>
                     </tbody>
                   </table>
@@ -1244,22 +1331,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
             {/* 4. Date & Time display */}
             <div className="space-y-3">
-              <label className="block text-slate-700 font-bold">Format Date & Fuseau Horaire</label>
+              <label className="block text-slate-700 font-bold">{isEn ? 'Date Format & Timezone' : 'Format Date & Fuseau Horaire'}</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <span className="text-slate-500 block text-[11px] mb-1 font-semibold">Format de date</span>
+                  <span className="text-slate-500 block text-[11px] mb-1 font-semibold">{isEn ? 'Date format' : 'Format de date'}</span>
                   <select
                     disabled={!canEdit}
                     value={formData.dateFormat || 'DD/MM/YYYY'}
                     onChange={(e) => handleChange('dateFormat', e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-bold focus:bg-white focus:outline-none"
                   >
-                    <option value="DD/MM/YYYY">JJ/MM/AAAA (ex: 13/10/2026)</option>
-                    <option value="YYYY-MM-DD">AAAA-MM-JJ (ISO 8601)</option>
+                    <option value="DD/MM/YYYY">{isEn ? 'DD/MM/YYYY (e.g. 13/10/2026)' : 'JJ/MM/AAAA (ex: 13/10/2026)'}</option>
+                    <option value="YYYY-MM-DD">{isEn ? 'YYYY-MM-DD (ISO 8601)' : 'AAAA-MM-JJ (ISO 8601)'}</option>
                   </select>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[11px] mb-1 font-semibold">Fuseau Horaire</span>
+                  <span className="text-slate-500 block text-[11px] mb-1 font-semibold">{isEn ? 'Timezone' : 'Fuseau Horaire'}</span>
                   <input
                     type="text"
                     disabled={!canEdit}
@@ -1270,7 +1357,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 </div>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500 font-medium">Aperçu direct de date :</span>
+                <span className="text-slate-500 font-medium">{isEn ? 'Live date preview :' : 'Aperçu direct de date :'}</span>
                 <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
                   {formData.dateFormat === 'YYYY-MM-DD'
                     ? new Date().toISOString().split('T')[0]
@@ -1282,7 +1369,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
             {/* 5. Sound alerts & Desktop notifications */}
             <div className="space-y-3">
-              <label className="block text-slate-700 font-bold">Alertes Sonores & Notifications Système</label>
+              <label className="block text-slate-700 font-bold">{isEn ? 'Audible Alerts & System Notifications' : 'Alertes Sonores & Notifications Système'}</label>
               
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                 {/* Sound Toggle */}
@@ -1290,10 +1377,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                   <div className="space-y-0.5">
                     <span className="font-bold text-slate-900 block flex items-center gap-1.5">
                       <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
-                      Signaux Sonores FCT
+                      {isEn ? 'FCT Audible Signals' : 'Signaux Sonores FCT'}
                     </span>
                     <span className="text-slate-500 text-[10px] block">
-                      Émettre un carillon doux lors d'encaissements ou alertes
+                      {isEn ? 'Emit a soft chime on payments or alerts' : 'Émettre un carillon doux lors d’encaissements ou alertes'}
                     </span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -1315,7 +1402,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                     className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer shadow-xs"
                   >
                     <Volume2 className="w-3.5 h-3.5" />
-                    <span>Écouter l’Alerte Sonore</span>
+                    <span>{isEn ? 'Listen to Sound Alert' : 'Écouter l’Alerte Sonore'}</span>
                   </button>
 
                   <button
@@ -1324,7 +1411,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                     className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center gap-1.5 transition cursor-pointer shadow-xs"
                   >
                     <Bell className="w-3.5 h-3.5" />
-                    <span>{isNativeMobile() ? 'Tester la Notification Smartphone' : 'Tester la Notification Système'}</span>
+                    <span>{isNativeMobile() ? (isEn ? 'Test Smartphone Notification' : 'Tester la Notification Smartphone') : (isEn ? 'Test Desktop Notification' : 'Tester la Notification Système')}</span>
                   </button>
                 </div>
 
@@ -1346,31 +1433,35 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
                 <Hash className="w-4 h-4 text-emerald-600" />
-                <span>Règles de Numérotation des Documents Officiels</span>
+                <span>{isEn ? 'Official Document Numbering Rules' : 'Règles de Numérotation des Documents Officiels'}</span>
               </div>
               <span className="text-[11px] text-slate-500">
-                Génération atomique & protection anti-collision
+                {isEn ? 'Atomic generation & anti-collision protection' : 'Génération atomique & protection anti-collision'}
               </span>
             </div>
 
             {/* Global formatting options */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs p-4 bg-slate-50 rounded-xl border border-slate-200">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Nombre de chiffres (remplissage 0)</label>
+                <label className="block text-slate-700 font-bold mb-1">
+                  {isEn ? 'Number of Digits (0-padding)' : 'Nombre de chiffres (remplissage 0)'}
+                </label>
                 <select
                   disabled={!canEdit}
                   value={formData.numberPaddingDigits || 4}
                   onChange={(e) => handleChange('numberPaddingDigits', Number(e.target.value))}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                 >
-                  <option value={4}>4 chiffres standard (ex: 0001)</option>
-                  <option value={5}>5 chiffres (ex: 00001)</option>
-                  <option value={6}>6 chiffres étendu (ex: 000001)</option>
+                  <option value={4}>{isEn ? '4 digits standard (e.g. 0001)' : '4 chiffres standard (ex: 0001)'}</option>
+                  <option value={5}>{isEn ? '5 digits (e.g. 00001)' : '5 chiffres (ex: 00001)'}</option>
+                  <option value={6}>{isEn ? '6 digits extended (e.g. 000001)' : '6 chiffres étendu (ex: 000001)'}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Inclure l’année dans la référence</label>
+                <label className="block text-slate-700 font-bold mb-1">
+                  {isEn ? 'Include year in reference' : 'Inclure l’année dans la référence'}
+                </label>
                 <div className="flex items-center h-9">
                   <label className="relative inline-flex items-center cursor-pointer gap-2">
                     <input
@@ -1382,16 +1473,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                     />
                     <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                     <span className="text-slate-800 font-semibold text-xs">
-                      {formData.includeYearInDocNumber !== false ? 'Oui (ex: 2026)' : 'Non (Sans année)'}
+                      {formData.includeYearInDocNumber !== false
+                        ? isEn ? 'Yes (e.g. 2026)' : 'Oui (ex: 2026)'
+                        : isEn ? 'No (without year)' : 'Non (Sans année)'}
                     </span>
                   </label>
                 </div>
               </div>
 
               <div>
-                <span className="block text-slate-500 font-bold mb-1">Règle de continuité</span>
+                <span className="block text-slate-500 font-bold mb-1">
+                  {isEn ? 'Continuity Rule' : 'Règle de continuité'}
+                </span>
                 <span className="text-[11px] text-slate-600 leading-tight block">
-                  La séquence s’incrémente de façon strictement croissante. Aucune réutilisation de numéro supprimé.
+                  {isEn
+                    ? 'The sequence increments strictly monotonically. Deleted numbers are never reused.'
+                    : 'La séquence s’incrémente de façon strictement croissante. Aucune réutilisation de numéro supprimé.'}
                 </span>
               </div>
             </div>
@@ -1399,7 +1496,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             {/* Individual Prefixes */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Préfixe Contrat Location</label>
+                <label className="block text-slate-500 font-semibold mb-1">
+                  {isEn ? 'Rental Contract Prefix' : 'Préfixe Contrat Location'}
+                </label>
                 <input
                   type="text"
                   disabled={!canEdit}
@@ -1410,7 +1509,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Préfixe Facture Client</label>
+                <label className="block text-slate-500 font-semibold mb-1">
+                  {isEn ? 'Client Invoice Prefix' : 'Préfixe Facture Client'}
+                </label>
                 <input
                   type="text"
                   disabled={!canEdit}
@@ -1421,7 +1522,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Préfixe Reçu Encaissement</label>
+                <label className="block text-slate-500 font-semibold mb-1">
+                  {isEn ? 'Cash Receipt Prefix' : 'Préfixe Reçu Encaissement'}
+                </label>
                 <input
                   type="text"
                   disabled={!canEdit}
@@ -1432,7 +1535,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Préfixe Commande Vente</label>
+                <label className="block text-slate-500 font-semibold mb-1">
+                  {isEn ? 'Sales Order Prefix' : 'Préfixe Commande Vente'}
+                </label>
                 <input
                   type="text"
                   disabled={!canEdit}
@@ -1443,7 +1548,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Préfixe Réservation</label>
+                <label className="block text-slate-500 font-semibold mb-1">
+                  {isEn ? 'Reservation Prefix' : 'Préfixe Réservation'}
+                </label>
                 <input
                   type="text"
                   disabled={!canEdit}
@@ -1454,7 +1561,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Préfixe Maintenance</label>
+                <label className="block text-slate-500 font-semibold mb-1">
+                  {isEn ? 'Maintenance Prefix' : 'Préfixe Maintenance'}
+                </label>
                 <input
                   type="text"
                   disabled={!canEdit}
@@ -1465,7 +1574,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Préfixe Devis Proforma</label>
+                <label className="block text-slate-500 font-semibold mb-1">
+                  {isEn ? 'Proforma Quote Prefix' : 'Préfixe Devis Proforma'}
+                </label>
                 <input
                   type="text"
                   disabled={!canEdit}
@@ -1476,7 +1587,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
               </div>
 
               <div>
-                <label className="block text-slate-500 font-semibold mb-1">Préfixe Dépense Caisse</label>
+                <label className="block text-slate-500 font-semibold mb-1">
+                  {isEn ? 'Cash Expense Prefix' : 'Préfixe Dépense Caisse'}
+                </label>
                 <input
                   type="text"
                   disabled={!canEdit}
@@ -1492,7 +1605,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
             <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
               <Eye className="w-4 h-4 text-blue-600" />
-              <span>Aperçu en Direct des Prochains Numéros de Pièces</span>
+              <span>
+                {isEn
+                  ? 'Real-Time Preview of Next Document Numbers'
+                  : 'Aperçu en Direct des Prochains Numéros de Pièces'}
+              </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
               {docPreviews.map((doc, idx) => (
@@ -1514,17 +1631,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
               <Coins className="w-4 h-4 text-emerald-600" />
-              <span>Paramètres Financiers, Fiscaux & Caisse</span>
+              <span>
+                {isEn ? 'Financial, Tax & Cash Desk Settings' : 'Paramètres Financiers, Fiscaux & Caisse'}
+              </span>
             </div>
             <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-              Devise Canonique : Franc CFA (XAF)
+              {isEn ? 'Canonical Currency : CFA Franc (XAF)' : 'Devise Canonique : Franc CFA (XAF)'}
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
             <div>
               <label className="block text-slate-500 font-semibold mb-1">
-                Taux de TVA Cameroun (%) <span className="text-rose-500">*</span>
+                {isEn ? 'Cameroon VAT Rate (%)' : 'Taux de TVA Cameroun (%)'} <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -1537,11 +1656,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 />
                 <Percent className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
-              <span className="text-[10px] text-slate-400 mt-1 block">Taux légal normal : 19.25%</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {isEn ? 'Standard legal rate : 19.25%' : 'Taux légal normal : 19.25%'}
+              </span>
             </div>
 
             <div>
-              <label className="block text-slate-500 font-semibold mb-1">Caution Standard par Défaut (XAF)</label>
+              <label className="block text-slate-500 font-semibold mb-1">
+                {isEn ? 'Default Standard Security Deposit (XAF)' : 'Caution Standard par Défaut (XAF)'}
+              </label>
               <input
                 type="number"
                 step="5000"
@@ -1550,12 +1673,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 onChange={(e) => handleChange('defaultDepositXAF', Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">Recommandé : 200 000 XAF</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {isEn ? 'Recommended : 200,000 XAF' : 'Recommandé : 200 000 XAF'}
+              </span>
             </div>
 
             <div>
               <label className="block text-slate-500 font-semibold mb-1">
-                Plafond Remise sans Approbation (%)
+                {isEn ? 'Max Discount Without Approval (%)' : 'Plafond Remise sans Approbation (%)'}
               </label>
               <input
                 type="number"
@@ -1564,12 +1689,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 onChange={(e) => handleChange('maxDiscountWithoutApprovalPercent', Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">Au-delà : validation Directeur requise</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {isEn ? 'Above: Director approval required' : 'Au-delà : validation Directeur requise'}
+              </span>
             </div>
 
             <div>
               <label className="block text-slate-500 font-semibold mb-1">
-                Seuil Approbation Dépense Caisse (XAF)
+                {isEn ? 'Cash Expense Approval Threshold (XAF)' : 'Seuil Approbation Dépense Caisse (XAF)'}
               </label>
               <input
                 type="number"
@@ -1579,12 +1706,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 onChange={(e) => handleChange('expenseApprovalThresholdXAF', Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">Au-delà : validation Direction obligatoire</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {isEn ? 'Above: Management approval mandatory' : 'Au-delà : validation Direction obligatoire'}
+              </span>
             </div>
 
             <div>
               <label className="block text-slate-500 font-semibold mb-1">
-                Tolérance Écart de Caisse Clôture (XAF)
+                {isEn ? 'Daily Closing Cash Discrepancy Tolerance (XAF)' : 'Tolérance Écart de Caisse Clôture (XAF)'}
               </label>
               <input
                 type="number"
@@ -1593,11 +1722,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 onChange={(e) => handleChange('cashDiscrepancyToleranceXAF', Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">Tolérance comptable maximale admise</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {isEn ? 'Maximum allowed accounting discrepancy' : 'Tolérance comptable maximale admise'}
+              </span>
             </div>
 
             <div>
-              <label className="block text-slate-500 font-semibold mb-1">Clôture Caisse Journalière Obligatoire</label>
+              <label className="block text-slate-500 font-semibold mb-1">
+                {isEn ? 'Mandatory Daily Cash Register Closing' : 'Clôture Caisse Journalière Obligatoire'}
+              </label>
               <div className="flex items-center h-10">
                 <label className="relative inline-flex items-center cursor-pointer gap-2">
                   <input
@@ -1609,7 +1742,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                   />
                   <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                   <span className="text-slate-800 font-semibold text-xs">
-                    {formData.mandatoryCashOpening !== false ? 'Activée' : 'Facultative'}
+                    {formData.mandatoryCashOpening !== false ? (isEn ? 'Enabled' : 'Activée') : (isEn ? 'Optional' : 'Facultative')}
                   </span>
                 </label>
               </div>
@@ -1619,14 +1752,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
           {/* Payment Methods */}
           <div className="pt-4 border-t border-slate-100 space-y-3">
             <span className="block text-xs font-bold text-slate-900">
-              Modes de Paiement Autorisés au Guichet FCT
+              {isEn ? 'Authorized Payment Channels at FCT Desk' : 'Modes de Paiement Autorisés au Guichet FCT'}
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               {[
-                { key: 'CASH' as const, label: 'Espèces (Cash Guichet)', desc: 'Mode principal FCT Douala' },
-                { key: 'BANK_TRANSFER' as const, label: 'Virement Bancaire', desc: 'Attestation requise' },
-                { key: 'CHECK' as const, label: 'Chèque Certifié', desc: 'Validation préalable' },
-                { key: 'MOBILE_MONEY' as const, label: 'Orange / MTN Money', desc: 'Bordereau de transaction' },
+                { key: 'CASH' as const, label: isEn ? 'Cash (Front Desk)' : 'Espèces (Cash Guichet)', desc: isEn ? 'Main FCT Douala mode' : 'Mode principal FCT Douala' },
+                { key: 'BANK_TRANSFER' as const, label: isEn ? 'Bank Transfer' : 'Virement Bancaire', desc: isEn ? 'Bank proof required' : 'Attestation requise' },
+                { key: 'CHECK' as const, label: isEn ? 'Certified Cheque' : 'Chèque Certifié', desc: isEn ? 'Prior verification' : 'Validation préalable' },
+                { key: 'MOBILE_MONEY' as const, label: isEn ? 'Orange / MTN Money' : 'Orange / MTN Money', desc: isEn ? 'Transaction receipt' : 'Bordereau de transaction' },
               ].map((pm) => {
                 const isChecked = (formData.allowedPaymentMethods || ['CASH']).includes(pm.key);
                 return (
@@ -1660,14 +1793,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
               <Car className="w-4 h-4 text-blue-600" />
-              <span>Paramètres du Parc Automobile & Seuils d’Alerte</span>
+              <span>{isEn ? 'Fleet Management & Alert Thresholds' : 'Paramètres du Parc Automobile & Seuils d’Alerte'}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
             <div>
               <label className="block text-slate-500 font-semibold mb-1">
-                Alerte Expiration Assurance (Jours avant)
+                {isEn ? 'Insurance Expiry Alert (Days prior)' : 'Alerte Expiration Assurance (Jours avant)'}
               </label>
               <input
                 type="number"
@@ -1676,12 +1809,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 onChange={(e) => handleChange('insuranceAlertDays', Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">Déclenche notification et pastille orange</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {isEn ? 'Triggers notification and orange badge' : 'Déclenche notification et pastille orange'}
+              </span>
             </div>
 
             <div>
               <label className="block text-slate-500 font-semibold mb-1">
-                Alerte Visite Technique (Jours avant)
+                {isEn ? 'Technical Inspection Alert (Days prior)' : 'Alerte Visite Technique (Jours avant)'}
               </label>
               <input
                 type="number"
@@ -1690,12 +1825,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 onChange={(e) => handleChange('technicalInspectionAlertDays', Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">Contrôle technique CEMAC obligatoire</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {isEn ? 'Mandatory CEMAC roadworthiness inspection' : 'Contrôle technique CEMAC obligatoire'}
+              </span>
             </div>
 
             <div>
               <label className="block text-slate-500 font-semibold mb-1">
-                Alerte Kilométrique Anticipée Vidange (Km)
+                {isEn ? 'Preventive Oil Change Mileage Warning (Km)' : 'Alerte Kilométrique Anticipée Vidange (Km)'}
               </label>
               <input
                 type="number"
@@ -1705,14 +1842,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 onChange={(e) => handleChange('maintenanceAlertMileageKm', Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">Ex: alerter 1 500 km avant l’échéance</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {isEn ? 'E.g. alert 1,500 km before due date' : 'Ex: alerter 1 500 km avant l’échéance'}
+              </span>
             </div>
 
             <div className="md:col-span-3 pt-4 border-t border-slate-100 flex items-center justify-between">
               <div>
-                <span className="font-bold text-slate-900 block">Photos Obligatoires lors des Départs / Retours</span>
+                <span className="font-bold text-slate-900 block">
+                  {isEn ? 'Mandatory Departure & Return Photos' : 'Photos Obligatoires lors des Départs / Retours'}
+                </span>
                 <span className="text-slate-500 text-[11px]">
-                  Exiger au minimum 4 photos (face avant, arrière, côté gauche, côté droit) avant signature du contrat
+                  {isEn
+                    ? 'Require minimum 4 photos (front, rear, left, right) prior to contract sign-off'
+                    : 'Exiger au minimum 4 photos (face avant, arrière, côté gauche, côté droit) avant signature du contrat'}
                 </span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -1736,14 +1879,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
               <Wrench className="w-4 h-4 text-amber-600" />
-              <span>Paramètres de Maintenance & Gestion du Stock de Pièces</span>
+              <span>{isEn ? 'Maintenance Parameters & Spare Parts Inventory' : 'Paramètres de Maintenance & Gestion du Stock de Pièces'}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
             <div>
               <label className="block text-slate-500 font-semibold mb-1">
-                Intervalle Standard Vidange Moteur (Km)
+                {isEn ? 'Standard Engine Oil Change Interval (Km)' : 'Intervalle Standard Vidange Moteur (Km)'}
               </label>
               <input
                 type="number"
@@ -1753,12 +1896,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 onChange={(e) => handleChange('defaultMaintenanceIntervalKm', Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">Recommandé : 5 000 à 10 000 km</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {isEn ? 'Recommended: 5,000 to 10,000 km' : 'Recommandé : 5 000 à 10 000 km'}
+              </span>
             </div>
 
             <div>
               <label className="block text-slate-500 font-semibold mb-1">
-                Garage Partenaire / Concessionnaire Référent
+                {isEn ? 'Referral Partner Garage / Dealership Workshop' : 'Garage Partenaire / Concessionnaire Référent'}
               </label>
               <input
                 type="text"
@@ -1771,7 +1916,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
             <div>
               <label className="block text-slate-500 font-semibold mb-1">
-                Seuil d’Alerte de Stock Faible par Défaut
+                {isEn ? 'Default Low Stock Alert Threshold' : 'Seuil d’Alerte de Stock Faible par Défaut'}
               </label>
               <input
                 type="number"
@@ -1780,14 +1925,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 onChange={(e) => handleChange('lowStockThresholdGlobal', Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               />
-              <span className="text-[10px] text-slate-400 mt-1 block">Alerte lorsqu’une pièce a ≤ ce nombre en rayon</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                {isEn ? 'Alert triggered when parts count in shelf is ≤ this number' : 'Alerte lorsqu’une pièce a ≤ ce nombre en rayon'}
+              </span>
             </div>
 
             <div className="flex items-center justify-between p-3 bg-amber-50/60 rounded-xl border border-amber-200">
               <div>
-                <span className="font-bold text-amber-950 block">Déduction Automatique des Pièces</span>
+                <span className="font-bold text-amber-950 block">
+                  {isEn ? 'Automated Parts Stock Deduction' : 'Déduction Automatique des Pièces'}
+                </span>
                 <span className="text-amber-800 text-[11px]">
-                  Déduire le stock uniquement lors de la clôture définitive de l’ordre de maintenance
+                  {isEn
+                    ? 'Deduct stock only upon final work order completion'
+                    : 'Déduire le stock uniquement lors de la clôture définitive de l’ordre de maintenance'}
                 </span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -1811,13 +1962,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
               <FileCheck className="w-4 h-4 text-emerald-600" />
-              <span>Paramètres des Locations, Réservations & Contrats</span>
+              <span>{isEn ? 'Rentals, Reservations & Contract Rules' : 'Paramètres des Locations, Réservations & Contrats'}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
             <div>
-              <label className="block text-slate-500 font-semibold mb-1">Durée Minimale de Location (Jours)</label>
+              <label className="block text-slate-500 font-semibold mb-1">
+                {isEn ? 'Minimum Rental Duration (Days)' : 'Durée Minimale de Location (Jours)'}
+              </label>
               <input
                 type="number"
                 disabled={!canEdit}
@@ -1829,7 +1982,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
             <div>
               <label className="block text-slate-500 font-semibold mb-1">
-                Délai Max d’Annulation sans Frais (Jours)
+                {isEn ? 'Max Free Cancellation Notice (Days)' : 'Délai Max d’Annulation sans Frais (Jours)'}
               </label>
               <input
                 type="number"
@@ -1841,7 +1994,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             </div>
 
             <div>
-              <label className="block text-slate-500 font-semibold mb-1">Pénalité de Retard Horaire (XAF/h)</label>
+              <label className="block text-slate-500 font-semibold mb-1">
+                {isEn ? 'Hourly Late Penalty Rate (XAF/h)' : 'Pénalité de Retard Horaire (XAF/h)'}
+              </label>
               <input
                 type="number"
                 step="1000"
@@ -1854,9 +2009,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
 
             <div className="md:col-span-3 pt-4 border-t border-slate-100 flex items-center justify-between">
               <div>
-                <span className="font-bold text-slate-900 block">Inspection Contradictoire Obligatoire</span>
+                <span className="font-bold text-slate-900 block">
+                  {isEn ? 'Mandatory Joint Inspection Form' : 'Inspection Contradictoire Obligatoire'}
+                </span>
                 <span className="text-slate-500 text-[11px]">
-                  Bloquer la clôture du contrat tant que la fiche de retour contradictoire (kilométrage & niveau de carburant) n’est pas signée
+                  {isEn
+                    ? 'Block contract closure until the joint return inspection form (mileage & fuel level) is signed'
+                    : 'Bloquer la clôture du contrat tant que la fiche de retour contradictoire (kilométrage & niveau de carburant) n’est pas signée'}
                 </span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -1881,10 +2040,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             <div>
               <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
                 <Layers className="w-4 h-4 text-emerald-600" />
-                <span>Gestion & Disponibilité des 18 Modules FCT</span>
+                <span>{isEn ? 'Availability & Control of the 18 FCT Modules' : 'Gestion & Disponibilité des 18 Modules FCT'}</span>
               </div>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                La désactivation d’un module masque son accès dans le menu de navigation mais ne supprime jamais ses données historiques.
+                {isEn
+                  ? 'Disabling a module hides it from navigation menus without deleting any historical operational data.'
+                  : 'La désactivation d’un module masque son accès dans le menu de navigation mais ne supprime jamais ses données historiques.'}
               </p>
             </div>
           </div>
@@ -1958,10 +2119,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
             </div>
             <div className="text-center space-y-1">
               <h3 className="font-black text-base text-slate-900">
-                Confirmer la réinitialisation des paramètres ?
+                {isEn ? 'Confirm settings reset?' : 'Confirmer la réinitialisation des paramètres ?'}
               </h3>
               <p className="text-xs text-slate-500">
-                Tous les préfixes de numérotation, taux fiscaux et règles de l’agence FCT seront réinitialisés à leurs valeurs d’origine. Aucune opération métier (véhicules, clients, contrats) ne sera effacée.
+                {isEn
+                  ? 'All numbering prefixes, tax rates and FCT agency rules will be reset to factory defaults. No operational records (vehicles, clients, contracts) will be deleted.'
+                  : 'Tous les préfixes de numérotation, taux fiscaux et règles de l’agence FCT seront réinitialisés à leurs valeurs d’origine. Aucune opération métier (véhicules, clients, contrats) ne sera effacée.'}
               </p>
             </div>
             <div className="flex items-center gap-3 pt-2">
@@ -1970,68 +2133,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, lang, onNavig
                 onClick={() => setIsResetConfirmOpen(false)}
                 className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition"
               >
-                Annuler
+                {isEn ? 'Cancel' : 'Annuler'}
               </button>
               <button
                 type="button"
                 onClick={handleResetDefaults}
                 className="flex-1 py-2 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-700 transition"
               >
-                Oui, Réinitialiser
+                {isEn ? 'Yes, Reset' : 'Oui, Réinitialiser'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL: IMPORT BACKUP JSON */}
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
-                <Upload className="w-4 h-4 text-emerald-600" />
-                <span>Restaurer une Sauvegarde FCT</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsImportModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition"
-                aria-label="Fermer"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <p className="text-xs text-slate-500">
-              Collez ci-dessous le contenu brut du fichier JSON généré lors d’une sauvegarde FCT précédente :
-            </p>
-            <textarea
-              rows={8}
-              value={importJsonText}
-              onChange={(e) => setImportJsonText(e.target.value)}
-              placeholder='{"version": 1, "settings": {...}, "vehicles": [...]}'
-              className="w-full p-3 rounded-xl border border-slate-200 font-mono text-[11px] bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-            />
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsImportModalOpen(false)}
-                className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                disabled={!importJsonText.trim()}
-                onClick={handleImportBackup}
-                className="flex-1 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition disabled:opacity-50"
-              >
-                Restaurer la Base
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* 4. Barre d'action inférieure de navigation & enregistrement quand une section est ouverte */}
       {activeTab !== null && (

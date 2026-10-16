@@ -43,10 +43,12 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate, lang =
             <div className="fct-hero-text">
               <div className="fct-badge fct-badge-green" style={{ marginBottom: 12 }}>
                 <MapPin size={13} />
-                <span>Douala · Carrefour Santa Barbara, Bonamoussadi</span>
+                <span>{(t as any).badge || (isEn ? 'DOUALA · SANTA BARBARA JUNCTION, BONAMOUSSADI' : 'DOUALA · CARREFOUR SANTA BARBARA, BONAMOUSSADI')}</span>
               </div>
               <h1>
-                {isEn ? (
+                {(t as any).heroTitle ? (
+                  (t as any).heroTitle
+                ) : isEn ? (
                   <>
                     Executive Automotive in Douala,{' '}
                     <span style={{ color: 'var(--fct-blue-primary)' }}>Certified Rental & Sales</span>.
@@ -73,7 +75,7 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate, lang =
                 </button>
                 <button onClick={() => onNavigate('carnet-sante')} className="btn-emerald">
                   <ShieldCheck size={17} />
-                  <span>{isEn ? 'Health Record' : 'Carnet de Santé'}</span>
+                  <span>{(t as any).healthPassportBtn || (isEn ? 'Health Record' : 'Carnet de Santé')}</span>
                 </button>
               </div>
             </div>
@@ -174,16 +176,16 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate, lang =
           {/* Barre des Statistiques Officielles */}
           <div className="fct-stats-bar-light">
             <div className="fct-stat-cell">
-              <strong>110 Points</strong>
-              <span>{isEn ? 'Certified Workshop Inspection' : 'Contrôle Atelier Certifié'}</span>
+              <strong>{(t as any).kpi1Title || (isEn ? '110 Points' : '110 Points')}</strong>
+              <span>{(t as any).kpi1Sub || (isEn ? 'Certified Workshop Inspection' : 'Contrôle Atelier Certifié')}</span>
             </div>
             <div className="fct-stat-cell">
-              <strong>500+</strong>
-              <span>{isEn ? 'Corporate & VIP Clients' : 'Clients Entreprises & Particuliers'}</span>
+              <strong>{(t as any).kpi2Title || (isEn ? '500+' : '500+')}</strong>
+              <span>{(t as any).kpi2Sub || (isEn ? 'Corporate & VIP Clients' : 'Clients Entreprises & Particuliers')}</span>
             </div>
             <div className="fct-stat-cell">
-              <strong style={{ color: 'var(--fct-green-primary)' }}>24/7</strong>
-              <span>{isEn ? 'Douala Roadside Assistance' : 'Assistance Dépannage Douala'}</span>
+              <strong style={{ color: 'var(--fct-green-primary)' }}>{(t as any).kpi3Title || '24/7'}</strong>
+              <span>{(t as any).kpi3Sub || (isEn ? 'Douala Roadside Assistance' : 'Assistance Dépannage Douala')}</span>
             </div>
             <div className="fct-stat-cell">
               <strong>100% XAF</strong>
@@ -209,7 +211,7 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate, lang =
               </p>
             </div>
             <button onClick={() => onNavigate('location')} className="btn-secondary">
-              <span>{isEn ? `View Full Fleet (${vehicles.filter((v) => v.isForRent).length})` : `Voir toute la flotte (${vehicles.filter((v) => v.isForRent).length})`}</span>
+              <span>{(t as any).viewAllFleet || (isEn ? `View Full Fleet (${vehicles.filter((v) => v.isForRent).length})` : `Voir toute la flotte (${vehicles.filter((v) => v.isForRent).length})`)}</span>
               <ArrowRight size={16} />
             </button>
           </div>
@@ -315,7 +317,7 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate, lang =
                 <Wrench size={24} />
               </div>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 8 }}>
-                {isEn ? 'Certified Bassa Workshop' : 'Atelier Agréé FCT Bassa'}
+                {(t as any).reason1Title || (isEn ? 'Certified Bassa Workshop' : 'Atelier Agréé FCT Bassa')}
               </h3>
               <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
                 {t.reason1Desc}
@@ -327,7 +329,7 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate, lang =
                 <UserCheck size={24} />
               </div>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 8 }}>
-                {isEn ? 'Certified VIP Chauffeurs' : 'Chauffeurs VIP Certifiés'}
+                {(t as any).reason2Title || (isEn ? 'Certified VIP Chauffeurs' : 'Chauffeurs VIP Certifiés')}
               </h3>
               <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
                 {t.reason2Desc}
@@ -339,12 +341,12 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate, lang =
                 <FileSpreadsheet size={24} />
               </div>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 8 }}>
-                {isEn ? 'Formal Invoices & Proformas' : 'Devis & Factures Proforma'}
+                {(t as any).reason3Title || (isEn ? 'Formal Invoices & Proformas' : 'Devis & Factures Proforma')}
               </h3>
               <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                {isEn
+                {(t as any).reason3Desc || (isEn
                   ? 'Full Cameroonian tax and legal compliance (VAT 19.25%, RC/DLA, official Tax ID) for corporate accounting departments.'
-                  : 'Conformité fiscale camerounaise intégrale (TVA 19.25%, RC/DLA, NIU officiel) pour vos comptabilités d\'entreprise.'}
+                  : 'Conformité fiscale camerounaise intégrale (TVA 19.25%, RC/DLA, NIU officiel) pour vos comptabilités d\'entreprise.')}
               </p>
             </div>
 
@@ -353,10 +355,12 @@ export const HomePage: React.FC<HomePageProps> = ({ vehicles, onNavigate, lang =
                 <ShieldCheck size={24} />
               </div>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--fct-blue-dark)', marginBottom: 8 }}>
-                {isEn ? 'Digital Vehicle Health Record' : 'Carnet de Santé Numérique'}
+                {(t as any).reason4Title || (isEn ? 'Digital Vehicle Health Record' : 'Carnet de Santé Numérique')}
               </h3>
               <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                {t.reason3Desc}
+                {(t as any).reason4Desc || (isEn
+                  ? 'Absolute transparency: View complete maintenance history, verified mileage and workshop records for every vehicle in our fleet.'
+                  : 'Transparence absolue : visualisez l\'historique d\'entretien complet, le kilométrage certifié et les révisions de chaque véhicule de notre flotte.')}
               </p>
             </div>
           </div>

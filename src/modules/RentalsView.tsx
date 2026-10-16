@@ -80,6 +80,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
   contextEntityId,
 }) => {
   const t = translations[lang];
+  const isEn = lang === 'en';
   const currentUser = dbStore.getCurrentUser();
   const [activeTab, setActiveTab] = useState<string>('ALL');
   const [search, setSearch] = useState('');
@@ -626,23 +627,23 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
                   <div className="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
                     <Calendar className="w-4 h-4 text-blue-600" />
-                    <span>Période Contractuelle</span>
+                    <span>{isEn ? 'Contractual Period' : 'Période Contractuelle'}</span>
                   </div>
                   <div className="space-y-2 text-xs text-slate-700">
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Date de départ :</span>
+                      <span className="text-slate-500">{isEn ? 'Pick-up Date:' : 'Date de départ :'}</span>
                       <span className="font-bold text-slate-900">{selectedContract.startDate}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Date de restitution :</span>
+                      <span className="text-slate-500">{isEn ? 'Return Date:' : 'Date de restitution :'}</span>
                       <span className="font-bold text-slate-900">{selectedContract.endDate}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Durée totale :</span>
-                      <span className="font-black text-blue-900">{selectedContract.totalDays} jour(s)</span>
+                      <span className="text-slate-500">{isEn ? 'Total Duration:' : 'Durée totale :'}</span>
+                      <span className="font-black text-blue-900">{selectedContract.totalDays} {isEn ? 'day(s)' : 'jour(s)'}</span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-slate-500">Date d'émission :</span>
+                      <span className="text-slate-500">{isEn ? 'Issue Date:' : "Date d'émission :"}</span>
                       <span className="font-mono text-slate-600">{selectedContract.createdAt}</span>
                     </div>
                   </div>
@@ -651,24 +652,24 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
                   <div className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
                     <DollarSign className="w-4 h-4 text-emerald-600" />
-                    <span>Tarification & Caution XAF</span>
+                    <span>{isEn ? 'Pricing & Security Deposit (XAF)' : 'Tarification & Caution XAF'}</span>
                   </div>
                   <div className="space-y-2 text-xs text-slate-700">
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Tarif journalier :</span>
-                      <span className="font-bold text-slate-900">{formatXAF(selectedContract.dailyRateXAF)} / jour</span>
+                      <span className="text-slate-500">{isEn ? 'Daily Rate:' : 'Tarif journalier :'}</span>
+                      <span className="font-bold text-slate-900 privacy-blur">{formatXAF(selectedContract.dailyRateXAF)} / {isEn ? 'day' : 'jour'}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Montant total contrat :</span>
-                      <span className="font-black text-sm text-blue-950">{formatXAF(selectedContract.totalAmountXAF)}</span>
+                      <span className="text-slate-500">{isEn ? 'Total Contract Amount:' : 'Montant total contrat :'}</span>
+                      <span className="font-black text-sm text-blue-950 privacy-blur">{formatXAF(selectedContract.totalAmountXAF)}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Caution obligatoire :</span>
-                      <span className="font-bold text-emerald-800">{formatXAF(selectedContract.securityDepositXAF)}</span>
+                      <span className="text-slate-500">{isEn ? 'Required Deposit:' : 'Caution obligatoire :'}</span>
+                      <span className="font-bold text-emerald-800 privacy-blur">{formatXAF(selectedContract.securityDepositXAF)}</span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-slate-500">Statut de la caution :</span>
-                      <span className="font-semibold text-slate-800">{selectedContract.depositReturnedXAF > 0 ? 'Restituée au client' : 'Consignée en agence FCT'}</span>
+                      <span className="text-slate-500">{isEn ? 'Deposit Status:' : 'Statut de la caution :'}</span>
+                      <span className="font-semibold text-slate-800">{selectedContract.depositReturnedXAF > 0 ? (isEn ? 'Refunded to client' : 'Restituée au client') : (isEn ? 'Consigned at FCT agency' : 'Consignée en agence FCT')}</span>
                     </div>
                   </div>
                 </div>
@@ -681,8 +682,8 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">Documents & Contrats Numérisés</h3>
-                  <p className="text-xs text-slate-500">Contrat signé, permis du locataire, attestation d'assurance et état des lieux numérisés</p>
+                  <h3 className="text-sm font-black text-slate-900">{isEn ? 'Digitized Documents & Contracts' : 'Documents & Contrats Numérisés'}</h3>
+                  <p className="text-xs text-slate-500">{isEn ? 'Signed contract, tenant license, insurance certificate and digitized walk-around' : "Contrat signé, permis du locataire, attestation d'assurance et état des lieux numérisés"}</p>
                 </div>
                 <button
                   type="button"
@@ -690,15 +691,15 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Rattacher un document</span>
+                  <span>{isEn ? 'Attach a document' : 'Rattacher un document'}</span>
                 </button>
               </div>
 
               {contractDocs.length === 0 ? (
                 <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-500 space-y-2">
                   <FileText className="w-8 h-8 text-slate-300 mx-auto" />
-                  <p className="font-bold text-slate-700">Aucun document numérique rattaché à ce contrat</p>
-                  <p className="text-xs text-slate-400">Cliquez sur « Rattacher un document » pour archiver le contrat signé ou le permis.</p>
+                  <p className="font-bold text-slate-700">{isEn ? 'No digital document attached to this contract' : 'Aucun document numérique rattaché à ce contrat'}</p>
+                  <p className="text-xs text-slate-400">{isEn ? 'Click "Attach a document" to archive the signed contract or license.' : 'Cliquez sur « Rattacher un document » pour archiver le contrat signé ou le permis.'}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -710,7 +711,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                         </div>
                         <div>
                           <h4 className="font-bold text-slate-900 text-xs">{doc.title}</h4>
-                          <div className="text-[11px] text-slate-500">{doc.category} • Ajouté le {doc.uploadedAt ? doc.uploadedAt.split('T')[0] : 'N/A'}</div>
+                          <div className="text-[11px] text-slate-500">{doc.category} • {isEn ? 'Added on' : 'Ajouté le'} {doc.uploadedAt ? doc.uploadedAt.split('T')[0] : 'N/A'}</div>
                           {doc.notes && <div className="text-[11px] text-slate-600 italic mt-0.5">{doc.notes}</div>}
                         </div>
                       </div>
@@ -719,7 +720,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                           type="button"
                           onClick={() => setViewerDoc(doc)}
                           className="p-1.5 rounded-lg text-slate-600 hover:text-blue-700 hover:bg-slate-100 transition cursor-pointer"
-                          title="Visualiser le contrat"
+                          title={isEn ? 'View contract' : 'Visualiser le contrat'}
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -730,7 +731,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                             rel="noreferrer"
                             download={doc.title}
                             className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-slate-100 transition cursor-pointer"
-                            title="Télécharger"
+                            title={isEn ? 'Download' : 'Télécharger'}
                           >
                             <Download className="w-4 h-4" />
                           </a>
@@ -761,10 +762,10 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                         {linkedVeh.brand} {linkedVeh.model} ({linkedVeh.year})
                       </h4>
                       <div className="text-slate-600 text-xs mt-0.5">
-                        Immatriculation : <span className="font-bold text-blue-900">{linkedVeh.licensePlate}</span> • VIN : <span className="font-mono text-slate-700">{linkedVeh.vin}</span>
+                        {isEn ? 'Plate:' : 'Immatriculation :'} <span className="font-bold text-blue-900">{linkedVeh.licensePlate}</span> • VIN : <span className="font-mono text-slate-700">{linkedVeh.vin}</span>
                       </div>
                       <div className="text-slate-500 text-xs mt-0.5">
-                        Kilométrage actuel : <span className="font-bold text-slate-800">{linkedVeh.mileage?.toLocaleString()} km</span> • Catégorie : {linkedVeh.category}
+                        {isEn ? 'Current mileage:' : 'Kilométrage actuel :'} <span className="font-bold text-slate-800">{linkedVeh.mileage?.toLocaleString()} km</span> • {isEn ? 'Category:' : 'Catégorie :'} {linkedVeh.category}
                       </div>
                     </div>
                   </div>
@@ -779,13 +780,13 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       className="px-4 py-2 rounded-xl bg-[#0f2a4a] hover:bg-[#163a66] text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer self-start md:self-center"
                     >
                       <Car className="w-3.5 h-3.5" />
-                      <span>Ouvrir Fiche Showroom Véhicule</span>
+                      <span>{isEn ? 'Open Vehicle Showroom Record' : 'Ouvrir Fiche Showroom Véhicule'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-slate-50 text-slate-500 text-xs">Véhicule non trouvé.</div>
+                <div className="p-4 rounded-xl bg-slate-50 text-slate-500 text-xs">{isEn ? 'Vehicle not found.' : 'Véhicule non trouvé.'}</div>
               )}
 
               {linkedDrv ? (
@@ -795,10 +796,10 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       {linkedDrv.fullName.charAt(0)}
                     </div>
                     <div>
-                      <div className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 mb-1">Chauffeur Professionnel Agréé FCT</div>
+                      <div className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 mb-1">{isEn ? 'Certified FCT Driver' : 'Chauffeur Professionnel Agréé FCT'}</div>
                       <h4 className="font-black text-slate-900 text-sm">{linkedDrv.fullName}</h4>
                       <div className="text-slate-600 text-xs mt-0.5">
-                        Permis N° : <span className="font-bold">{linkedDrv.licenseNumber}</span> (Cat. {(linkedDrv.licenseCategories || []).join(', ') || 'B'}) • Tél : {linkedDrv.phone}
+                        {isEn ? 'License No:' : 'Permis N° :'} <span className="font-bold">{linkedDrv.licenseNumber}</span> (Cat. {(linkedDrv.licenseCategories || []).join(', ') || 'B'}) • {isEn ? 'Phone:' : 'Tél :'} {linkedDrv.phone}
                       </div>
                     </div>
                   </div>
@@ -813,14 +814,14 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer self-start md:self-center"
                     >
                       <UserCheck className="w-3.5 h-3.5" />
-                      <span>Ouvrir Profil Chauffeur</span>
+                      <span>{isEn ? 'Open Driver Profile' : 'Ouvrir Profil Chauffeur'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
               ) : (
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs">
-                  Location en formule autonome sans chauffeur FCT affecté.
+                  {isEn ? 'Self-drive rental without assigned FCT chauffeur.' : 'Location en formule autonome sans chauffeur FCT affecté.'}
                 </div>
               )}
             </div>
@@ -833,16 +834,16 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-1.5">
                     <div className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
-                      {linkedCust.type === 'COMPANY' ? 'Client Entreprise' : 'Client Particulier'}
+                      {linkedCust.type === 'COMPANY' ? (isEn ? 'Corporate Client' : 'Client Entreprise') : (isEn ? 'Individual Client' : 'Client Particulier')}
                     </div>
                     <h4 className="font-black text-slate-900 text-base">
                       {linkedCust.companyName || linkedCust.fullName}
                     </h4>
-                    <div className="text-slate-600 text-xs">Téléphone : <span className="font-bold text-slate-900">{linkedCust.phone}</span></div>
+                    <div className="text-slate-600 text-xs">{isEn ? 'Phone:' : 'Téléphone :'} <span className="font-bold text-slate-900">{linkedCust.phone}</span></div>
                     <div className="text-slate-600 text-xs">Email : {linkedCust.email}</div>
-                    <div className="text-slate-600 text-xs">Adresse / Ville : {linkedCust.address}</div>
+                    <div className="text-slate-600 text-xs">{isEn ? 'Address / City:' : 'Adresse / Ville :'} {linkedCust.address}</div>
                     {linkedCust.taxNumber && (
-                      <div className="font-mono text-slate-500 text-xs">NIU Fiscal : {linkedCust.taxNumber}</div>
+                      <div className="font-mono text-slate-500 text-xs">{isEn ? 'Tax ID / NIU:' : 'NIU Fiscal :'} {linkedCust.taxNumber}</div>
                     )}
                   </div>
 
@@ -856,13 +857,13 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer shrink-0"
                     >
                       <User className="w-3.5 h-3.5" />
-                      <span>Consulter Fiche Client CRM 360°</span>
+                      <span>{isEn ? 'View CRM 360° Client Profile' : 'Consulter Fiche Client CRM 360°'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-slate-50 text-slate-500 text-xs">Client introuvable.</div>
+                <div className="p-4 rounded-xl bg-slate-50 text-slate-500 text-xs">{isEn ? 'Customer not found.' : 'Client introuvable.'}</div>
               )}
             </div>
           )}
@@ -872,24 +873,24 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-center">
-                  <div className="text-xs font-bold text-blue-700 uppercase">Montant Total Prévu</div>
-                  <div className="text-lg font-black text-blue-950 mt-1">{formatXAF(selectedContract.totalAmountXAF)}</div>
+                  <div className="text-xs font-bold text-blue-700 uppercase">{isEn ? 'Total Contract Amount' : 'Montant Total Prévu'}</div>
+                  <div className="text-lg font-black text-blue-950 mt-1 privacy-blur">{formatXAF(selectedContract.totalAmountXAF)}</div>
                 </div>
                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
-                  <div className="text-xs font-bold text-emerald-700 uppercase">Montant Encaissé</div>
-                  <div className="text-lg font-black text-emerald-950 mt-1">{formatXAF(selectedContract.paidAmountXAF)}</div>
+                  <div className="text-xs font-bold text-emerald-700 uppercase">{isEn ? 'Total Collected' : 'Montant Encaissé'}</div>
+                  <div className="text-lg font-black text-emerald-950 mt-1 privacy-blur">{formatXAF(selectedContract.paidAmountXAF)}</div>
                 </div>
                 <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-center">
-                  <div className="text-xs font-bold text-amber-700 uppercase">Solde Restant</div>
-                  <div className="text-lg font-black text-amber-950 mt-1">{formatXAF(selectedContract.remainingAmountXAF)}</div>
+                  <div className="text-xs font-bold text-amber-700 uppercase">{isEn ? 'Remaining Balance' : 'Solde Restant'}</div>
+                  <div className="text-lg font-black text-amber-950 mt-1 privacy-blur">{formatXAF(selectedContract.remainingAmountXAF)}</div>
                 </div>
               </div>
 
               <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs">
                 <div>
-                  <span className="font-bold text-slate-900 block text-xs">Caution Consignée en Caisse</span>
+                  <span className="font-bold text-slate-900 block text-xs">{isEn ? 'Security Deposit Held at Cash Desk' : 'Caution Consignée en Caisse'}</span>
                   <span className="text-slate-500 text-[11px]">
-                    Dépôt de garantie bloqué pour couverture des éventuels dommages ou carburant manquant
+                    {isEn ? 'Security deposit held to cover potential damage or missing fuel' : 'Dépôt de garantie bloqué pour couverture des éventuels dommages ou carburant manquant'}
                   </span>
                 </div>
                 <span className="font-black text-sm text-emerald-800">{formatXAF(selectedContract.securityDepositXAF)}</span>
@@ -907,7 +908,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                     className="px-3.5 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     <Receipt className="w-3.5 h-3.5" />
-                    <span>Consulter les Factures Liées</span>
+                    <span>{isEn ? 'View Related Invoices' : 'Consulter les Factures Liées'}</span>
                   </button>
                   <button
                     type="button"
@@ -919,7 +920,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                     className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     <Wallet className="w-3.5 h-3.5" />
-                    <span>Encaisser au Journal de Caisse</span>
+                    <span>{isEn ? 'Collect in Cash Desk Journal' : 'Encaisser au Journal de Caisse'}</span>
                   </button>
                 </div>
               )}
@@ -934,29 +935,29 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                   <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
                     <span className="font-black text-emerald-950 text-xs flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Rapport de Restitution &amp; État des Lieux de Retour</span>
+                      <span>{isEn ? 'Return Walk-around & Inspection Report' : 'Rapport de Restitution & État des Lieux de Retour'}</span>
                     </span>
                     <span className="text-xs text-emerald-800 font-mono">
                       {selectedContract.inspectionRetour.signatureDate}
                     </span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-800">
-                    <div>Kilométrage relevé au retour : <span className="font-bold">{selectedContract.inspectionRetour.mileage.toLocaleString()} km</span></div>
-                    <div>Jauge de carburant : <span className="font-bold">{selectedContract.inspectionRetour.fuelLevel} / 8</span></div>
-                    <div>État de propreté : <span className="font-bold">{selectedContract.inspectionRetour.cleanlinessCondition}</span></div>
-                    <div>Inspecteur FCT : <span className="font-semibold">{selectedContract.inspectionRetour.inspectorName}</span></div>
+                    <div>{isEn ? 'Return mileage reading:' : 'Kilométrage relevé au retour :'} <span className="font-bold">{selectedContract.inspectionRetour.mileage.toLocaleString()} km</span></div>
+                    <div>{isEn ? 'Fuel gauge:' : 'Jauge de carburant :'} <span className="font-bold">{selectedContract.inspectionRetour.fuelLevel} / 8</span></div>
+                    <div>{isEn ? 'Cleanliness state:' : 'État de propreté :'} <span className="font-bold">{selectedContract.inspectionRetour.cleanlinessCondition}</span></div>
+                    <div>{isEn ? 'FCT Inspector:' : 'Inspecteur FCT :'} <span className="font-semibold">{selectedContract.inspectionRetour.inspectorName}</span></div>
                   </div>
                   {selectedContract.inspectionRetour.bodyConditionNotes && (
                     <div className="p-3 rounded-xl bg-slate-50 text-xs text-slate-700">
-                      <strong>Observations carrosserie :</strong> {selectedContract.inspectionRetour.bodyConditionNotes}
+                      <strong>{isEn ? 'Bodywork observations:' : 'Observations carrosserie :'}</strong> {selectedContract.inspectionRetour.bodyConditionNotes}
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-500 space-y-2">
                   <FileCheck className="w-8 h-8 text-slate-300 mx-auto" />
-                  <p className="font-bold text-slate-700">Véhicule actuellement en cours de location</p>
-                  <p className="text-xs text-slate-400">L'inspection de retour sera enregistrée lors de la clôture et restitution du véhicule.</p>
+                  <p className="font-bold text-slate-700">{isEn ? 'Vehicle currently rented out' : 'Véhicule actuellement en cours de location'}</p>
+                  <p className="text-xs text-slate-400">{isEn ? 'Return inspection will be logged upon vehicle check-in and contract closure.' : "L'inspection de retour sera enregistrée lors de la clôture et restitution du véhicule."}</p>
                 </div>
               )}
             </div>
@@ -969,8 +970,10 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                 {
                   id: 'evt-create',
                   date: selectedContract.createdAt,
-                  title: `Émission du contrat ${selectedContract.contractNumber}`,
-                  description: `Véhicule ${selectedContract.vehicleName} réservé pour ${selectedContract.customerName} du ${selectedContract.startDate} au ${selectedContract.endDate}.`,
+                  title: isEn ? `Contract issuance ${selectedContract.contractNumber}` : `Émission du contrat ${selectedContract.contractNumber}`,
+                  description: isEn
+                    ? `Vehicle ${selectedContract.vehicleName} reserved for ${selectedContract.customerName} from ${selectedContract.startDate} to ${selectedContract.endDate}.`
+                    : `Véhicule ${selectedContract.vehicleName} réservé pour ${selectedContract.customerName} du ${selectedContract.startDate} au ${selectedContract.endDate}.`,
                   type: 'INFO',
                 },
                 ...(selectedContract.status === 'RETURNED' || (selectedContract.status as string) === 'COMPLETED'
@@ -978,8 +981,10 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       {
                         id: 'evt-return',
                         date: selectedContract.inspectionRetour?.signatureDate || selectedContract.endDate,
-                        title: 'Restitution du véhicule et inspection de fin de contrat',
-                        description: 'Véhicule inspecté et remis en état disponible dans la flotte FCT.',
+                        title: isEn ? 'Vehicle return & end of rental inspection' : 'Restitution du véhicule et inspection de fin de contrat',
+                        description: isEn
+                          ? 'Vehicle inspected and returned to available status in FCT fleet.'
+                          : 'Véhicule inspecté et remis en état disponible dans la flotte FCT.',
                         type: 'SUCCESS' as const,
                       },
                     ]
@@ -989,8 +994,10 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       {
                         id: 'evt-cancel',
                         date: selectedContract.createdAt,
-                        title: 'Annulation du contrat de location',
-                        description: 'Contrat annulé administrativement. Caution libérée.',
+                        title: isEn ? 'Rental contract cancellation' : 'Annulation du contrat de location',
+                        description: isEn
+                          ? 'Contract cancelled administratively. Deposit released.'
+                          : 'Contrat annulé administrativement. Caution libérée.',
                         type: 'DANGER' as const,
                       },
                     ]
@@ -1013,14 +1020,14 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                 <div className="border-b border-slate-200 pb-3">
                   <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                    <span>État des Lieux Contradictoire &amp; Restitution</span>
+                    <span>{isEn ? 'Return Walk-around & Contract Check-in' : 'État des Lieux Contradictoire & Restitution'}</span>
                   </h3>
                   <p className="text-xs text-slate-600 mt-1">
-                    Contrat <strong className="text-slate-900">{returnModalContract.contractNumber}</strong> • Client :{' '}
+                    {isEn ? 'Contract' : 'Contrat'} <strong className="text-slate-900">{returnModalContract.contractNumber}</strong> • {isEn ? 'Client:' : 'Client :'} {' '}
                     <strong className="text-slate-900">{returnModalContract.customerName}</strong>
                   </p>
                   <p className="text-[11px] text-slate-500">
-                    Véhicule : <strong className="text-slate-800">{veh?.brand} {veh?.model}</strong> (Immat: <strong className="text-blue-900">{veh?.licensePlate || '-'}</strong>)
+                    {isEn ? 'Vehicle:' : 'Véhicule :'} <strong className="text-slate-800">{veh?.brand} {veh?.model}</strong> ({isEn ? 'Plate:' : 'Immat:'} <strong className="text-blue-900">{veh?.licensePlate || '-'}</strong>)
                   </p>
                 </div>
 
@@ -1030,16 +1037,16 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                     <div className="flex items-center justify-between font-bold text-slate-700">
                       <span className="flex items-center gap-1.5">
                         <Gauge className="w-4 h-4 text-blue-700" />
-                        Relevé Kilométrique Contradictoire
+                        {isEn ? 'Mileage Reading' : 'Relevé Kilométrique Contradictoire'}
                       </span>
                       <span className="text-[11px] text-slate-500">
-                        Départ : <strong>{departKm.toLocaleString()} km</strong>
+                        {isEn ? 'Start:' : 'Départ :'} <strong>{departKm.toLocaleString()} km</strong>
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                       <div>
-                        <label className="block text-slate-700 font-bold mb-1">Compteur au retour *</label>
+                        <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Odometer at return *' : 'Compteur au retour *'}</label>
                         <input
                           type="number"
                           min={departKm}
@@ -1051,7 +1058,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       </div>
                       <div className="flex flex-col justify-end">
                         <div className="p-2 bg-white rounded-lg border border-slate-200 text-center">
-                          <span className="text-[10px] text-slate-500 uppercase font-black block">Distance Parcourue</span>
+                          <span className="text-[10px] text-slate-500 uppercase font-black block">{isEn ? 'Driven Distance' : 'Distance Parcourue'}</span>
                           <span className="font-black text-blue-900 text-sm">+{drivenKm.toLocaleString()} km</span>
                         </div>
                       </div>
@@ -1063,7 +1070,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                     <div>
                       <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
                         <Fuel className="w-3.5 h-3.5 text-amber-600" />
-                        Jauge Carburant au retour *
+                        {isEn ? 'Fuel gauge at return *' : 'Jauge Carburant au retour *'}
                       </label>
                       <select
                         value={returnFuel}
@@ -1072,21 +1079,21 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       >
                         {[8, 7, 6, 5, 4, 3, 2, 1, 0].map((level) => (
                           <option key={level} value={level}>
-                            {level}/8 {level === 8 ? '(Plein complet)' : level === 4 ? '(Demi-plein)' : level <= 2 ? '(Réserve)' : ''}
+                            {level}/8 {level === 8 ? (isEn ? '(Full tank)' : '(Plein complet)') : level === 4 ? (isEn ? '(Half tank)' : '(Demi-plein)') : level <= 2 ? (isEn ? '(Reserve)' : '(Réserve)') : ''}
                           </option>
                         ))}
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-slate-700 font-bold mb-1">Propreté du véhicule *</label>
+                      <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Vehicle cleanliness *' : 'Propreté du véhicule *'}</label>
                       <select
                         value={returnCleanliness}
                         onChange={(e) => setReturnCleanliness(e.target.value as any)}
                         className="w-full p-2 rounded-lg border border-slate-200 font-bold bg-white"
                       >
-                        <option value="CLEAN">Propre / Conforme</option>
-                        <option value="DIRTY">Lavage agence requis (Salissures)</option>
+                        <option value="CLEAN">{isEn ? 'Clean / Compliant' : 'Propre / Conforme'}</option>
+                        <option value="DIRTY">{isEn ? 'Agency wash required' : 'Lavage agence requis (Salissures)'}</option>
                       </select>
                     </div>
                   </div>
@@ -1100,7 +1107,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                         onChange={(e) => setReturnSpareWheel(e.target.checked)}
                         className="rounded border-slate-300 text-blue-900"
                       />
-                      <span>Roue de secours présente</span>
+                      <span>{isEn ? 'Spare wheel present' : 'Roue de secours présente'}</span>
                     </label>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
@@ -1109,7 +1116,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                         onChange={(e) => setReturnJackTools(e.target.checked)}
                         className="rounded border-slate-300 text-blue-900"
                       />
-                      <span>Cric &amp; Outils complets</span>
+                      <span>{isEn ? 'Jack & complete tools' : 'Cric & Outils complets'}</span>
                     </label>
                   </div>
 
@@ -1118,13 +1125,13 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-emerald-950 flex items-center gap-1.5">
                         <Wallet className="w-4 h-4 text-emerald-700" />
-                        Règlement de Caution (Dépôt : {formatXAF(returnModalContract.securityDepositXAF)})
+                        {isEn ? 'Deposit Settlement' : 'Règlement de Caution'} ({isEn ? 'Held:' : 'Dépôt :'} {formatXAF(returnModalContract.securityDepositXAF)})
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                       <div>
-                        <label className="block text-slate-700 font-bold mb-1">Pénalités déduites (XAF)</label>
+                        <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Deducted penalties (XAF)' : 'Pénalités déduites (XAF)'}</label>
                         <input
                           type="number"
                           min={0}
@@ -1136,18 +1143,18 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                         />
                       </div>
                       <div className="p-2 bg-white rounded-lg border border-emerald-300 flex flex-col justify-center text-center">
-                        <span className="text-[10px] text-slate-500 uppercase font-black">Restitution Nette au Client</span>
+                        <span className="text-[10px] text-slate-500 uppercase font-black">{isEn ? 'Net Refund to Client' : 'Restitution Nette au Client'}</span>
                         <span className="font-black text-emerald-700 text-sm">{formatXAF(netCautionRefund)}</span>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">Observations d'état de retour / Carrosserie / Motif pénalités</label>
+                    <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Return condition notes / Bodywork / Penalty reasons' : "Observations d'état de retour / Carrosserie / Motif pénalités"}</label>
                     <textarea
                       value={penaltyNotes}
                       onChange={(e) => setPenaltyNotes(e.target.value)}
-                      placeholder="Ex: Véhicule restitué en parfait état, carrosserie intacte, accessoires vérifiés."
+                      placeholder={isEn ? 'Ex: Vehicle returned in good condition, body intact, tools verified.' : 'Ex: Véhicule restitué en parfait état, carrosserie intacte, accessoires vérifiés.'}
                       rows={2}
                       className="w-full p-2 rounded-lg border border-slate-200"
                     />
@@ -1159,14 +1166,14 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       onClick={() => setReturnModalContract(null)}
                       className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                     >
-                      Annuler
+                      {isEn ? 'Cancel' : 'Annuler'}
                     </button>
                     <button
                       type="submit"
                       className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs flex items-center gap-1.5"
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Valider &amp; Imprimer PV de Restitution</span>
+                      <span>{isEn ? 'Validate & Print Return Report' : 'Valider & Imprimer PV de Restitution'}</span>
                     </button>
                   </div>
                 </form>
@@ -1182,7 +1189,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                   <Upload className="w-5 h-5 text-purple-600" />
-                  <span>Rattacher un Document au Contrat</span>
+                  <span>{isEn ? 'Attach Document to Contract' : 'Rattacher un Document au Contrat'}</span>
                 </h3>
                 <button
                   type="button"
@@ -1195,49 +1202,49 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
 
               <form onSubmit={handleAddDocumentToContract} className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Intitulé du document *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Document title *' : 'Intitulé du document *'}</label>
                   <input
                     type="text"
                     required
                     value={docForm.title}
                     onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
-                    placeholder="Ex: Contrat signé par le client, Scan CNI / Permis..."
+                    placeholder={isEn ? 'Ex: Signed contract, Tenant ID / Driving license...' : 'Ex: Contrat signé par le client, Scan CNI / Permis...'}
                     className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Catégorie du document</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Document category' : 'Catégorie du document'}</label>
                   <select
                     value={docForm.category}
                     onChange={(e) => setDocForm({ ...docForm, category: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-slate-200"
                   >
-                    <option value="CONTRAT_SIGNE">Contrat de Location Signé</option>
-                    <option value="PERMIS_CONDUIRE">Permis de Conduire Locataire</option>
-                    <option value="CNI_PASSEPORT">CNI / Passeport Locataire</option>
-                    <option value="ETAT_DES_LIEUX">État des Lieux Numérisé</option>
-                    <option value="RECU_CAUTION">Reçu de Caution</option>
-                    <option value="AUTRE">Autre Justificatif</option>
+                    <option value="CONTRAT_SIGNE">{isEn ? 'Signed Rental Agreement' : 'Contrat de Location Signé'}</option>
+                    <option value="PERMIS_CONDUIRE">{isEn ? 'Tenant Driving License' : 'Permis de Conduire Locataire'}</option>
+                    <option value="CNI_PASSEPORT">{isEn ? 'ID Card / Passport' : 'CNI / Passeport Locataire'}</option>
+                    <option value="ETAT_DES_LIEUX">{isEn ? 'Digitized Walk-around' : 'État des Lieux Numérisé'}</option>
+                    <option value="RECU_CAUTION">{isEn ? 'Deposit Receipt' : 'Reçu de Caution'}</option>
+                    <option value="AUTRE">{isEn ? 'Other Attachment' : 'Autre Justificatif'}</option>
                   </select>
                 </div>
 
                 <CloudinaryUploadDropzone
                   folder="fct_automobile/rentals"
-                  label="Contrat signé / Justificatif (Téléversement Cloudinary FCT) :"
-                  helperText="Glissez ou sélectionnez le contrat signé ou permis locataire (PDF, PNG, JPG)"
+                  label={isEn ? 'Signed contract / Supporting document (Cloudinary FCT):' : 'Contrat signé / Justificatif (Téléversement Cloudinary FCT) :'}
+                  helperText={isEn ? 'Drag & drop or select signed contract or tenant license (PDF, PNG, JPG)' : 'Glissez ou sélectionnez le contrat signé ou permis locataire (PDF, PNG, JPG)'}
                   currentValue={docForm.fileUrl}
                   onUploadSuccess={(url) => setDocForm({ ...docForm, fileUrl: url })}
                   onClear={() => setDocForm({ ...docForm, fileUrl: '' })}
                 />
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Notes / Observations</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Notes / Observations' : 'Notes / Observations'}</label>
                   <textarea
                     rows={2}
                     value={docForm.notes}
                     onChange={(e) => setDocForm({ ...docForm, notes: e.target.value })}
-                    placeholder="Observations ou annotations..."
+                    placeholder={isEn ? 'Remarks or notes...' : 'Observations ou annotations...'}
                     className="w-full p-2.5 rounded-xl border border-slate-200"
                   />
                 </div>
@@ -1248,13 +1255,13 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                     onClick={() => setIsAddDocModalOpen(false)}
                     className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
                   >
-                    Annuler
+                    {isEn ? 'Cancel' : 'Annuler'}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold cursor-pointer shadow-xs"
                   >
-                    Enregistrer et Rattacher
+                    {isEn ? 'Save & Attach' : 'Enregistrer et Rattacher'}
                   </button>
                 </div>
               </form>
@@ -1442,9 +1449,9 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                           setReturnMileage(linkedVeh?.mileage || 50000);
                         }}
                         className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition shadow-2xs"
-                        title="Restituer le véhicule"
+                        title={isEn ? 'Return vehicle & check-in' : 'Restituer le véhicule'}
                       >
-                        Retour
+                        {isEn ? 'Return' : 'Retour'}
                       </button>
                     )}
                     <button
@@ -1454,7 +1461,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                         handlePrintContract(contract);
                       }}
                       className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
-                      title="Imprimer le contrat"
+                      title={isEn ? 'Print contract' : 'Imprimer le contrat'}
                     >
                       <Printer className="w-3.5 h-3.5" />
                     </button>
@@ -1519,10 +1526,10 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                           <span className="text-slate-400 text-[10px]">{lang === 'en' ? 'No' : 'Non'}</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-right font-black text-slate-900 whitespace-nowrap">
+                      <td className="py-3 px-4 text-right font-black text-slate-900 whitespace-nowrap privacy-blur">
                         {formatXAF(contract.totalAmountXAF)}
                       </td>
-                      <td className="py-3 px-4 text-right font-semibold text-emerald-800 whitespace-nowrap">
+                      <td className="py-3 px-4 text-right font-semibold text-emerald-800 whitespace-nowrap privacy-blur">
                         {formatXAF(contract.securityDepositXAF)}
                       </td>
                       <td className="py-3 px-4 text-center whitespace-nowrap">
@@ -1610,14 +1617,14 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
               <div className="border-b border-slate-200 pb-3">
                 <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                  <span>État des Lieux Contradictoire &amp; Restitution</span>
+                  <span>{isEn ? 'Return Walk-around & Contract Check-in' : 'État des Lieux Contradictoire & Restitution'}</span>
                 </h3>
                 <p className="text-xs text-slate-600 mt-1">
-                  Contrat <strong className="text-slate-900">{returnModalContract.contractNumber}</strong> • Client :{' '}
+                  {isEn ? 'Contract' : 'Contrat'} <strong className="text-slate-900">{returnModalContract.contractNumber}</strong> • {isEn ? 'Client:' : 'Client :'} {' '}
                   <strong className="text-slate-900">{returnModalContract.customerName}</strong>
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  Véhicule : <strong className="text-slate-800">{veh?.brand} {veh?.model}</strong> (Immat: <strong className="text-blue-900">{veh?.licensePlate || '-'}</strong>)
+                  {isEn ? 'Vehicle:' : 'Véhicule :'} <strong className="text-slate-800">{veh?.brand} {veh?.model}</strong> ({isEn ? 'Plate:' : 'Immat:'} <strong className="text-blue-900">{veh?.licensePlate || '-'}</strong>)
                 </p>
               </div>
 
@@ -1627,16 +1634,16 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                   <div className="flex items-center justify-between font-bold text-slate-700">
                     <span className="flex items-center gap-1.5">
                       <Gauge className="w-4 h-4 text-blue-700" />
-                      Relevé Kilométrique Contradictoire
+                      {isEn ? 'Mileage Reading' : 'Relevé Kilométrique Contradictoire'}
                     </span>
                     <span className="text-[11px] text-slate-500">
-                      Départ : <strong>{departKm.toLocaleString()} km</strong>
+                      {isEn ? 'Start:' : 'Départ :'} <strong>{departKm.toLocaleString()} km</strong>
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="block text-slate-700 font-bold mb-1">Compteur au retour *</label>
+                      <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Odometer at return *' : 'Compteur au retour *'}</label>
                       <input
                         type="number"
                         min={departKm}
@@ -1648,7 +1655,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                     </div>
                     <div className="flex flex-col justify-end">
                       <div className="p-2 bg-white rounded-lg border border-slate-200 text-center">
-                        <span className="text-[10px] text-slate-500 uppercase font-black block">Distance Parcourue</span>
+                        <span className="text-[10px] text-slate-500 uppercase font-black block">{isEn ? 'Driven Distance' : 'Distance Parcourue'}</span>
                         <span className="font-black text-blue-900 text-sm">+{drivenKm.toLocaleString()} km</span>
                       </div>
                     </div>
@@ -1660,7 +1667,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                   <div>
                     <label className="block text-slate-700 font-bold mb-1 flex items-center gap-1">
                       <Fuel className="w-3.5 h-3.5 text-amber-600" />
-                      Jauge Carburant au retour *
+                      {isEn ? 'Fuel gauge at return *' : 'Jauge Carburant au retour *'}
                     </label>
                     <select
                       value={returnFuel}
@@ -1669,21 +1676,21 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                     >
                       {[8, 7, 6, 5, 4, 3, 2, 1, 0].map((level) => (
                         <option key={level} value={level}>
-                          {level}/8 {level === 8 ? '(Plein complet)' : level === 4 ? '(Demi-plein)' : level <= 2 ? '(Réserve)' : ''}
+                          {level}/8 {level === 8 ? (isEn ? '(Full tank)' : '(Plein complet)') : level === 4 ? (isEn ? '(Half tank)' : '(Demi-plein)') : level <= 2 ? (isEn ? '(Reserve)' : '(Réserve)') : ''}
                         </option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">Propreté du véhicule *</label>
+                    <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Vehicle cleanliness *' : 'Propreté du véhicule *'}</label>
                     <select
                       value={returnCleanliness}
                       onChange={(e) => setReturnCleanliness(e.target.value as any)}
                       className="w-full p-2 rounded-lg border border-slate-200 font-bold bg-white"
                     >
-                      <option value="CLEAN">Propre / Conforme</option>
-                      <option value="DIRTY">Lavage agence requis (Salissures)</option>
+                      <option value="CLEAN">{isEn ? 'Clean / Compliant' : 'Propre / Conforme'}</option>
+                      <option value="DIRTY">{isEn ? 'Agency wash required' : 'Lavage agence requis (Salissures)'}</option>
                     </select>
                   </div>
                 </div>
@@ -1697,7 +1704,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       onChange={(e) => setReturnSpareWheel(e.target.checked)}
                       className="rounded border-slate-300 text-blue-900"
                     />
-                    <span>Roue de secours présente</span>
+                    <span>{isEn ? 'Spare wheel present' : 'Roue de secours présente'}</span>
                   </label>
                   <label className="flex items-center gap-1.5 cursor-pointer">
                     <input
@@ -1706,7 +1713,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       onChange={(e) => setReturnJackTools(e.target.checked)}
                       className="rounded border-slate-300 text-blue-900"
                     />
-                    <span>Cric &amp; Outils complets</span>
+                    <span>{isEn ? 'Jack & complete tools' : 'Cric & Outils complets'}</span>
                   </label>
                 </div>
 
@@ -1715,13 +1722,13 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-emerald-950 flex items-center gap-1.5">
                       <Wallet className="w-4 h-4 text-emerald-700" />
-                      Règlement de Caution (Dépôt : {formatXAF(returnModalContract.securityDepositXAF)})
+                      {isEn ? 'Deposit Settlement' : 'Règlement de Caution'} ({isEn ? 'Held:' : 'Dépôt :'} {formatXAF(returnModalContract.securityDepositXAF)})
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="block text-slate-700 font-bold mb-1">Pénalités déduites (XAF)</label>
+                      <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Deducted penalties (XAF)' : 'Pénalités déduites (XAF)'}</label>
                       <input
                         type="number"
                         min={0}
@@ -1733,18 +1740,18 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                       />
                     </div>
                     <div className="p-2 bg-white rounded-lg border border-emerald-300 flex flex-col justify-center text-center">
-                      <span className="text-[10px] text-slate-500 uppercase font-black">Restitution Nette au Client</span>
+                      <span className="text-[10px] text-slate-500 uppercase font-black">{isEn ? 'Net Refund to Client' : 'Restitution Nette au Client'}</span>
                       <span className="font-black text-emerald-700 text-sm">{formatXAF(netCautionRefund)}</span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Observations d'état de retour / Carrosserie / Motif pénalités</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Return condition notes / Bodywork / Penalty reasons' : "Observations d'état de retour / Carrosserie / Motif pénalités"}</label>
                   <textarea
                     value={penaltyNotes}
                     onChange={(e) => setPenaltyNotes(e.target.value)}
-                    placeholder="Ex: Véhicule restitué en parfait état, carrosserie intacte, accessoires vérifiés."
+                    placeholder={isEn ? 'Ex: Vehicle returned in good condition, body intact, tools verified.' : 'Ex: Véhicule restitué en parfait état, carrosserie intacte, accessoires vérifiés.'}
                     rows={2}
                     className="w-full p-2 rounded-lg border border-slate-200"
                   />
@@ -1756,14 +1763,14 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                     onClick={() => setReturnModalContract(null)}
                     className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                   >
-                    Annuler
+                    {isEn ? 'Cancel' : 'Annuler'}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs flex items-center gap-1.5"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Valider &amp; Imprimer PV de Restitution</span>
+                    <span>{isEn ? 'Validate & Print Return Report' : 'Valider & Imprimer PV de Restitution'}</span>
                   </button>
                 </div>
               </form>
@@ -1779,7 +1786,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                 <KeyRound className="w-5 h-5 text-emerald-600" />
-                <span>Émettre un Contrat de Location</span>
+                <span>{isEn ? 'Issue Rental Agreement' : 'Émettre un Contrat de Location'}</span>
               </h3>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
@@ -1798,7 +1805,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
 
             <form onSubmit={handleCreateContract} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Client *</label>
+                <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Client *' : 'Client *'}</label>
                 <select
                   value={contractForm.customerId}
                   onChange={(e) => setContractForm({ ...contractForm, customerId: e.target.value })}
@@ -1814,7 +1821,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Véhicule à louer *</label>
+                <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Vehicle to rent *' : 'Véhicule à louer *'}</label>
                 <select
                   value={contractForm.vehicleId}
                   onChange={(e) => handleSelectVehicle(e.target.value)}
@@ -1823,7 +1830,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                 >
                   {state.vehicles.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.brand} {v.model} ({v.licensePlate}) - {formatXAF(v.rentalDailyRate)}/j - {v.status}
+                      {v.brand} {v.model} ({v.licensePlate}) - {formatXAF(v.rentalDailyRate)}/{isEn ? 'day' : 'j'} - {v.status}
                     </option>
                   ))}
                 </select>
@@ -1831,7 +1838,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Date de début *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Start Date *' : 'Date de début *'}</label>
                   <input
                     type="date"
                     value={contractForm.startDate}
@@ -1841,7 +1848,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Date de fin *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'End Date *' : 'Date de fin *'}</label>
                   <input
                     type="date"
                     value={contractForm.endDate}
@@ -1854,7 +1861,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Tarif Journalier (XAF) *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Daily Rate (XAF) *' : 'Tarif Journalier (XAF) *'}</label>
                   <input
                     type="number"
                     value={contractForm.dailyRateXAF}
@@ -1864,7 +1871,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Caution Obligatoire (XAF) *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Required Deposit (XAF) *' : 'Caution Obligatoire (XAF) *'}</label>
                   <input
                     type="number"
                     value={contractForm.securityDepositXAF}
@@ -1883,21 +1890,21 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                     onChange={(e) => setContractForm({ ...contractForm, driverIncluded: e.target.checked })}
                     className="w-4 h-4 rounded text-blue-900"
                   />
-                  <span>Option Chauffeur Professionnel Agréé FCT inclus</span>
+                  <span>{isEn ? 'Include certified FCT professional chauffeur' : 'Option Chauffeur Professionnel Agréé FCT inclus'}</span>
                 </label>
 
                 {contractForm.driverIncluded && (
                   <div>
-                    <label className="block text-slate-600 font-medium mb-1">Sélectionner le chauffeur</label>
+                    <label className="block text-slate-600 font-medium mb-1">{isEn ? 'Select chauffeur' : 'Sélectionner le chauffeur'}</label>
                     <select
                       value={contractForm.driverId}
                       onChange={(e) => setContractForm({ ...contractForm, driverId: e.target.value })}
                       className="w-full p-2 rounded-lg border border-slate-200 font-bold bg-white"
                     >
-                      <option value="">Sélectionner parmi les chauffeurs disponibles</option>
+                      <option value="">{isEn ? 'Select among available chauffeurs' : 'Sélectionner parmi les chauffeurs disponibles'}</option>
                       {state.drivers.map((d) => (
                         <option key={d.id} value={d.id}>
-                          {d.fullName} ({d.status}) - Permis {d.licenseNumber}
+                          {d.fullName} ({d.status}) - {isEn ? 'License' : 'Permis'} {d.licenseNumber}
                         </option>
                       ))}
                     </select>
@@ -1911,13 +1918,13 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                   onClick={() => setIsCreateModalOpen(false)}
                   className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {isEn ? 'Cancel' : 'Annuler'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Valider &amp; Imprimer Contrat
+                  {isEn ? 'Validate & Print Contract' : 'Valider & Imprimer Contrat'}
                 </button>
               </div>
             </form>
@@ -1931,13 +1938,13 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <Pencil className="w-5 h-5 text-blue-900" />
-              <span>Modifier Contrat {editingContract.contractNumber}</span>
+              <span>{isEn ? 'Edit Contract' : 'Modifier Contrat'} {editingContract.contractNumber}</span>
             </h3>
 
             <form onSubmit={handleSaveEditContract} className="space-y-3 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Date Début *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Start Date *' : 'Date Début *'}</label>
                   <input
                     type="date"
                     value={editForm.startDate}
@@ -1947,7 +1954,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Date Fin *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'End Date *' : 'Date Fin *'}</label>
                   <input
                     type="date"
                     value={editForm.endDate}
@@ -1960,7 +1967,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Tarif Journalier (XAF)</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Daily Rate (XAF)' : 'Tarif Journalier (XAF)'}</label>
                   <input
                     type="number"
                     value={editForm.dailyRateXAF}
@@ -1969,7 +1976,7 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Caution (XAF)</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Deposit (XAF)' : 'Caution (XAF)'}</label>
                   <input
                     type="number"
                     value={editForm.securityDepositXAF}
@@ -1985,13 +1992,13 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
                   onClick={() => setIsEditModalOpen(false)}
                   className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {isEn ? 'Cancel' : 'Annuler'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Enregistrer
+                  {isEn ? 'Save' : 'Enregistrer'}
                 </button>
               </div>
             </form>
@@ -2003,10 +2010,12 @@ export const RentalsView: React.FC<RentalsViewProps> = ({
       {cancelConfirmContract && (
         <DeleteConfirmModal
           isOpen={Boolean(cancelConfirmContract)}
-          title="Annuler le Contrat de Location"
-          itemName={`Contrat ${cancelConfirmContract.contractNumber} (${cancelConfirmContract.customerName})`}
-          itemDetails={`Période du ${cancelConfirmContract.startDate} au ${cancelConfirmContract.endDate} d'un montant de ${formatXAF(cancelConfirmContract.totalAmountXAF)}.`}
-          warningMessage="L'annulation libérera le véhicule et le chauffeur affecté. Cette action sera enregistrée dans le journal d'audit de sécurité."
+          title={isEn ? 'Cancel Rental Agreement' : 'Annuler le Contrat de Location'}
+          itemName={isEn ? `Contract ${cancelConfirmContract.contractNumber} (${cancelConfirmContract.customerName})` : `Contrat ${cancelConfirmContract.contractNumber} (${cancelConfirmContract.customerName})`}
+          itemDetails={isEn
+            ? `Period from ${cancelConfirmContract.startDate} to ${cancelConfirmContract.endDate} totaling ${formatXAF(cancelConfirmContract.totalAmountXAF)}.`
+            : `Période du ${cancelConfirmContract.startDate} au ${cancelConfirmContract.endDate} d'un montant de ${formatXAF(cancelConfirmContract.totalAmountXAF)}.`}
+          warningMessage={isEn ? 'Cancellation will release both the vehicle and the assigned chauffeur. This action is logged in the security audit trail.' : "L'annulation libérera le véhicule et le chauffeur affecté. Cette action sera enregistrée dans le journal d'audit de sécurité."}
           onConfirm={handleConfirmCancelContract}
           onCancel={() => setCancelConfirmContract(null)}
         />

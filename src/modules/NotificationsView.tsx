@@ -299,7 +299,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ state, lan
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>Catalogue des Gabarits ({catalogTemplates.length})</span>
+            <span>{isEn ? 'Template Catalog' : 'Catalogue des Gabarits'} ({catalogTemplates.length})</span>
           </button>
 
           <button
@@ -312,7 +312,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ state, lan
             }`}
           >
             <Send className="w-3.5 h-3.5" />
-            <span>Banc de Test Réel</span>
+            <span>{isEn ? 'Live Test Bench' : 'Banc de Test Réel'}</span>
           </button>
         </div>
       </div>
@@ -323,14 +323,14 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ state, lan
           <div className="flex flex-wrap items-center justify-between pb-2 border-b border-slate-200 gap-2">
             <div>
               <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
-                Catalogue des Gabarits d'Emails Certifiés FCT Automobile (6 Modèles)
+                {isEn ? 'Certified FCT Automobile Email Templates (6 Models)' : "Catalogue des Gabarits d'Emails Certifiés FCT Automobile (6 Modèles)"}
               </h3>
               <p className="text-xs text-slate-500">
-                Chaque modèle est responsive, charté aux couleurs officielles avec bouton d'action et liens interactifs.
+                {isEn ? 'Each template is responsive, styled with official brand colors, action button, and interactive links.' : "Chaque modèle est responsive, charté aux couleurs officielles avec bouton d'action et liens interactifs."}
               </p>
             </div>
             <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-900 font-extrabold text-xs border border-emerald-200">
-              6 Modèles Actifs & Chartés
+              {isEn ? '6 Active & Branded Templates' : '6 Modèles Actifs & Chartés'}
             </span>
           </div>
 
@@ -360,7 +360,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ state, lan
                   className="w-full py-2.5 bg-slate-100 hover:bg-[#0f2a4a] hover:text-white text-slate-800 font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1.5 cursor-pointer group shadow-2xs"
                 >
                   <Eye className="w-3.5 h-3.5 text-[#0f2a4a] group-hover:text-emerald-400 transition-colors" />
-                  <span>Prévisualiser ce Modèle</span>
+                  <span>{isEn ? 'Preview this Template' : 'Prévisualiser ce Modèle'}</span>
                 </button>
               </div>
             ))}
@@ -372,7 +372,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ state, lan
       {activeTab === 'TEST_BENCH' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="bg-white rounded-2xl shadow-xs border border-slate-200 p-5 space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900">Paramètres de la Passerelle EmailJS</h3>
+            <h3 className="font-extrabold text-sm text-slate-900">{isEn ? 'EmailJS Gateway Settings' : 'Paramètres de la Passerelle EmailJS'}</h3>
             
             <div className="space-y-2 text-xs font-mono text-slate-600">
               <div className="flex justify-between border-b border-slate-100 pb-1.5">
@@ -384,17 +384,17 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ state, lan
                 <span className="font-bold text-slate-900">template_6gxkx2n</span>
               </div>
               <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                <span className="text-slate-400">Compte Expéditeur :</span>
+                <span className="text-slate-400">{isEn ? 'Sender Account:' : 'Compte Expéditeur :'}</span>
                 <span className="font-bold text-emerald-700">fct.cmr@gmail.com</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Protocole :</span>
+                <span className="text-slate-400">{isEn ? 'Protocol:' : 'Protocole :'}</span>
                 <span className="font-bold text-blue-900">REST API v1.0 TLS</span>
               </div>
             </div>
 
             <div className="pt-2 border-t border-slate-100 space-y-2">
-              <label className="text-xs font-bold text-slate-700 block">Choisir un gabarit à tester :</label>
+              <label className="text-xs font-bold text-slate-700 block">{isEn ? 'Choose a template to test:' : 'Choisir un gabarit à tester :'}</label>
               <select
                 value={benchTemplate}
                 onChange={(e) => setBenchTemplate(e.target.value)}
@@ -414,15 +414,15 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ state, lan
               className="w-full py-2 bg-blue-50 text-blue-950 font-bold text-xs rounded-xl hover:bg-blue-100 transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Eye className="w-3.5 h-3.5 text-blue-900" />
-              <span>Ouvrir l'Aperçu Complet (Desktop & Mobile)</span>
+              <span>{isEn ? 'Open Full Preview (Desktop & Mobile)' : "Ouvrir l'Aperçu Complet (Desktop & Mobile)"}</span>
             </button>
           </div>
 
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-xs border border-slate-200 p-5 space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900">Expédition Immédiate de Test</h3>
+            <h3 className="font-extrabold text-sm text-slate-900">{isEn ? 'Instant Test Dispatch' : 'Expédition Immédiate de Test'}</h3>
             
             <p className="text-xs text-slate-500">
-              Saisissez votre adresse e-mail personnelle pour recevoir le gabarit sélectionné tel qu'il apparaîtra dans votre boîte de réception (Gmail, Outlook, smartphone Android).
+              {isEn ? 'Enter your personal email address to receive the selected template as it will appear in your inbox (Gmail, Outlook, smartphone).' : 'Saisissez votre adresse e-mail personnelle pour recevoir le gabarit sélectionné tel qu\'il apparaîtra dans votre boîte de réception (Gmail, Outlook, smartphone Android).'}
             </p>
 
             <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -476,12 +476,12 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ state, lan
                 {benchSending ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Envoi en cours...</span>
+                    <span>{isEn ? 'Sending in progress...' : 'Envoi en cours...'}</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span>Expédier le Test Réel</span>
+                    <span>{isEn ? 'Send Live Test' : 'Expédier le Test Réel'}</span>
                   </>
                 )}
               </button>

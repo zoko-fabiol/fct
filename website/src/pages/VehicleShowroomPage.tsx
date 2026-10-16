@@ -129,7 +129,7 @@ export const VehicleShowroomPage: React.FC<VehicleShowroomPageProps> = ({
     if (!partner) return;
     const affUrl = generateAffiliateUrl(vehicle.id, partner.partnerCode);
     const isRent = activeTab === 'rent';
-    const copyText = generateShareCopyText(vehicle, affUrl, isRent);
+    const copyText = generateShareCopyText(vehicle, affUrl, isRent, lang);
     const photoUrl = vehicle.photoUrls?.[0] || '';
 
     await logPartnerShare(partner, vehicle, platform);

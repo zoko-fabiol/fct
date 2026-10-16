@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { WhatsAppIcon } from './WhatsAppIcon.tsx';
-import { OrangeMoneyLogo, MtnMomoLogo } from './PaymentLogos.tsx';
+import { OrangeMoneyLogo, MtnMomoLogo, OrangeLogo, MtnLogo } from './PaymentLogos.tsx';
 import { validateCameroonPhone } from '../services/profileService.ts';
 import { CheckCircle2, Plus, RefreshCw, Smartphone, PhoneCall, AlertCircle } from 'lucide-react';
 
@@ -155,13 +155,17 @@ export const UnifiedPhoneChannelsInput: React.FC<UnifiedPhoneChannelsProps> = ({
                     : '1px solid #e2e8f0',
               }}
             >
-              {detectedOperator === 'ORANGE' && <OrangeMoneyLogo size={14} />}
-              {detectedOperator === 'MTN' && <MtnMomoLogo size={14} />}
+              {detectedOperator === 'ORANGE' && <OrangeLogo size={15} />}
+              {detectedOperator === 'MTN' && <MtnLogo size={15} />}
               <span>
                 {detectedOperator === 'ORANGE'
-                  ? 'Réseau Orange'
+                  ? isEn
+                    ? 'Orange Network'
+                    : 'Réseau Orange'
                   : detectedOperator === 'MTN'
-                  ? 'Réseau MTN'
+                  ? isEn
+                    ? 'MTN Network'
+                    : 'Réseau MTN'
                   : isEn
                   ? 'Other / Landline'
                   : 'Autre réseau'}
@@ -176,7 +180,7 @@ export const UnifiedPhoneChannelsInput: React.FC<UnifiedPhoneChannelsProps> = ({
             disabled={disabled}
             value={phone}
             onChange={(e) => handleMainPhoneChange(e.target.value)}
-            placeholder="699 45 88 12 ou +237 ..."
+            placeholder={isEn ? '699 45 88 12 or +237 ...' : '699 45 88 12 ou +237 ...'}
             style={{
               width: '100%',
               padding: '11px 14px',

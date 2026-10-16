@@ -53,7 +53,7 @@ export const RentalPage: React.FC<RentalPageProps> = ({ vehicles, onOpenShowroom
       <div className="fct-page-header">
         <div className="fct-container">
           <span className="fct-badge fct-badge-blue">
-            {isEn ? 'Official Catalog' : 'Catalogue Officiel'}
+            {(t as any).badge || (isEn ? 'Official Catalog' : 'Catalogue Officiel')}
           </span>
           <h2>{t.title}</h2>
           <p>{t.subtitle}</p>
@@ -240,17 +240,17 @@ export const RentalPage: React.FC<RentalPageProps> = ({ vehicles, onOpenShowroom
                       <div className="fct-card-price-row">
                         <div>
                           <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-                            {isEn ? 'Daily Rate' : 'Tarif journalier'}
+                            {(t as any).dayRateLabel || (isEn ? 'Daily Rate' : 'Tarif journalier')}
                           </span>
                           <div className="fct-price-tag">
-                            {formatXAF(v.rentalDailyRate)} <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>/ {isEn ? 'day' : 'j'}</span>
+                            {formatXAF(v.rentalDailyRate)} <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>/ {(t as any).dayRate || (isEn ? 'day' : 'j')}</span>
                           </div>
                           <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                             {t.deposit} {formatXAF(v.securityDepositRate)}
                           </span>
                         </div>
                         <button className="btn-primary" style={{ padding: '8px 14px', fontSize: 12 }}>
-                          <span>{isEn ? 'Showroom' : 'Showroom'}</span>
+                          <span>{t.detailsCTA || (isEn ? 'Showroom' : 'Showroom')}</span>
                           <ArrowRight size={14} />
                         </button>
                       </div>

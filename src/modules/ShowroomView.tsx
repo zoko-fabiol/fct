@@ -611,20 +611,20 @@ ${vehicle.isForSale ? `*Prix de Vente :* ${formatXAF(vehicle.salePrice)}` : ''}
             <div className="p-4 rounded-xl bg-gradient-to-br from-slate-900 via-[#0f2a4a] to-emerald-950 text-white space-y-3 shadow-sm border border-slate-800">
               <div className="flex items-baseline justify-between border-b border-white/10 pb-2.5">
                 <span className="text-xs text-slate-300 font-medium">{t.showroom.dailyRate} :</span>
-                <span className="text-2xl font-black text-emerald-400 tracking-tight">
+                <span className="text-2xl font-black text-emerald-400 tracking-tight privacy-blur">
                   {formatXAF(vehicle.rentalDailyRate)}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-xs text-slate-300">
                 <span>{t.showroom.deposit} :</span>
-                <span className="font-bold text-white">{formatXAF(vehicle.securityDepositRate)}</span>
+                <span className="font-bold text-white privacy-blur">{formatXAF(vehicle.securityDepositRate)}</span>
               </div>
 
               {vehicle.isForSale && (
                 <div className="flex items-center justify-between text-xs pt-2.5 border-t border-white/10">
                   <span className="text-amber-200 font-medium">{t.showroom.salePrice} :</span>
-                  <span className="font-black text-lg text-amber-300">{formatXAF(vehicle.salePrice)}</span>
+                  <span className="font-black text-lg text-amber-300 privacy-blur">{formatXAF(vehicle.salePrice)}</span>
                 </div>
               )}
             </div>

@@ -3,6 +3,7 @@ import {
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  persistentSingleTabManager,
   getFirestore,
   Firestore,
   collection,
@@ -50,10 +51,13 @@ export const app: FirebaseApp = getApps().length > 0 ? getApp() : initializeApp(
 function initWebsiteFirestore(): Firestore {
   try {
     if (typeof window !== 'undefined' && typeof indexedDB !== 'undefined') {
+      const hasWebLocks = typeof navigator !== 'undefined' && 'locks' in navigator;
+      const tabManager = hasWebLocks
+        ? persistentMultipleTabManager()
+        : persistentSingleTabManager({ forceOwnership: true });
+
       return initializeFirestore(app, {
-        localCache: persistentLocalCache({
-          tabManager: persistentMultipleTabManager(),
-        }),
+        localCache: persistentLocalCache({ tabManager }),
       });
     }
   } catch (err) {

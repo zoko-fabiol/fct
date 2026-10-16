@@ -35,6 +35,7 @@ import {
   SecurityAuditEvent,
   UserAccountStatus,
   UserPermissionOverrides,
+  TrashItem,
 } from '../../packages/shared-types/index.ts';
 import { PUBLIC_VEHICLES_COLLECTION, isVehiclePublishable, toPublicVehicle } from './publicCatalog.ts';
 import {
@@ -125,6 +126,7 @@ export interface DatabaseState {
   documents: FctDocument[];
   auditLogs: AuditLog[];
   syncQueue: SyncQueueItem[];
+  trashItems: TrashItem[];
   isOnline: boolean;
   isHydrated: boolean;
   documentCounters: Record<string, number>;
@@ -180,6 +182,7 @@ function loadInitialState(): DatabaseState {
         },
       ],
       syncQueue: [],
+      trashItems: [],
       isOnline: true,
       documentCounters: {
         CTR: 35,
@@ -218,6 +221,7 @@ function loadInitialState(): DatabaseState {
     documents: [],
     auditLogs: [],
     syncQueue: [],
+    trashItems: [],
     isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
     documentCounters: {
       CTR: 1,
@@ -229,6 +233,19 @@ function loadInitialState(): DatabaseState {
       CS: 1,
     },
   };
+}
+
+function sanitizeForFirestore(obj: any): any {
+  if (obj === undefined) return null;
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+  const clean: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      clean[key] = sanitizeForFirestore(value);
+    }
+  }
+  return clean;
 }
 
 class DatabaseStore {
@@ -271,8 +288,14 @@ class DatabaseStore {
     }
   }
 
-  private async initFirebasePersistence() {
+  public async initFirebasePersistence(forceRefresh = false) {
+    if (isTestEnv) return;
     try {
+      if (this.unsubscribeRealtime) {
+        this.unsubscribeRealtime();
+        this.unsubscribeRealtime = undefined;
+      }
+
       // 1. Abonnement en temps réel : Firestore active son cache local persistant IndexedDB
       // et émet un premier snapshot en moins de 15ms dès qu'il est disponible !
       this.unsubscribeRealtime = listenToFirebaseRealtime((partial) => {
@@ -351,8 +374,14 @@ class DatabaseStore {
     this.currentUser = user;
     if (user) {
       sessionService.saveSession(user);
+      // Reconnexion réactive à Firebase dès authentification réussie
+      this.initFirebasePersistence(true);
     } else {
       sessionService.clearSession();
+      if (this.unsubscribeRealtime) {
+        this.unsubscribeRealtime();
+        this.unsubscribeRealtime = undefined;
+      }
     }
     this.notify();
   }
@@ -670,12 +699,14 @@ class DatabaseStore {
   }
 
   // Idempotency Key & Audit Helper
-  private createAuditLog(
+  public createAuditLog(
     action: AuditLog['action'],
     module: AuditLog['module'],
     recordId: string,
     details: string,
-    reason?: string
+    reason?: string,
+    entityTitle?: string,
+    trashId?: string
   ) {
     const idempKey = `idemp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const log: AuditLog = {
@@ -690,6 +721,8 @@ class DatabaseStore {
       details,
       reason,
       idempotencyKey: idempKey,
+      entityTitle,
+      trashId,
     };
     this.state.auditLogs.unshift(log);
 
@@ -714,10 +747,11 @@ class DatabaseStore {
   public async mirrorToFirestore(collectionName: string, docId: string, data: any) {
     if (!this.state.isOnline) return;
     try {
-      await setDoc(doc(db, collectionName, docId), {
+      const sanitized = sanitizeForFirestore({
         ...data,
         syncedAt: new Date().toISOString(),
-      }, { merge: true });
+      });
+      await setDoc(doc(db, collectionName, docId), sanitized, { merge: true });
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `${collectionName}/${docId}`);
     }
@@ -759,6 +793,195 @@ class DatabaseStore {
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `${PUBLIC_VEHICLES_COLLECTION}/${vehicleId}`);
     }
+  }
+
+  // --- CORBEILLE SÉCURISÉE FCT & SOFT-DELETE (GARANTIE 30 JOURS) ---
+  public getTrashItems(): TrashItem[] {
+    return this.state.trashItems || [];
+  }
+
+  public getVehicles(): Vehicle[] {
+    return this.state.vehicles;
+  }
+
+  public getCustomers(): Customer[] {
+    return this.state.customers;
+  }
+
+  public archiveToTrash(
+    originalCollection: TrashItem['originalCollection'],
+    entityId: string,
+    entityTitle: string,
+    entityData: any,
+    reason?: string
+  ): TrashItem {
+    const deletedAt = new Date().toISOString();
+    // Garantie de rétention stricte de 30 jours
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const trashItem: TrashItem = {
+      id: `trash_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      originalCollection,
+      entityId,
+      entityTitle,
+      entityData: sanitizeForFirestore(entityData),
+      deletedAt,
+      deletedByUserId: this.actor.id,
+      deletedByName: this.actor.fullName,
+      deletedByRole: this.actor.role,
+      deletionReason: reason || 'Suppression manuelle depuis l’interface',
+      expiresAt,
+      isRestored: false,
+    };
+    this.state.trashItems = [trashItem, ...(this.state.trashItems || [])];
+    this.mirrorToFirestore('trash_bin', trashItem.id, trashItem);
+    return trashItem;
+  }
+
+  public restoreFromTrash(trashId: string): { success: boolean; message: string } {
+    // Contrôle d'accès strict : seuls les profils admin / direction peuvent restaurer
+    if (this.actor.role !== 'super_admin' && this.actor.role !== 'director') {
+      throw new Error('Action refusée : seuls les administrateurs FCT sont habilités à restaurer des données supprimées.');
+    }
+
+    const item = (this.state.trashItems || []).find((t) => t.id === trashId);
+    if (!item) {
+      throw new Error('Élément de la corbeille introuvable.');
+    }
+
+    if (item.isRestored) {
+      throw new Error(`Cet élément (« ${item.entityTitle} ») a déjà été restauré.`);
+    }
+
+    // Contrôle de la fenêtre légale de 30 jours
+    const now = Date.now();
+    const expiryTime = new Date(item.expiresAt).getTime();
+    if (now > expiryTime) {
+      throw new Error('Délai de restauration dépassé : la période légale de 30 jours est expirée pour cet élément.');
+    }
+
+    // Réinjection dans la collection d'origine
+    switch (item.originalCollection) {
+      case 'vehicles': {
+        const vehicle = item.entityData as Vehicle;
+        const exists = this.state.vehicles.some((v) => v.id === vehicle.id || v.licensePlate === vehicle.licensePlate);
+        if (exists) {
+          throw new Error(`Un véhicule avec l'immatriculation ${vehicle.licensePlate} existe déjà dans la flotte active.`);
+        }
+        this.state.vehicles = [vehicle, ...this.state.vehicles];
+        this.mirrorToFirestore('vehicles', vehicle.id, vehicle);
+        break;
+      }
+      case 'customers': {
+        const customer = item.entityData as Customer;
+        const exists = this.state.customers.some((c) => c.id === customer.id);
+        if (exists) {
+          throw new Error(`Un client avec le même identifiant (${customer.fullName}) existe déjà.`);
+        }
+        this.state.customers = [customer, ...this.state.customers];
+        this.mirrorToFirestore('customers', customer.id, customer);
+        break;
+      }
+      case 'reservations': {
+        const res = item.entityData as Reservation;
+        this.state.reservations = [res, ...this.state.reservations];
+        this.mirrorToFirestore('reservations', res.id, res);
+        break;
+      }
+      case 'stock': {
+        const stock = item.entityData as StockItem;
+        this.state.stock = [stock, ...this.state.stock];
+        this.mirrorToFirestore('stock', stock.id, stock);
+        break;
+      }
+      case 'maintenance': {
+        const mnt = item.entityData as MaintenanceRecord;
+        this.state.maintenance = [mnt, ...this.state.maintenance];
+        this.mirrorToFirestore('maintenance', mnt.id, mnt);
+        break;
+      }
+      case 'leads': {
+        const lead = item.entityData as CrmLead;
+        this.state.leads = [lead, ...this.state.leads];
+        this.mirrorToFirestore('leads', lead.id, lead);
+        break;
+      }
+      case 'drivers': {
+        const driver = item.entityData as Driver;
+        this.state.drivers = [driver, ...this.state.drivers];
+        this.mirrorToFirestore('drivers', driver.id, driver);
+        break;
+      }
+      case 'documents': {
+        const doc = item.entityData as FctDocument;
+        if (!this.state.documents) this.state.documents = [];
+        this.state.documents = [doc, ...this.state.documents];
+        this.mirrorToFirestore('documents', doc.id, doc);
+        break;
+      }
+      default:
+        throw new Error(`Collection « ${item.originalCollection} » non prise en charge pour la restauration.`);
+    }
+
+    // Mise à jour de l'état dans la corbeille
+    const updatedTrashItem: TrashItem = {
+      ...item,
+      isRestored: true,
+      restoredAt: new Date().toISOString(),
+      restoredByUserId: this.actor.id,
+      restoredByName: this.actor.fullName,
+    };
+    this.state.trashItems = this.state.trashItems.map((t) => (t.id === trashId ? updatedTrashItem : t));
+    this.mirrorToFirestore('trash_bin', trashId, updatedTrashItem);
+
+    // Inscrire dans le journal d'audit
+    const auditModule: AppModule =
+      item.originalCollection === 'vehicles'
+        ? 'vehicles'
+        : item.originalCollection === 'customers' || item.originalCollection === 'leads'
+        ? 'crm'
+        : item.originalCollection === 'reservations'
+        ? 'reservations'
+        : item.originalCollection === 'stock'
+        ? 'stock'
+        : item.originalCollection === 'maintenance'
+        ? 'maintenance'
+        : item.originalCollection === 'drivers'
+        ? 'drivers'
+        : 'documents';
+
+    this.createAuditLog(
+      'RESTORE',
+      auditModule,
+      item.entityId,
+      `Restauration depuis la corbeille (30j) : ${item.entityTitle}`,
+      `Restauré avec succès par ${this.actor.fullName} (${this.actor.role})`,
+      item.entityTitle,
+      trashId
+    );
+
+    this.notify();
+    return {
+      success: true,
+      message: `« ${item.entityTitle} » a été restauré avec succès dans l'interface active.`,
+    };
+  }
+
+  public purgeExpiredTrashItems(): number {
+    const now = Date.now();
+    const initialCount = (this.state.trashItems || []).length;
+    this.state.trashItems = (this.state.trashItems || []).filter((item) => {
+      const isExpired = now > new Date(item.expiresAt).getTime() && !item.isRestored;
+      if (isExpired) {
+        this.deleteFromFirestore('trash_bin', item.id);
+        return false;
+      }
+      return true;
+    });
+    const purged = initialCount - (this.state.trashItems || []).length;
+    if (purged > 0) {
+      this.notify();
+    }
+    return purged;
   }
 
   public getSettings(): AgencySettings {
@@ -938,13 +1161,18 @@ class DatabaseStore {
       );
     }
 
+    const title = `${target.brand} ${target.model} (${target.licensePlate})`;
+    const trashItem = this.archiveToTrash('vehicles', id, title, target, reason);
+
     this.state.vehicles = this.state.vehicles.filter((v) => v.id !== id);
     this.createAuditLog(
       'DELETE',
       'vehicles',
       id,
-      `Suppression véhicule ${target.brand} ${target.model} (${target.licensePlate})`,
-      reason || 'Suppression manuelle depuis l’interface'
+      `Suppression véhicule ${title}`,
+      reason || 'Suppression manuelle depuis l’interface',
+      title,
+      trashItem.id
     );
     this.deleteFromFirestore('vehicles', id);
     this.notify();
@@ -995,13 +1223,18 @@ class DatabaseStore {
       );
     }
 
+    const title = `${target.fullName} (${target.companyName || 'Particulier'})`;
+    const trashItem = this.archiveToTrash('customers', id, title, target, reason);
+
     this.state.customers = this.state.customers.filter((c) => c.id !== id);
     this.createAuditLog(
       'DELETE',
       'crm',
       id,
-      `Suppression fiche client ${target.fullName} (${target.companyName || 'Particulier'})`,
-      reason || 'Suppression du répertoire'
+      `Suppression fiche client ${title}`,
+      reason || 'Suppression du répertoire',
+      title,
+      trashItem.id
     );
     this.deleteFromFirestore('customers', id);
     this.notify();
@@ -1342,8 +1575,11 @@ class DatabaseStore {
   public deleteReservation(id: string, reason?: string): boolean {
     const target = this.state.reservations.find((r) => r.id === id);
     if (!target) throw new Error('Réservation introuvable');
+    const title = `Réservation ${target.reservationNumber}`;
+    const trashItem = this.archiveToTrash('reservations', id, title, target, reason);
+
     this.state.reservations = this.state.reservations.filter((r) => r.id !== id);
-    this.createAuditLog('DELETE', 'reservations', id, `Suppression réservation ${target.reservationNumber}`, reason);
+    this.createAuditLog('DELETE', 'reservations', id, `Suppression réservation ${target.reservationNumber}`, reason, title, trashItem.id);
     this.deleteFromFirestore('reservations', id);
     this.notify();
     return true;
@@ -1822,8 +2058,11 @@ class DatabaseStore {
   public deleteStockItem(id: string, reason?: string): boolean {
     const target = this.state.stock.find((s) => s.id === id);
     if (!target) throw new Error('Article introuvable');
+    const title = `Pièce stock ${target.name} (${target.code})`;
+    const trashItem = this.archiveToTrash('stock', id, title, target, reason);
+
     this.state.stock = this.state.stock.filter((s) => s.id !== id);
-    this.createAuditLog('DELETE', 'stock', id, `Suppression article stock ${target.name} (${target.code})`, reason);
+    this.createAuditLog('DELETE', 'stock', id, `Suppression article stock ${target.name} (${target.code})`, reason, title, trashItem.id);
     this.deleteFromFirestore('stock', id);
     this.notify();
     return true;
@@ -1914,8 +2153,11 @@ class DatabaseStore {
       }
     }
 
+    const title = `Dossier maintenance ${rec.recordNumber}`;
+    const trashItem = this.archiveToTrash('maintenance', id, title, rec, reason);
+
     this.state.maintenance = this.state.maintenance.filter((m) => m.id !== id);
-    this.createAuditLog('DELETE', 'maintenance', id, `Suppression dossier maintenance ${rec.recordNumber}`, reason);
+    this.createAuditLog('DELETE', 'maintenance', id, `Suppression dossier maintenance ${rec.recordNumber}`, reason, title, trashItem.id);
     this.deleteFromFirestore('maintenance', id);
     this.notify();
     return true;
@@ -2145,8 +2387,11 @@ class DatabaseStore {
   public deleteLead(id: string, reason?: string): boolean {
     const target = this.state.leads.find((l) => l.id === id);
     if (!target) throw new Error('Prospect introuvable');
+    const title = `Prospect CRM ${target.fullName}`;
+    const trashItem = this.archiveToTrash('leads', id, title, target, reason);
+
     this.state.leads = this.state.leads.filter((l) => l.id !== id);
-    this.createAuditLog('DELETE', 'crm', id, `Suppression prospect CRM ${target.fullName}`, reason);
+    this.createAuditLog('DELETE', 'crm', id, `Suppression prospect CRM ${target.fullName}`, reason, title, trashItem.id);
     this.deleteFromFirestore('leads', id);
     this.notify();
     return true;
@@ -2206,8 +2451,11 @@ class DatabaseStore {
     if (target.status === 'ON_TRIP') {
       throw new Error(`Impossible de supprimer le chauffeur ${target.fullName} : il est actuellement en mission sur route.`);
     }
+    const title = `Chauffeur ${target.fullName}`;
+    const trashItem = this.archiveToTrash('drivers', id, title, target, reason);
+
     this.state.drivers = this.state.drivers.filter((d) => d.id !== id);
-    this.createAuditLog('DELETE', 'drivers', id, `Suppression chauffeur ${target.fullName}`, reason);
+    this.createAuditLog('DELETE', 'drivers', id, `Suppression chauffeur ${target.fullName}`, reason, title, trashItem.id);
     this.deleteFromFirestore('drivers', id);
     this.notify();
     return true;
@@ -2253,8 +2501,11 @@ class DatabaseStore {
     if (!this.state.documents) return false;
     const target = this.state.documents.find((d) => d.id === id);
     if (!target) return false;
+    const title = `Document coffre-fort ${target.title}`;
+    const trashItem = this.archiveToTrash('documents', id, title, target, 'Suppression coffre-fort');
+
     this.state.documents = this.state.documents.filter((d) => d.id !== id);
-    this.createAuditLog('DELETE', 'documents', id, `Suppression document ${target.title}`);
+    this.createAuditLog('DELETE', 'documents', id, `Suppression document ${target.title}`, undefined, title, trashItem.id);
     this.deleteFromFirestore('documents', id);
     this.notify();
     return true;

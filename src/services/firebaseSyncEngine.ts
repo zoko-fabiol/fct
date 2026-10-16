@@ -35,6 +35,7 @@ import {
   UserProfile,
   AuditLog,
   SecurityAuditEvent,
+  TrashItem,
 } from '../../packages/shared-types/index.ts';
 import type { DatabaseState, FctDocument } from './dbStore.ts';
 
@@ -296,7 +297,7 @@ async function fetchCollectionWithCacheFallback(colName: string): Promise<QueryS
     const timeoutPromise = new Promise<QuerySnapshot>((resolve) => {
       setTimeout(() => {
         resolve({ docs: [], empty: true, size: 0 } as unknown as QuerySnapshot);
-      }, 3500);
+      }, 12000);
     });
     return await Promise.race([serverPromise, timeoutPromise]);
   } catch (e) {
@@ -328,6 +329,7 @@ export async function loadAllFromFirebase(): Promise<Partial<DatabaseState> | nu
       drvSnap,
       docSnap,
       userSnap,
+      trashSnap,
     ] = await Promise.all([
       fetchCollectionWithCacheFallback('vehicles'),
       fetchCollectionWithCacheFallback('customers'),
@@ -344,6 +346,7 @@ export async function loadAllFromFirebase(): Promise<Partial<DatabaseState> | nu
       fetchCollectionWithCacheFallback('drivers'),
       fetchCollectionWithCacheFallback('documents'),
       fetchCollectionWithCacheFallback('users'),
+      fetchCollectionWithCacheFallback('trash_bin'),
     ]);
 
     // Hydratation stricte : zéro fausse donnée résiduelle.
@@ -365,6 +368,7 @@ export async function loadAllFromFirebase(): Promise<Partial<DatabaseState> | nu
     if (userSnap.docs.length > 0) {
       loaded.users = userSnap.docs.map((d) => d.data() as UserProfile);
     }
+    loaded.trashItems = trashSnap.docs.map((d) => d.data() as TrashItem);
     loaded.isHydrated = true;
 
     return loaded;
@@ -414,6 +418,7 @@ export function listenToFirebaseRealtime(
   attachListener<MaintenanceRecord>('maintenance', 'maintenance');
   attachListener<Driver>('drivers', 'drivers');
   attachListener<CrmLead>('leads', 'leads');
+  attachListener<TrashItem>('trash_bin', 'trashItems');
 
   return () => {
     unsubs.forEach((fn) => fn());

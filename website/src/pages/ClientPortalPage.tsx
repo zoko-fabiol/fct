@@ -488,10 +488,10 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--fct-blue-dark)', margin: 0 }}>
-                      {profile?.companyName || profile?.fullName || currentUser.displayName || 'Client Adhérent FCT'}
+                      {profile?.companyName || profile?.fullName || currentUser.displayName || (isEn ? 'FCT Member Client' : 'Client Adhérent FCT')}
                     </h3>
                     <span className="fct-badge fct-badge-green" style={{ fontSize: 10 }}>
-                      {profile?.type === 'COMPANY' ? 'Compte Entreprise' : 'Particulier'}
+                      {profile?.type === 'COMPANY' ? t.corporateAccount : t.individualAccount}
                     </span>
                     <span
                       style={{
@@ -503,11 +503,11 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                         fontWeight: 700,
                       }}
                     >
-                      En Ligne ✓
+                      {t.onlineBadge}
                     </span>
                   </div>
                   <p style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 4, margin: 0 }}>
-                    {currentUser.email} • {profile?.phone || 'Téléphone non renseigné'}
+                    {currentUser.email} • {profile?.phone || t.noPhoneProvided}
                   </p>
                 </div>
               </div>
@@ -697,8 +697,8 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                           onChange={(e) => setEditProfileForm({ ...editProfileForm, type: e.target.value as any })}
                           className="fct-input"
                         >
-                          <option value="INDIVIDUAL">Particulier (B2C)</option>
-                          <option value="COMPANY">Client Entreprise / Société (B2B)</option>
+                          <option value="INDIVIDUAL">{t.individualAccount}</option>
+                          <option value="COMPANY">{t.corporateAccount}</option>
                         </select>
                       </div>
 
@@ -916,7 +916,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                                 {doc.title}
                               </h5>
                               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                                Déposé le {doc.uploadedAt ? doc.uploadedAt.split('T')[0] : 'N/A'}
+                                {t.uploadedOn} {doc.uploadedAt ? doc.uploadedAt.split('T')[0] : 'N/A'}
                               </div>
                               {doc.notes && (
                                 <p style={{ fontSize: 11, color: 'var(--text-sub)', fontStyle: 'italic', margin: '4px 0 0' }}>
@@ -1059,7 +1059,7 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                                   {r.vehicleName}
                                 </h5>
                                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                  N° Contrat / Réf : <span style={{ fontFamily: 'monospace', fontWeight: 800, color: 'var(--fct-blue-primary)' }}>{r.contractNumber}</span>
+                                  {t.contractRef} <span style={{ fontFamily: 'monospace', fontWeight: 800, color: 'var(--fct-blue-primary)' }}>{r.contractNumber}</span>
                                 </div>
                               </div>
 
@@ -1068,11 +1068,11 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                                   {formatXAF(r.totalAmountXAF)}
                                 </div>
                                 <div style={{ fontSize: 12, color: '#059669', fontWeight: 700, marginTop: 2 }}>
-                                  Encaissé : {formatXAF(r.paidAmountXAF)}
+                                  {t.collectedAmount} {formatXAF(r.paidAmountXAF)}
                                 </div>
                                 {r.remainingAmountXAF > 0 && (
                                   <div style={{ fontSize: 12, color: '#dc2626', fontWeight: 800 }}>
-                                    Solde restant : {formatXAF(r.remainingAmountXAF)}
+                                    {t.balanceDue} {formatXAF(r.remainingAmountXAF)}
                                   </div>
                                 )}
                               </div>
@@ -1092,14 +1092,14 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <Calendar size={14} color="var(--fct-blue-primary)" />
                                 <span>
-                                  {r.startDate} au {r.endDate} ({r.durationDays || 1} jours)
+                                  {r.startDate} {t.toDate} {r.endDate} ({r.durationDays || 1} {t.days})
                                 </span>
                               </div>
 
                               {r.driverOptionIncluded && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#059669', fontWeight: 700 }}>
                                   <CheckCircle2 size={14} />
-                                  <span>Chauffeur FCT Inclus</span>
+                                  <span>{t.driverIncluded}</span>
                                 </div>
                               )}
 
@@ -1240,25 +1240,25 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                           <div style={{ fontSize: 12, color: 'var(--text-sub)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                             {sale.negotiatedPriceXAF > 0 && (
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span>Prix de vente convenu :</span>
+                                <span>{t.agreedSalePrice}</span>
                                 <strong style={{ color: 'var(--text-main)' }}>{formatXAF(sale.negotiatedPriceXAF)}</strong>
                               </div>
                             )}
                             {sale.paidAmountXAF > 0 && (
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span>Acompte versé :</span>
+                                <span>{t.depositPaid}</span>
                                 <strong style={{ color: '#059669' }}>{formatXAF(sale.paidAmountXAF)}</strong>
                               </div>
                             )}
                             {sale.balanceXAF > 0 && (
                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span>Solde restant :</span>
+                                <span>{t.balanceDue}</span>
                                 <strong style={{ color: '#dc2626' }}>{formatXAF(sale.balanceXAF)}</strong>
                               </div>
                             )}
                             {sale.orderDate && (
                               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                                Date de dossier : {sale.orderDate}
+                                {t.orderDate} {sale.orderDate}
                               </div>
                             )}
                           </div>
@@ -1336,13 +1336,13 @@ export const ClientPortalPage: React.FC<ClientPortalPageProps> = ({ onToast, onN
                       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
                         <thead>
                           <tr style={{ background: 'var(--fct-blue-dark, #0f2a4a)', color: 'white', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            <th style={{ padding: '12px 14px', borderRadius: '10px 0 0 0' }}>N° Facture</th>
-                            <th style={{ padding: '12px 14px' }}>Date d'Émission</th>
-                            <th style={{ padding: '12px 14px', textAlign: 'right' }}>Total TTC</th>
-                            <th style={{ padding: '12px 14px', textAlign: 'right' }}>Encaissé</th>
-                            <th style={{ padding: '12px 14px', textAlign: 'right' }}>Solde Dû</th>
-                            <th style={{ padding: '12px 14px', textAlign: 'center' }}>Statut</th>
-                            <th style={{ padding: '12px 14px', textAlign: 'right', borderRadius: '0 10px 0 0' }}>Action</th>
+                            <th style={{ padding: '12px 14px', borderRadius: '10px 0 0 0' }}>{t.thInvoiceNumber}</th>
+                            <th style={{ padding: '12px 14px' }}>{t.thIssueDate}</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t.thTotalTTC}</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t.thCollected}</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t.thBalanceDue}</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'center' }}>{t.thStatus}</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'right', borderRadius: '0 10px 0 0' }}>{t.thAction}</th>
                           </tr>
                         </thead>
                         <tbody>

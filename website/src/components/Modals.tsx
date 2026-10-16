@@ -4,6 +4,7 @@ import { Vehicle, BookingRequest, PurchaseRequest } from '../types/index.ts';
 import { FCT_AGENCY_INFO } from '../data/defaultCatalog.ts';
 import { formatXAF } from '../utils/formatters.ts';
 import { submitBooking, submitPurchaseLead, auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, FirebaseUser } from '../services/firebase.ts';
+import { WebsiteLanguage, websiteTranslations } from '../services/i18n.ts';
 
 /* ==========================================================================
    MODAL DE RÉSERVATION EN DIRECT
@@ -12,9 +13,12 @@ interface BookingModalProps {
   vehicle: Vehicle;
   onClose: () => void;
   onSuccess: (message: string) => void;
+  lang?: WebsiteLanguage;
 }
 
-export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, onSuccess }) => {
+export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, onSuccess, lang = 'fr' }) => {
+  const t = websiteTranslations[lang].modals;
+  const isEn = lang === 'en';
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const nextWeek = new Date();
@@ -47,7 +51,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, on
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName.trim() || !clientPhone.trim()) {
-      setError('Veuillez renseigner votre nom et votre numéro de téléphone.');
+      setError(isEn ? 'Please provide your full name and phone number.' : 'Veuillez renseigner votre nom et votre numéro de téléphone.');
       return;
     }
 
@@ -76,10 +80,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, on
     setLoading(false);
 
     if (res.success) {
-      onSuccess(`Votre réservation pour ${vehicle.brand} ${vehicle.model} a été transmise avec succès ! Un conseiller FCT vous contactera rapidement.`);
+      onSuccess(isEn ? `Your booking for ${vehicle.brand} ${vehicle.model} has been submitted! An FCT advisor will contact you shortly.` : `Votre réservation pour ${vehicle.brand} ${vehicle.model} a été transmise avec succès ! Un conseiller FCT vous contactera rapidement.`);
       onClose();
     } else {
-      setError(res.error || "Une erreur est survenue lors de l'enregistrement de votre demande.");
+      setError(res.error || (isEn ? 'An error occurred while submitting your booking.' : "Une erreur est survenue lors de l'enregistrement de votre demande."));
     }
   };
 
@@ -89,7 +93,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, on
         <div className="fct-modal-header">
           <div>
             <span className="fct-pill-badge" style={{ fontSize: 11, padding: '3px 10px' }}>
-              Réservation en ligne
+              {t.bookingTitle}
             </span>
             <h3 style={{ marginTop: 6 }}>
               {vehicle.brand} {vehicle.model}
@@ -111,7 +115,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, on
           {/* Dates de début et de fin */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div className="fct-form-group">
-              <label className="fct-form-label">Date de départ</label>
+              <label className="fct-form-label">{t.startDate}</label>
               <input
                 type="date"
                 value={startDate}
@@ -121,7 +125,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, on
               />
             </div>
             <div className="fct-form-group">
-              <label className="fct-form-label">Date de restitution</label>
+              <label className="fct-form-label">{t.endDate}</label>
               <input
                 type="date"
                 value={endDate}
@@ -135,17 +139,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, on
           {/* Option Chauffeur & Destination */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div className="fct-form-group">
-              <label className="fct-form-label">Zone de circulation</label>
+              <label className="fct-form-label">{t.zoneLabel}</label>
               <select
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
                 className="fct-form-select"
               >
-                <option value="Douala intra-muros">Douala intra-muros</option>
-                <option value="Axe Douala - Yaoundé">Axe Douala - Yaoundé</option>
-                <option value="Axe Douala - Kribi">Axe Douala - Kribi</option>
-                <option value="Région de l'Ouest / Bafoussam">Région Ouest / Bafoussam</option>
-                <option value="Tout le Cameroun (Mission nationale)">Tout le Cameroun (Mission nationale)</option>
+                <option value={t.zoneDouala}>{t.zoneDouala}</option>
+                <option value={t.zoneYaounde}>{t.zoneYaounde}</option>
+                <option value={t.zoneKribi}>{t.zoneKribi}</option>
+                <option value={t.zoneWest}>{t.zoneWest}</option>
+                <option value={t.zoneNational}>{t.zoneNational}</option>
               </select>
             </div>
 
@@ -171,7 +175,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, on
                   onChange={(e) => setWithDriver(e.target.checked)}
                   style={{ width: 16, height: 16, accentColor: '#f59e0b' }}
                 />
-                <span>Chauffeur FCT (+15 000 FCFA/j)</span>
+                <span>{t.withDriverOption}</span>
               </label>
             </div>
           </div>
@@ -179,10 +183,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, on
           {/* Coordonnées Client */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div className="fct-form-group">
-              <label className="fct-form-label">Votre Nom complet *</label>
+              <label className="fct-form-label">{t.fullNameLabel}</label>
               <input
                 type="text"
-                placeholder="Ex: Paul BIYIK"
+                placeholder={isEn ? "e.g. Paul BIYIK" : "Ex: Paul BIYIK"}
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 className="fct-form-input"
@@ -190,7 +194,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, on
               />
             </div>
             <div className="fct-form-group">
-              <label className="fct-form-label">Numéro Téléphone / WhatsApp *</label>
+              <label className="fct-form-label">{t.phoneLabel}</label>
               <input
                 type="tel"
                 placeholder="+237 6XX XX XX XX"
@@ -203,10 +207,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, on
           </div>
 
           <div className="fct-form-group">
-            <label className="fct-form-label">Adresse Courriel (Optionnel)</label>
+            <label className="fct-form-label">{t.emailLabel}</label>
             <input
               type="email"
-              placeholder="votre.email@entreprise.cm"
+              placeholder={isEn ? "your.email@company.cm" : "votre.email@entreprise.cm"}
               value={clientEmail}
               onChange={(e) => setClientEmail(e.target.value)}
               className="fct-form-input"
@@ -216,32 +220,32 @@ export const BookingModal: React.FC<BookingModalProps> = ({ vehicle, onClose, on
           {/* Calculateur de Prix en Direct */}
           <div className="fct-calc-box">
             <div className="fct-calc-row">
-              <span>Tarif location ({totalDays} jour{totalDays > 1 ? 's' : ''})</span>
+              <span>{t.rentalRate} ({totalDays} {totalDays > 1 ? (isEn ? 'days' : 'jours') : (isEn ? 'day' : 'jour')})</span>
               <span>{formatXAF(vehicleRentalTotal)}</span>
             </div>
             {withDriver && (
               <div className="fct-calc-row" style={{ color: 'var(--gold-light)' }}>
-                <span>Option Chauffeur certifié FCT ({totalDays} j)</span>
+                <span>{t.driverOptionRate} ({totalDays} {isEn ? 'd' : 'j'})</span>
                 <span>{formatXAF(driverTotal)}</span>
               </div>
             )}
             <div className="fct-calc-row" style={{ color: 'var(--text-muted)' }}>
-              <span>Caution de garantie remboursable</span>
+              <span>{t.depositNotice}</span>
               <span>{formatXAF(vehicle.securityDepositRate)}</span>
             </div>
             <div className="fct-calc-row fct-calc-total">
-              <span>Total Estimé</span>
+              <span>{t.estimatedTotal}</span>
               <span className="gold-text">{formatXAF(totalAmount)}</span>
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 10 }}>
             <button type="button" onClick={onClose} className="btn-secondary">
-              Annuler
+              {t.cancelBtn}
             </button>
             <button type="submit" disabled={loading} className="btn-gold">
               <KeyRound size={16} />
-              <span>{loading ? 'Transmission en cours...' : 'Confirmer la Réservation'}</span>
+              <span>{loading ? t.submittingBookingBtn : t.submitBookingBtn}</span>
             </button>
           </div>
         </form>
@@ -257,9 +261,12 @@ interface PurchaseModalProps {
   vehicle: Vehicle;
   onClose: () => void;
   onSuccess: (message: string) => void;
+  lang?: WebsiteLanguage;
 }
 
-export const PurchaseModal: React.FC<PurchaseModalProps> = ({ vehicle, onClose, onSuccess }) => {
+export const PurchaseModal: React.FC<PurchaseModalProps> = ({ vehicle, onClose, onSuccess, lang = 'fr' }) => {
+  const t = websiteTranslations[lang].modals;
+  const isEn = lang === 'en';
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
@@ -271,7 +278,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ vehicle, onClose, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientName.trim() || !clientPhone.trim()) {
-      setError('Veuillez renseigner votre nom et votre numéro de téléphone.');
+      setError(isEn ? 'Please provide your full name and phone number.' : 'Veuillez renseigner votre nom et votre numéro de téléphone.');
       return;
     }
 
@@ -290,10 +297,10 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ vehicle, onClose, 
     setLoading(false);
 
     if (res.success) {
-      onSuccess(`Votre demande d'acquisition pour ${vehicle.brand} ${vehicle.model} a été reçue ! Un devis proforma officiel vous sera envoyé.`);
+      onSuccess(isEn ? `Your purchase inquiry for ${vehicle.brand} ${vehicle.model} has been received! An official proforma quotation will be sent.` : `Votre demande d'acquisition pour ${vehicle.brand} ${vehicle.model} a été reçue ! Un devis proforma officiel vous sera envoyé.`);
       onClose();
     } else {
-      setError(res.error || "Une erreur est survenue lors de l'envoi.");
+      setError(res.error || (isEn ? 'An error occurred while sending your request.' : "Une erreur est survenue lors de l'envoi."));
     }
   };
 
@@ -303,7 +310,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ vehicle, onClose, 
         <div className="fct-modal-header">
           <div>
             <span className="fct-pill-badge" style={{ fontSize: 11, padding: '3px 10px' }}>
-              Acquisition & Devis Proforma
+              {t.purchaseTitle}
             </span>
             <h3 style={{ marginTop: 6 }}>
               {vehicle.brand} {vehicle.model} ({vehicle.year})
@@ -323,22 +330,24 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ vehicle, onClose, 
 
           <div style={{ padding: 14, background: 'var(--bg-card-inner)', borderRadius: 10, border: '1px solid var(--border-gold)' }}>
             <span style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700 }}>
-              Prix certifié TTC
+              {isEn ? 'Certified Price (Tax Incl.)' : 'Prix certifié TTC'}
             </span>
             <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--gold-light)', fontFamily: 'var(--font-display)' }}>
               {formatXAF(vehicle.salePrice)}
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 4 }}>
-              Véhicule révisé 110 points, papiers camerounais en règle, carnet d'entretien numérique FCT fourni.
+              {isEn
+                ? '110-point workshop check, valid Cameroon registration, digital FCT maintenance passport included.'
+                : 'Véhicule révisé 110 points, papiers camerounais en règle, carnet d\'entretien numérique FCT fourni.'}
             </p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div className="fct-form-group">
-              <label className="fct-form-label">Nom et Prénom *</label>
+              <label className="fct-form-label">{t.fullNameLabel}</label>
               <input
                 type="text"
-                placeholder="Ex: Alain NGUEMA"
+                placeholder={isEn ? "e.g. Alain NGUEMA" : "Ex: Alain NGUEMA"}
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
                 className="fct-form-input"
@@ -346,7 +355,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ vehicle, onClose, 
               />
             </div>
             <div className="fct-form-group">
-              <label className="fct-form-label">Téléphone / WhatsApp *</label>
+              <label className="fct-form-label">{t.phoneLabel}</label>
               <input
                 type="tel"
                 placeholder="+237 6XX XX XX XX"
@@ -359,10 +368,10 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ vehicle, onClose, 
           </div>
 
           <div className="fct-form-group">
-            <label className="fct-form-label">Adresse Courriel</label>
+            <label className="fct-form-label">{t.emailLabel}</label>
             <input
               type="email"
-              placeholder="votre.email@domaine.cm"
+              placeholder={isEn ? "your.email@domain.cm" : "votre.email@domaine.cm"}
               value={clientEmail}
               onChange={(e) => setClientEmail(e.target.value)}
               className="fct-form-input"
@@ -391,15 +400,15 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ vehicle, onClose, 
                 onChange={(e) => setFinancingNeeded(e.target.checked)}
                 style={{ width: 16, height: 16, accentColor: '#f59e0b' }}
               />
-              <span>Je souhaite une simulation de crédit-bail ou leasing d'entreprise</span>
+              <span>{t.financingCheckbox}</span>
             </label>
           </div>
 
           <div className="fct-form-group">
-            <label className="fct-form-label">Message ou questions spécifiques</label>
+            <label className="fct-form-label">{t.notesLabel}</label>
             <textarea
               rows={3}
-              placeholder="Précisez vos souhaits (visite en agence Bonamoussadi, essai routier, etc.)"
+              placeholder={t.notesPlaceholder}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="fct-form-textarea"
@@ -408,11 +417,11 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({ vehicle, onClose, 
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 10 }}>
             <button type="button" onClick={onClose} className="btn-secondary">
-              Fermer
+              {t.closeBtn}
             </button>
             <button type="submit" disabled={loading} className="btn-gold">
               <ShoppingBag size={16} />
-              <span>{loading ? 'Envoi...' : 'Demander le Devis Proforma'}</span>
+              <span>{loading ? t.submittingPurchaseBtn : t.submitPurchaseBtn}</span>
             </button>
           </div>
         </form>

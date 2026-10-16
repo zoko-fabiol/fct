@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { dbStore, DatabaseState } from '../services/dbStore.ts';
-import { Language } from '../services/i18n.ts';
+import { Language, translations } from '../services/i18n.ts';
 import {
   AppModule,
   PartnerProfile,
@@ -59,6 +59,7 @@ interface PartnersViewProps {
 
 export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavigate }) => {
   const isEn = lang === 'en';
+  const t = translations[lang].partnersPage;
   const [activeTab, setActiveTab] = useState<'partners' | 'activity' | 'commissions' | 'settings'>('partners');
   const [partners, setPartners] = useState<PartnerProfile[]>([]);
   const [commissions, setCommissions] = useState<PartnerCommission[]>([]);
@@ -365,14 +366,14 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
                   <tr>
-                    <th className="py-3 px-4">Partenaire</th>
-                    <th className="py-3 px-4">Code Affilié</th>
-                    <th className="py-3 px-4">{isEn ? 'Tier & 30d Quota' : 'Niveau & Quota 30j'}</th>
-                    <th className="py-3 px-4">{isEn ? 'Shares (Today / 30d / Total)' : 'Partages (Jour / 30j / Total)'}</th>
-                    <th className="py-3 px-4">Clics / Leads</th>
-                    <th className="py-3 px-4">Solde Disponible</th>
-                    <th className="py-3 px-4">Mode de Retrait</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-3 px-4">{t.thPartner}</th>
+                    <th className="py-3 px-4">{t.thAffiliateCode}</th>
+                    <th className="py-3 px-4">{t.thTierQuota}</th>
+                    <th className="py-3 px-4">{t.thShares}</th>
+                    <th className="py-3 px-4">{t.thClicksLeads}</th>
+                    <th className="py-3 px-4">{t.thBalance}</th>
+                    <th className="py-3 px-4">{t.thPayoutMethod}</th>
+                    <th className="py-3 px-4 text-right">{t.thActions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -413,30 +414,30 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
                             <div className="text-[10px] mt-1">
                               {p.tier === 'GOLD' ? (
                                 <span className={isQuotaSafe ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-bold'}>
-                                  {shares30dP}/25 ce mois {isQuotaSafe ? '✓' : '(Risque)'}
+                                  {shares30dP}/25 {t.thisMonth} {isQuotaSafe ? '✓' : t.risk}
                                 </span>
                               ) : p.tier === 'SILVER' ? (
                                 <span className={isQuotaSafe ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-bold'}>
-                                  {shares30dP}/10 ce mois {isQuotaSafe ? '✓' : '(Risque)'}
+                                  {shares30dP}/10 {t.thisMonth} {isQuotaSafe ? '✓' : t.risk}
                                 </span>
                               ) : (
                                 <span className="text-slate-400">
-                                  {shares30dP}/10 pour Silver
+                                  {shares30dP}/10 {t.forSilver}
                                 </span>
                               )}
                             </div>
                           </td>
                           <td className="py-3 px-4">
                             <div className="font-bold text-slate-800">
-                              <span className="text-blue-600">{sharesTodayP}</span> j · <span className="text-purple-600 font-bold">{shares30dP}</span> 30j · {p.stats?.totalShares || 0} tot
+                              <span className="text-blue-600">{sharesTodayP}</span> {isEn ? 'd' : 'j'} · <span className="text-purple-600 font-bold">{shares30dP}</span> {isEn ? '30d' : '30j'} · {p.stats?.totalShares || 0} {isEn ? 'tot' : 'tot'}
                             </div>
                             <div className="text-[10px] text-slate-400">
-                              {sharesTodayP > 0 ? (isEn ? 'Active today' : 'Actif aujourd\'hui') : (isEn ? 'No share today' : 'Aucun partage ce jour')}
+                              {sharesTodayP > 0 ? t.activeToday : t.noShareToday}
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="font-medium text-slate-800">{p.stats?.totalClicks || 0} clics</div>
-                            <div className="text-[11px] text-purple-600 font-semibold">{p.stats?.totalLeads || 0} prospects</div>
+                            <div className="font-medium text-slate-800">{p.stats?.totalClicks || 0} {t.clicks}</div>
+                            <div className="text-[11px] text-purple-600 font-semibold">{p.stats?.totalLeads || 0} {t.leads}</div>
                           </td>
                           <td className="py-3 px-4 font-bold text-emerald-600">
                             {formatXAF(p.stats?.balanceAvailableXAF || 0)}
@@ -457,7 +458,7 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
                               className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-[11px] rounded-lg transition-colors inline-flex items-center gap-1 shadow-sm"
                             >
                               <DollarSign size={13} />
-                              <span>{isEn ? 'Pay Cash' : 'Régler'}</span>
+                              <span>{t.payCash}</span>
                             </button>
                           </td>
                         </tr>
@@ -476,9 +477,9 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
             <div className="font-bold text-xs text-slate-700 uppercase tracking-wider">
-              {isEn ? 'Recent Social Media Shares Log' : 'Journal des Partages Sociaux en Temps Réel'}
+              {t.recentSharesLog}
             </div>
-            <div className="text-xs text-slate-500">{shareLogs.length} partages récents</div>
+            <div className="text-xs text-slate-500">{shareLogs.length} {isEn ? 'recent shares' : 'partages récents'}</div>
           </div>
 
           <div className="divide-y divide-slate-100">
@@ -498,7 +499,7 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
                         {partners.find((p) => p.id === log.partnerId || p.partnerCode === log.partnerCode)?.fullName || log.partnerCode} <span className="font-mono text-orange-600 font-semibold">({log.partnerCode})</span>
                       </div>
                       <div className="text-[11px] text-slate-500 mt-0.5">
-                        A partagé : <strong className="text-slate-800">{log.vehicleName}</strong>
+                        {isEn ? 'Shared:' : 'A partagé :'} <strong className="text-slate-800">{log.vehicleName}</strong>
                       </div>
                     </div>
                   </div>
@@ -525,13 +526,13 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="py-3 px-4">Affaire / Contrat</th>
-                  <th className="py-3 px-4">Partenaire</th>
-                  <th className="py-3 px-4">Véhicule</th>
-                  <th className="py-3 px-4">Montant Affaire</th>
-                  <th className="py-3 px-4">Commission</th>
-                  <th className="py-3 px-4">Statut</th>
-                  <th className="py-3 px-4 text-right">Action</th>
+                  <th className="py-3 px-4">{isEn ? 'Deal / Contract' : 'Affaire / Contrat'}</th>
+                  <th className="py-3 px-4">{t.thPartner}</th>
+                  <th className="py-3 px-4">{t.thVehicle}</th>
+                  <th className="py-3 px-4">{isEn ? 'Deal Amount' : 'Montant Affaire'}</th>
+                  <th className="py-3 px-4">{isEn ? 'Commission' : 'Commission'}</th>
+                  <th className="py-3 px-4">{isEn ? 'Status' : 'Statut'}</th>
+                  <th className="py-3 px-4 text-right">{t.thActions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -605,19 +606,19 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
 
             <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Partenaire :</span>
+                <span className="text-slate-500">{t.partnerLabel}</span>
                 <strong className="text-slate-900">{selectedPartner.fullName}</strong>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Code Affilié :</span>
+                <span className="text-slate-500">{t.thAffiliateCode} :</span>
                 <strong className="font-mono text-orange-600">{selectedPartner.partnerCode}</strong>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Mode de Paiement :</span>
+                <span className="text-slate-500">{t.thPayoutMethod} :</span>
                 <strong>{selectedPartner.payoutMethod} ({selectedPartner.payoutPhone})</strong>
               </div>
               <div className="flex justify-between text-sm pt-2 border-t border-slate-200">
-                <span className="font-bold text-slate-700">Montant à Verser :</span>
+                <span className="font-bold text-slate-700">{t.payoutAmountLabel}</span>
                 <span className="font-black text-emerald-600 text-base">
                   {formatXAF(selectedPartner.stats?.balanceAvailableXAF || 0)}
                 </span>
@@ -625,7 +626,9 @@ export const PartnersView: React.FC<PartnersViewProps> = ({ state, lang, onNavig
             </div>
 
             <p className="text-[11px] text-slate-500 leading-relaxed">
-              En confirmant, cette sortie de caisse sera imputée à la session de caisse active avec génération d'un reçu officiel FCT.
+              {isEn
+                ? 'By confirming, this cash outflow will be posted to the active cash register session with an official FCT receipt.'
+                : "En confirmant, cette sortie de caisse sera imputée à la session de caisse active avec génération d'un reçu officiel FCT."}
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">

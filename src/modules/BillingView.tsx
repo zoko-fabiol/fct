@@ -63,8 +63,31 @@ export const BillingView: React.FC<BillingViewProps> = ({
   contextEntityId,
 }) => {
   const t = translations[lang];
+  const isEn = lang === 'en';
   const currentUser = dbStore.getCurrentUser();
-  const [activeTab, setActiveTab] = useState<'ALL' | 'UNPAID' | 'PAID' | 'PROFORMA'>('ALL');
+  const [activeTab, setActiveTab] = useState<'ALL' | 'UNPAID' | 'PAID' | 'PROFORMA'>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const urlSub = new URLSearchParams(window.location.search).get('subtab');
+        if (urlSub && ['ALL', 'UNPAID', 'PAID', 'PROFORMA'].includes(urlSub)) return urlSub as any;
+        const saved = sessionStorage.getItem('fct_active_billing_tab') || localStorage.getItem('fct_active_billing_tab');
+        if (saved && ['ALL', 'UNPAID', 'PAID', 'PROFORMA'].includes(saved)) return saved as any;
+      }
+    } catch {}
+    return 'ALL';
+  });
+
+  React.useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('fct_active_billing_tab', activeTab);
+        localStorage.setItem('fct_active_billing_tab', activeTab);
+        const url = new URL(window.location.href);
+        url.searchParams.set('subtab', activeTab);
+        window.history.replaceState({}, '', url.toString());
+      }
+    } catch {}
+  }, [activeTab]);
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
 
@@ -432,7 +455,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   <span className="font-bold text-slate-900">{formatXAF(selectedInvoice.taxAmountXAF)}</span>
                 </div>
                 <div className="flex justify-between border-t border-slate-200 pt-2.5 text-base font-black text-blue-950">
-                  <span>Total TTC Net à Payer :</span>
+                  <span>{isEn ? 'Net Total Payable (Tax Incl.):' : 'Total TTC Net à Payer :'}</span>
                   <span>{formatXAF(selectedInvoice.totalAmountXAF)}</span>
                 </div>
               </div>
@@ -444,8 +467,8 @@ export const BillingView: React.FC<BillingViewProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">Documents & Justificatifs Comptables</h3>
-                  <p className="text-xs text-slate-500">Facture tamponnée FCT, bon de commande client, bordereau de remise chèque ou virement</p>
+                  <h3 className="text-sm font-black text-slate-900">{isEn ? 'Accounting Documents & Vouchers' : 'Documents & Justificatifs Comptables'}</h3>
+                  <p className="text-xs text-slate-500">{isEn ? 'FCT stamped invoice, customer purchase order, check deposit or wire slip' : 'Facture tamponnée FCT, bon de commande client, bordereau de remise chèque ou virement'}</p>
                 </div>
                 <button
                   type="button"
@@ -453,15 +476,15 @@ export const BillingView: React.FC<BillingViewProps> = ({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Rattacher un document</span>
+                  <span>{isEn ? 'Attach document' : 'Rattacher un document'}</span>
                 </button>
               </div>
 
               {invDocs.length === 0 ? (
                 <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-500 space-y-2">
                   <FileText className="w-8 h-8 text-slate-300 mx-auto" />
-                  <p className="font-bold text-slate-700">Aucun justificatif numérique rattaché à cette facture</p>
-                  <p className="text-xs text-slate-400">Cliquez sur « Rattacher un document » pour archiver la preuve de virement ou la facture signée.</p>
+                  <p className="font-bold text-slate-700">{isEn ? 'No digital document attached to this invoice' : 'Aucun justificatif numérique rattaché à cette facture'}</p>
+                  <p className="text-xs text-slate-400">{isEn ? 'Click "Attach document" to archive payment proof or signed invoice.' : 'Cliquez sur « Rattacher un document » pour archiver la preuve de virement ou la facture signée.'}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -493,7 +516,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                             rel="noreferrer"
                             download={doc.title}
                             className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-slate-100 transition cursor-pointer"
-                            title="Télécharger"
+                            title={isEn ? 'Download' : 'Télécharger'}
                           >
                             <Download className="w-4 h-4" />
                           </a>
@@ -512,9 +535,9 @@ export const BillingView: React.FC<BillingViewProps> = ({
               <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1.5">
                   <h4 className="font-black text-slate-900 text-base">{selectedInvoice.customerName}</h4>
-                  <div className="text-slate-600 text-xs">Adresse de facturation : {selectedInvoice.customerAddress}</div>
+                  <div className="text-slate-600 text-xs">{isEn ? 'Billing Address:' : 'Adresse de facturation :'} {selectedInvoice.customerAddress}</div>
                   {selectedInvoice.customerNiu && (
-                    <div className="font-mono text-slate-500 text-xs">NIU Fiscal : {selectedInvoice.customerNiu}</div>
+                    <div className="font-mono text-slate-500 text-xs">{isEn ? 'Tax ID / NIU:' : 'NIU Fiscal :'} {selectedInvoice.customerNiu}</div>
                   )}
                 </div>
 
@@ -529,7 +552,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                     className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer shrink-0"
                   >
                     <User className="w-3.5 h-3.5" />
-                    <span>Consulter Fiche Client CRM 360°</span>
+                    <span>{isEn ? 'View CRM 360° Client Profile' : 'Consulter Fiche Client CRM 360°'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -543,8 +566,8 @@ export const BillingView: React.FC<BillingViewProps> = ({
               {selectedInvoice.relatedContractId ? (
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex items-center justify-between">
                   <div>
-                    <span className="font-bold text-slate-900 block text-sm">Liée au Contrat de Location</span>
-                    <span className="font-mono text-slate-500 text-xs">Réf. Contrat : {selectedInvoice.relatedContractId}</span>
+                    <span className="font-bold text-slate-900 block text-sm">{isEn ? 'Linked to Rental Contract' : 'Liée au Contrat de Location'}</span>
+                    <span className="font-mono text-slate-500 text-xs">{isEn ? 'Contract Ref:' : 'Réf. Contrat :'} {selectedInvoice.relatedContractId}</span>
                   </div>
                   {onNavigate && (
                     <button
@@ -556,7 +579,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                       }}
                       className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                     >
-                      <span>Voir le Contrat de Location</span>
+                      <span>{isEn ? 'View Rental Contract' : 'Voir le Contrat de Location'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -564,8 +587,8 @@ export const BillingView: React.FC<BillingViewProps> = ({
               ) : selectedInvoice.relatedSaleOrderId ? (
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex items-center justify-between">
                   <div>
-                    <span className="font-bold text-slate-900 block text-sm">Liée à la Commande de Vente</span>
-                    <span className="font-mono text-slate-500 text-xs">Réf. Vente : {selectedInvoice.relatedSaleOrderId}</span>
+                    <span className="font-bold text-slate-900 block text-sm">{isEn ? 'Linked to Sales Order' : 'Liée à la Commande de Vente'}</span>
+                    <span className="font-mono text-slate-500 text-xs">{isEn ? 'Sale Ref:' : 'Réf. Vente :'} {selectedInvoice.relatedSaleOrderId}</span>
                   </div>
                   {onNavigate && (
                     <button
@@ -577,7 +600,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
                       }}
                       className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                     >
-                      <span>Voir la Commande de Vente</span>
+                      <span>{isEn ? 'View Sales Order' : 'Voir la Commande de Vente'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -595,11 +618,11 @@ export const BillingView: React.FC<BillingViewProps> = ({
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
-                  <div className="text-xs font-bold text-emerald-700 uppercase">Montant Encaissé</div>
+                  <div className="text-xs font-bold text-emerald-700 uppercase">{isEn ? 'Collected Amount' : 'Montant Encaissé'}</div>
                   <div className="text-lg font-black text-emerald-950 mt-1">{formatXAF(selectedInvoice.paidAmountXAF)}</div>
                 </div>
                 <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-center">
-                  <div className="text-xs font-bold text-amber-700 uppercase">Solde Restant Dû</div>
+                  <div className="text-xs font-bold text-amber-700 uppercase">{isEn ? 'Remaining Balance Due' : 'Solde Restant Dû'}</div>
                   <div className="text-lg font-black text-amber-950 mt-1">{formatXAF(selectedInvoice.balanceXAF)}</div>
                 </div>
               </div>
@@ -657,7 +680,7 @@ export const BillingView: React.FC<BillingViewProps> = ({
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                   <Upload className="w-5 h-5 text-purple-600" />
-                  <span>Rattacher un Document à la Facture</span>
+                  <span>{isEn ? 'Attach Document to Invoice' : 'Rattacher un Document à la Facture'}</span>
                 </h3>
                 <button
                   type="button"
@@ -670,47 +693,47 @@ export const BillingView: React.FC<BillingViewProps> = ({
 
               <form onSubmit={handleAddDocumentToInvoice} className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Intitulé du document *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Document title *' : 'Intitulé du document *'}</label>
                   <input
                     type="text"
                     required
                     value={docForm.title}
                     onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
-                    placeholder="Ex: Facture signée/tamponnée, Ordre de virement bancaire..."
+                    placeholder={isEn ? 'Ex: Signed/stamped invoice, Bank transfer slip...' : 'Ex: Facture signée/tamponnée, Ordre de virement bancaire...'}
                     className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Catégorie du document</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Document category' : 'Catégorie du document'}</label>
                   <select
                     value={docForm.category}
                     onChange={(e) => setDocForm({ ...docForm, category: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-slate-200"
                   >
-                    <option value="FACTURE_SIGNEE">Facture Signée &amp; Tamponnée</option>
-                    <option value="BORDEREAU_VIREMENT">Preuve de Virement / Chèque</option>
-                    <option value="BON_DE_COMMANDE">Bon de Commande Client</option>
-                    <option value="AUTRE">Autre Justificatif</option>
+                    <option value="FACTURE_SIGNEE">{isEn ? 'Signed & Stamped Invoice' : 'Facture Signée & Tamponnée'}</option>
+                    <option value="BORDEREAU_VIREMENT">{isEn ? 'Proof of Bank Transfer / Cheque' : 'Preuve de Virement / Chèque'}</option>
+                    <option value="BON_DE_COMMANDE">{isEn ? 'Customer Purchase Order' : 'Bon de Commande Client'}</option>
+                    <option value="AUTRE">{isEn ? 'Other Document' : 'Autre Justificatif'}</option>
                   </select>
                 </div>
 
                 <CloudinaryUploadDropzone
                   folder="fct_automobile/billing"
-                  label="Facture signée / Preuve de virement (Téléversement Cloudinary FCT) :"
-                  helperText="Glissez ou sélectionnez la facture tamponnée ou l'ordre de virement bancaire"
+                  label={isEn ? 'Signed invoice / Proof of payment (Cloudinary FCT):' : 'Facture signée / Preuve de virement (Téléversement Cloudinary FCT) :'}
+                  helperText={isEn ? 'Drag & drop or select stamped invoice or bank transfer order' : "Glissez ou sélectionnez la facture tamponnée ou l'ordre de virement bancaire"}
                   currentValue={docForm.fileUrl}
                   onUploadSuccess={(url) => setDocForm({ ...docForm, fileUrl: url })}
                   onClear={() => setDocForm({ ...docForm, fileUrl: '' })}
                 />
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Notes / Observations</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Notes / Observations' : 'Notes / Observations'}</label>
                   <textarea
                     rows={2}
                     value={docForm.notes}
                     onChange={(e) => setDocForm({ ...docForm, notes: e.target.value })}
-                    placeholder="Observations comptables..."
+                    placeholder={isEn ? 'Accounting remarks...' : 'Observations comptables...'}
                     className="w-full p-2.5 rounded-xl border border-slate-200"
                   />
                 </div>
@@ -721,13 +744,13 @@ export const BillingView: React.FC<BillingViewProps> = ({
                     onClick={() => setIsAddDocModalOpen(false)}
                     className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
                   >
-                    Annuler
+                    {isEn ? 'Cancel' : 'Annuler'}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold cursor-pointer shadow-xs"
                   >
-                    Enregistrer et Rattacher
+                    {isEn ? 'Save & Attach' : 'Enregistrer et Rattacher'}
                   </button>
                 </div>
               </form>
@@ -939,14 +962,14 @@ export const BillingView: React.FC<BillingViewProps> = ({
                     <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
                       {inv.issueDate} ({lang === 'en' ? 'due' : 'éch.'} {inv.dueDate})
                     </td>
-                    <td className="py-3 px-4 text-right font-black text-slate-900 whitespace-nowrap">
+                    <td className="py-3 px-4 text-right font-black text-slate-900 whitespace-nowrap privacy-blur">
                       {formatXAF(inv.totalAmountXAF)}
                     </td>
-                    <td className="py-3 px-4 text-right font-bold text-emerald-700 whitespace-nowrap">
+                    <td className="py-3 px-4 text-right font-bold text-emerald-700 whitespace-nowrap privacy-blur">
                       {formatXAF(inv.paidAmountXAF)}
                     </td>
                     <td
-                      className={`py-3 px-4 text-right font-bold whitespace-nowrap ${
+                      className={`py-3 px-4 text-right font-bold whitespace-nowrap privacy-blur ${
                         inv.balanceXAF > 0 ? 'text-rose-700 font-black' : 'text-slate-400'
                       }`}
                     >

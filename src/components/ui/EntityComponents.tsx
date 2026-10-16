@@ -246,11 +246,21 @@ export const EntityActivitySummary: React.FC<EntityActivitySummaryProps> = ({
                 <Icon className="w-4 h-4" />
               </div>
             </div>
-            <div className={`text-xl font-black mt-1 tracking-tight truncate ${theme.val}`}>
+            <div
+              className={`text-xl font-black mt-1 tracking-tight truncate ${
+                typeof kpi.value === 'string' && (kpi.value.includes('FCFA') || kpi.value.includes('XAF'))
+                  ? 'privacy-blur '
+                  : ''
+              }${theme.val}`}
+            >
               {kpi.value}
             </div>
             {kpi.sublabel && (
-              <div className="text-[11px] text-slate-500 mt-0.5 truncate font-medium">
+              <div
+                className={`text-[11px] text-slate-500 mt-0.5 truncate font-medium ${
+                  kpi.sublabel.includes('FCFA') || kpi.sublabel.includes('XAF') ? 'privacy-blur' : ''
+                }`}
+              >
                 {kpi.sublabel}
               </div>
             )}

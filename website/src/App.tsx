@@ -15,7 +15,7 @@ import { AppPage, RouteState } from './types/router.ts';
 import { subscribePublicVehicles } from './services/firebase.ts';
 import { trackPartnerLandingRef } from './services/partnerService.ts';
 import { WebsiteLanguage, websiteTranslations, mergeLiveWebsiteTranslations } from './services/i18n.ts';
-import { subscribeWebsiteTheme, subscribeWebsiteContent } from './services/websiteCmsService.ts';
+import { subscribeWebsiteTheme, subscribeWebsiteContent, applyWebsiteThemeToDOM } from './services/websiteCmsService.ts';
 import { logWebsiteVisit } from './services/websiteAnalyticsService.ts';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -45,6 +45,18 @@ export default function App() {
         setCmsVersion((v) => v + 1);
       }
     });
+
+    // Écouteur HMR Vite local instantané (Port 3000 ⇄ Port 3001)
+    if (import.meta.hot) {
+      import.meta.hot.on('fct-cms-update', (data: any) => {
+        if (data?.type === 'CMS_CONTENT_UPDATE' && data.lang && data.content) {
+          mergeLiveWebsiteTranslations(data.lang, data.content);
+          setCmsVersion((v) => v + 1);
+        } else if (data?.type === 'CMS_THEME_UPDATE' && data.theme) {
+          applyWebsiteThemeToDOM(data.theme);
+        }
+      });
+    }
 
     return () => {
       unsubTheme();

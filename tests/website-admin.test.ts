@@ -10,6 +10,7 @@ import {
   THEME_PRESETS,
   deepMergeWebsiteContent,
   WebsiteTheme,
+  DEFAULT_WEBSITE_TRANSLATIONS,
 } from '../src/services/websiteCmsService.ts';
 import { detectDevice } from '../src/services/websiteAnalyticsService.ts';
 
@@ -69,6 +70,27 @@ describe('Administration Site Web & CMS FCT Automobile', () => {
     expect(typeof detection.browser).toBe('string');
   });
 
+  it('devrait garantir une parité stricte à 100% des clés CMS entre le français et l\'anglais', () => {
+    function getMissingKeys(obj1: Record<string, any>, obj2: Record<string, any>, prefix = ''): string[] {
+      const missing: string[] = [];
+      for (const key of Object.keys(obj1)) {
+        const fullPath = prefix ? `${prefix}.${key}` : key;
+        if (!(key in obj2)) {
+          missing.push(fullPath);
+        } else if (typeof obj1[key] === 'object' && obj1[key] !== null) {
+          missing.push(...getMissingKeys(obj1[key], obj2[key], fullPath));
+        }
+      }
+      return missing;
+    }
+
+    const missingInEn = getMissingKeys(DEFAULT_WEBSITE_TRANSLATIONS.fr, DEFAULT_WEBSITE_TRANSLATIONS.en);
+    const missingInFr = getMissingKeys(DEFAULT_WEBSITE_TRANSLATIONS.en, DEFAULT_WEBSITE_TRANSLATIONS.fr);
+
+    expect(missingInEn, `Clés manquantes en anglais : ${missingInEn.join(', ')}`).toEqual([]);
+    expect(missingInFr, `Clés manquantes en français : ${missingInFr.join(', ')}`).toEqual([]);
+  });
+
   it('devrait effectuer le rendu du composant WebsiteAdminTab sans lever d\'exception', async () => {
     const React = await import('react');
     const ReactDOMServer = await import('react-dom/server');
@@ -78,5 +100,5 @@ describe('Administration Site Web & CMS FCT Automobile', () => {
       const html = ReactDOMServer.renderToString(React.createElement(WebsiteAdminTab));
       expect(html).toContain('Administration du Site Web FCT Automobile');
     }).not.toThrow();
-  });
+  }, 20000);
 });

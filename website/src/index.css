@@ -62,6 +62,14 @@
   padding: 0;
 }
 
+/* Mode Confidentialité & Discrétion Hermétique (Plan B Strict) */
+body.privacy-mode .privacy-blur {
+  filter: blur(9px) !important;
+  user-select: none !important;
+  pointer-events: none !important;
+  transition: filter 0.2s ease-in-out !important;
+}
+
 html {
   scroll-behavior: smooth;
   color-scheme: light;

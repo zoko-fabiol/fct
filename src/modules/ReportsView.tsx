@@ -249,22 +249,22 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
               <div className="text-[10px] text-slate-400 uppercase font-black">{t.reportsPage.fleetAssets}</div>
-              <div className="text-xl font-black text-slate-900 mt-1">{formatXAF(totalFleetValue)}</div>
+              <div className="text-xl font-black text-slate-900 mt-1 privacy-blur">{formatXAF(totalFleetValue)}</div>
               <div className="text-[10px] text-slate-500 mt-1">{totalVehicles} {t.reportsPage.vehiclesAcquired}</div>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
               <div className="text-[10px] text-emerald-700 uppercase font-black">{t.reportsPage.collectedReceipts}</div>
-              <div className="text-xl font-black text-emerald-700 mt-1">{formatXAF(totalInflows)}</div>
+              <div className="text-xl font-black text-emerald-700 mt-1 privacy-blur">{formatXAF(totalInflows)}</div>
               <div className="text-[10px] text-emerald-600 mt-1">{t.reportsPage.totalInflowsDesc}</div>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
               <div className="text-[10px] text-rose-700 uppercase font-black">{t.reportsPage.expensesOutflows}</div>
-              <div className="text-xl font-black text-rose-700 mt-1">{formatXAF(totalOutflows)}</div>
+              <div className="text-xl font-black text-rose-700 mt-1 privacy-blur">{formatXAF(totalOutflows)}</div>
               <div className="text-[10px] text-rose-600 mt-1">{t.reportsPage.expensesDesc}</div>
             </div>
             <div className="bg-emerald-50/60 p-4 rounded-xl border border-emerald-300 shadow-xs">
               <div className="text-[10px] text-emerald-800 uppercase font-black">{t.reportsPage.netOperatingCashflow}</div>
-              <div className="text-xl font-black text-emerald-900 mt-1">{formatXAF(netCashFlow)}</div>
+              <div className="text-xl font-black text-emerald-900 mt-1 privacy-blur">{formatXAF(netCashFlow)}</div>
               <div className="text-[10px] text-emerald-700 mt-1">{t.reportsPage.netCashflowDesc}</div>
             </div>
           </div>
@@ -278,19 +278,19 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ state, lang }) => {
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between py-1.5 border-b border-slate-100">
                   <span className="text-slate-600">{t.reportsPage.totalInvoicedTtc}</span>
-                  <span className="font-black text-slate-900">{formatXAF(totalInvoiced)}</span>
+                  <span className="font-black text-slate-900 privacy-blur">{formatXAF(totalInvoiced)}</span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-slate-100">
                   <span className="text-slate-600">{t.reportsPage.totalInvoicedCollected}</span>
-                  <span className="font-bold text-emerald-700">{formatXAF(totalInvoiced - totalUnpaidReceivables)}</span>
+                  <span className="font-bold text-emerald-700 privacy-blur">{formatXAF(totalInvoiced - totalUnpaidReceivables)}</span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-slate-100">
                   <span className="text-slate-600">{t.reportsPage.pendingReceivables}</span>
-                  <span className="font-black text-rose-700">{formatXAF(totalUnpaidReceivables)}</span>
+                  <span className="font-black text-rose-700 privacy-blur">{formatXAF(totalUnpaidReceivables)}</span>
                 </div>
                 <div className="flex justify-between py-1.5">
                   <span className="text-slate-600">{t.reportsPage.concludedSales}</span>
-                  <span className="font-black text-blue-900">{formatXAF(totalSalesConcluded)}</span>
+                  <span className="font-black text-blue-900 privacy-blur">{formatXAF(totalSalesConcluded)}</span>
                 </div>
               </div>
             </div>

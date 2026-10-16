@@ -43,11 +43,12 @@ export const websiteTranslations = {
 
     // Accueil (HomePage)
     home: {
-      badge: 'PRESTIGE & CONFIANCE AUTOMOBILE À DOUALA',
-      heroTitle: 'Louez ou Achetez des Véhicules d\'Exception à Douala',
+      badge: 'DOUALA · CARREFOUR SANTA BARBARA, BONAMOUSSADI',
+      heroTitle: "L'Automobile de Prestige à Douala, en Location & Vente Certifiée.",
       heroSubtitle: 'Parc automobile haut de gamme certifié, service chauffeur VIP bilingue, transparence comptable et carnet de santé numérique infalsifiable.',
       exploreFleet: 'Explorer la Flotte',
       viewSales: 'Véhicules en Vente',
+      healthPassportBtn: 'Carnet de Santé',
       kpi1Title: 'Véhicules Certifiés',
       kpi1Sub: 'Inspectés en 110 points',
       kpi2Title: 'Caution Sécurisée',
@@ -175,6 +176,110 @@ export const websiteTranslations = {
       extendContract: 'Demander une Prolongation',
       noActiveContract: 'Vous n\'avez aucun contrat actif pour le moment.',
       logout: 'Déconnexion',
+
+      // Nouveaux libellés pour les 6 onglets Adhérent
+      tabProfile: 'Identité & Coordonnées',
+      tabDocs: 'Pièces d\'Identité & Permis (GED)',
+      tabRentals: 'Historique des Locations & Contrats',
+      tabSales: 'Achats de Véhicules',
+      tabInvoices: 'Factures & Règlements',
+      tabTimeline: 'Historique & Relation Client',
+
+      individualAccount: 'Particulier (B2C)',
+      corporateAccount: 'Client Entreprise / Société (B2B)',
+      onlineBadge: 'En Ligne ✓',
+      noPhoneProvided: 'Téléphone non renseigné',
+      mainIdentityTitle: 'Identité Principale',
+      fullNameLabel: 'Nom Complet / Représentant :',
+      clientTypeLabel: 'Type de Client :',
+      companyNameLabel: 'Raison Sociale / Société :',
+      emailReadOnlyLabel: 'Adresse E-mail (Non modifiable) :',
+      taxContactTitle: 'Fiscalité & Localisation',
+      taxIdLabel: 'Numéro d\'Identifiant Unique (NIU) :',
+      cityLabel: 'Ville :',
+      addressQuarterLabel: 'Quartier / Adresse :',
+      saveProfileBtn: 'Enregistrer les Modifications',
+      savingProfileBtn: 'Enregistrement...',
+
+      // GED & Documents
+      gedTitle: 'Dossier Numérique & Justificatifs Client (GED)',
+      gedSubtitle: 'Scan CNI ou Passeport, Permis de conduire, Justificatif de domicile, Registre du Commerce (RCCM).',
+      attachDocBtn: 'Déposer un Document (CNI, Permis)',
+      emptyDocsTitle: 'Aucun document numérique archivé pour le moment',
+      emptyDocsSub: 'Téléversez votre permis de conduire et votre pièce d’identité dès maintenant pour bénéficier de la mise à disposition express de vos véhicules à l’agence.',
+      addDocBtn: 'Ajouter mon Permis ou CNI',
+      uploadedOn: 'Déposé le',
+      viewDocBtn: 'Visualiser',
+      downloadDocBtn: 'Télécharger',
+
+      // Locations & Ventes
+      rentalsTitle: 'Historique des Locations & Contrats',
+      rentalsSubtitle: 'Tous les contrats et réservations de location associés à votre compte, avec suivi du solde dû et options chauffeurs.',
+      newBookingBtn: 'Nouvelle Réservation',
+      contractRef: 'N° Contrat / Réf :',
+      collectedAmount: 'Encaissé :',
+      balanceDue: 'Solde restant :',
+      toDate: 'au',
+      days: 'jours',
+      driverIncluded: 'Chauffeur FCT Inclus',
+      whatsappAgentBtn: 'Échanger sur WhatsApp',
+      printContractBtn: 'Imprimer Fiche Contrat',
+
+      salesTitle: 'Historique des Achats de Véhicules',
+      salesSubtitle: 'Dossiers d\'acquisition de véhicules certifiés FCT, suivi des règlements et certificats de cession.',
+      agreedSalePrice: 'Prix de vente convenu :',
+      depositPaid: 'Acompte versé :',
+      orderDate: 'Date de dossier :',
+      contactSalesBtn: 'Contacter Service Commercial',
+
+      // Factures
+      invoicesTitle: 'Factures & Règlements',
+      invoicesSubtitle: 'Toutes les factures et règlements associés à vos locations et acquisitions de véhicules.',
+      printStatementBtn: 'Imprimer Relevé',
+      thInvoiceNumber: 'N° Facture',
+      thIssueDate: 'Date d\'Émission',
+      thTotalTTC: 'Total TTC',
+      thCollected: 'Encaissé',
+      thBalanceDue: 'Solde Dû',
+      thStatus: 'Statut',
+      thAction: 'Action',
+      emptyInvoicesTitle: 'Aucune facture enregistrée pour ce client',
+      emptyInvoicesSub: 'Dès validation de vos contrats par l\'agence FCT Automobile de Bonamoussadi, vos factures certifiées seront consultables ici.',
+      timelineTitle: 'Historique d\'Interactions & Journal Client',
+      timelineSubtitle: 'Suivi chronologique transparent de vos réservations, règlements, dépôts de documents et échanges avec l\'agence FCT.',
+    },
+
+    // Modals de Réservation & Devis (Modals.tsx)
+    modals: {
+      bookingTitle: 'Réservation de Véhicule',
+      bookingSubtitle: 'Bloquez votre date immédiatement avec confirmation VIP sous 15 minutes',
+      startDate: 'Date de départ',
+      endDate: 'Date de restitution',
+      zoneLabel: 'Zone de circulation',
+      zoneDouala: 'Douala intra-muros',
+      zoneYaounde: 'Axe Douala - Yaoundé',
+      zoneKribi: 'Axe Douala - Kribi',
+      zoneWest: 'Région Ouest / Bafoussam',
+      zoneNational: 'Tout le Cameroun (Mission nationale)',
+      withDriverOption: 'Chauffeur FCT (+15 000 FCFA/j)',
+      fullNameLabel: 'Votre Nom complet *',
+      phoneLabel: 'Numéro Téléphone / WhatsApp *',
+      emailLabel: 'Adresse Courriel (Optionnel)',
+      rentalRate: 'Tarif location',
+      driverOptionRate: 'Option Chauffeur certifié FCT',
+      depositNotice: 'Caution de garantie remboursable',
+      estimatedTotal: 'Total Estimé',
+      cancelBtn: 'Annuler',
+      closeBtn: 'Fermer',
+      submitBookingBtn: 'Confirmer la Réservation',
+      submittingBookingBtn: 'Transmission en cours...',
+      purchaseTitle: 'Acquisition Véhicule & Devis Proforma',
+      purchaseSubtitle: 'Recevez un devis commercial officiel FCT avec conditions de garantie et livraison',
+      financingCheckbox: 'Je souhaite une simulation de crédit-bail ou leasing d\'entreprise',
+      notesLabel: 'Message ou questions spécifiques',
+      notesPlaceholder: 'Précisez vos souhaits (visite en agence Bonamoussadi, essai routier, etc.)',
+      submitPurchaseBtn: 'Demander le Devis Proforma',
+      submittingPurchaseBtn: 'Envoi en cours...',
     },
 
     // Page Agence (AgencyPage)
@@ -234,9 +339,17 @@ export const websiteTranslations = {
       activeContracts: 'Ventes & Locations Validées',
       balanceAvailable: 'Commissions Disponibles',
       selectVehicleToShare: 'Sélectionnez un véhicule à promouvoir',
+      selectVehicleDesc: 'Sélectionnez un véhicule pour publier une annonce calibrée avec votre lien d’affiliation sur WhatsApp.',
+      antiSpamNotice: 'Anti-spam actif : Déjà comptabilisé aujourd’hui (1 max/véhicule/24h). Nouveau quota dans ~24h (vous pouvez continuer à le partager librement).',
       shareWhatsappBtn: 'Statut WhatsApp',
       shareUniversalBtn: 'Partager le Lien',
       copyLinkBtn: 'Copier le Lien Affilié',
+      sharePitchRentHeader: '*LOCATION VÉHICULE CERTIFIÉ - FCT AUTOMOBILE DOUALA*',
+      sharePitchSaleHeader: '*VÉHICULE CERTIFIÉ À VENDRE - FCT AUTOMOBILE DOUALA*',
+      sharePitchWarranty: 'Garantie : Assurance complète & Entretien certifié FCT',
+      sharePitchAvailability: 'Disponibilité : Immédiate à Douala (avec ou sans chauffeur)',
+      sharePitchSaleStatus: 'Statut : Certifié FCT, révisé et prêt à rouler',
+      sharePitchSaleLocation: 'Emplacement : Showroom Bonamoussadi, Carrefour Santa Barbara',
       requestPayoutBtn: 'Demander un Retrait Mobile Money',
       payoutNotice: 'Paiement exécuté sous 24h ouvrées sur votre compte certifié.',
     },
@@ -318,11 +431,12 @@ export const websiteTranslations = {
 
     // Accueil (HomePage)
     home: {
-      badge: 'PRESTIGE & AUTOMOTIVE TRUST IN DOUALA',
-      heroTitle: 'Rent or Buy Premium Vehicles in Douala',
+      badge: 'DOUALA · SANTA BARBARA JUNCTION, BONAMOUSSADI',
+      heroTitle: 'Executive Automotive in Douala, Certified Rental & Sales.',
       heroSubtitle: 'Certified high-end vehicle fleet, bilingual VIP chauffeur services, full accounting transparency and tamper-proof digital health records.',
       exploreFleet: 'Explore Fleet',
       viewSales: 'Vehicles for Sale',
+      healthPassportBtn: 'Health Record',
       kpi1Title: 'Certified Fleet',
       kpi1Sub: '110-point technical check',
       kpi2Title: 'Secured Deposit',
@@ -450,6 +564,110 @@ export const websiteTranslations = {
       extendContract: 'Request Rental Extension',
       noActiveContract: 'You have no active rental agreement at this time.',
       logout: 'Log Out',
+
+      // New labels for 6 Member Tabs
+      tabProfile: 'Identity & Contacts',
+      tabDocs: 'ID & Driver\'s License (EDM)',
+      tabRentals: 'Rentals History & Contracts',
+      tabSales: 'Vehicle Purchases',
+      tabInvoices: 'Invoices & Settlements',
+      tabTimeline: 'History & Client Relations',
+
+      individualAccount: 'Individual (B2C)',
+      corporateAccount: 'Corporate / Business (B2B)',
+      onlineBadge: 'Online ✓',
+      noPhoneProvided: 'No phone provided',
+      mainIdentityTitle: 'Primary Identity',
+      fullNameLabel: 'Full Name / Representative:',
+      clientTypeLabel: 'Customer Type:',
+      companyNameLabel: 'Company / Business Name:',
+      emailReadOnlyLabel: 'Email Address (Read-only):',
+      taxContactTitle: 'Tax & Location',
+      taxIdLabel: 'Unique Taxpayer ID (NIU):',
+      cityLabel: 'City:',
+      addressQuarterLabel: 'Quarter / Street Address:',
+      saveProfileBtn: 'Save Changes',
+      savingProfileBtn: 'Saving...',
+
+      // GED & Documents
+      gedTitle: 'Digital Records & Client Documents (EDM)',
+      gedSubtitle: 'National ID or Passport, Driver\'s License, Proof of Residence, Trade Register (RCCM).',
+      attachDocBtn: 'Attach Document (ID, License)',
+      emptyDocsTitle: 'No digital documents archived yet',
+      emptyDocsSub: 'Upload your driver\'s license and ID card now to enjoy express vehicle handovers at our branch.',
+      addDocBtn: 'Add Driver\'s License or ID',
+      uploadedOn: 'Uploaded on',
+      viewDocBtn: 'View',
+      downloadDocBtn: 'Download',
+
+      // Rentals & Sales
+      rentalsTitle: 'Rental History & Agreements',
+      rentalsSubtitle: 'All rental files, past or active, with balance tracking and driver options.',
+      newBookingBtn: 'New Reservation',
+      contractRef: 'Agreement # / Ref:',
+      collectedAmount: 'Collected:',
+      balanceDue: 'Balance Due:',
+      toDate: 'to',
+      days: 'days',
+      driverIncluded: 'Dedicated FCT Driver Included',
+      whatsappAgentBtn: 'Chat on WhatsApp',
+      printContractBtn: 'Print Agreement Sheet',
+
+      salesTitle: 'Vehicle Purchases History',
+      salesSubtitle: 'Acquisition records for certified FCT vehicles, settlement tracking and bills of sale.',
+      agreedSalePrice: 'Agreed Sale Price:',
+      depositPaid: 'Deposit Paid:',
+      orderDate: 'Order Date:',
+      contactSalesBtn: 'Contact Sales Team',
+
+      // Invoices
+      invoicesTitle: 'Invoices & Payments',
+      invoicesSubtitle: 'All invoices and receipts related to your rentals and vehicle acquisitions.',
+      printStatementBtn: 'Print Statement',
+      thInvoiceNumber: 'Invoice #',
+      thIssueDate: 'Issue Date',
+      thTotalTTC: 'Total Incl. Tax',
+      thCollected: 'Collected',
+      thBalanceDue: 'Balance Due',
+      thStatus: 'Status',
+      thAction: 'Action',
+      emptyInvoicesTitle: 'No invoice registered for this client yet',
+      emptyInvoicesSub: 'Upon contract validation at the FCT Bonamoussadi agency, your certified invoices will appear here.',
+      timelineTitle: 'Customer Interaction History & Audit Log',
+      timelineSubtitle: 'Transparent chronological timeline of your bookings, payments, document uploads and communications with FCT.',
+    },
+
+    // Modals de Réservation & Devis (Modals.tsx)
+    modals: {
+      bookingTitle: 'Vehicle Reservation',
+      bookingSubtitle: 'Lock your dates immediately with VIP confirmation within 15 minutes',
+      startDate: 'Pick-up Date',
+      endDate: 'Return Date',
+      zoneLabel: 'Driving Zone',
+      zoneDouala: 'Douala City Center',
+      zoneYaounde: 'Douala - Yaounde Highway',
+      zoneKribi: 'Douala - Kribi Highway',
+      zoneWest: 'West Region / Bafoussam',
+      zoneNational: 'All Cameroon (Nationwide Mission)',
+      withDriverOption: 'Dedicated FCT Driver (+15,000 XAF/day)',
+      fullNameLabel: 'Your Full Name *',
+      phoneLabel: 'Phone / WhatsApp Number *',
+      emailLabel: 'Email Address (Optional)',
+      rentalRate: 'Rental Rate',
+      driverOptionRate: 'Dedicated FCT Driver Option',
+      depositNotice: 'Refundable Security Deposit',
+      estimatedTotal: 'Estimated Total',
+      cancelBtn: 'Cancel',
+      closeBtn: 'Close',
+      submitBookingBtn: 'Confirm Reservation',
+      submittingBookingBtn: 'Transmitting...',
+      purchaseTitle: 'Vehicle Acquisition & Proforma Quotation',
+      purchaseSubtitle: 'Receive an official FCT commercial quotation with warranty and delivery terms',
+      financingCheckbox: 'I would like a lease-to-own or corporate leasing simulation',
+      notesLabel: 'Message or specific requests',
+      notesPlaceholder: 'Specify your preferences (agency visit at Bonamoussadi, test drive, etc.)',
+      submitPurchaseBtn: 'Request Proforma Quotation',
+      submittingPurchaseBtn: 'Submitting...',
     },
 
     // Page Agence (AgencyPage)
@@ -509,9 +727,17 @@ export const websiteTranslations = {
       activeContracts: 'Validated Deals',
       balanceAvailable: 'Available Commissions',
       selectVehicleToShare: 'Select a vehicle to promote',
+      selectVehicleDesc: 'Select a vehicle to publish an ad formatted with your affiliate link on WhatsApp.',
+      antiSpamNotice: 'Anti-spam active: Already counted today (1 max/vehicle/24h). Next quota in ~24h (you may keep sharing freely).',
       shareWhatsappBtn: 'WhatsApp Status',
       shareUniversalBtn: 'Share Link',
       copyLinkBtn: 'Copy Affiliate Link',
+      sharePitchRentHeader: '*CERTIFIED VEHICLE RENTAL - FCT AUTOMOBILE DOUALA*',
+      sharePitchSaleHeader: '*CERTIFIED VEHICLE FOR SALE - FCT AUTOMOBILE DOUALA*',
+      sharePitchWarranty: 'Warranty : Comprehensive insurance & FCT certified maintenance',
+      sharePitchAvailability: 'Availability : Immediate in Douala (with or without driver)',
+      sharePitchSaleStatus: 'Status : FCT certified, inspected and ready to drive',
+      sharePitchSaleLocation: 'Location : Bonamoussadi Showroom, Carrefour Santa Barbara',
       requestPayoutBtn: 'Request Mobile Money Payout',
       payoutNotice: 'Transfers processed within 24 business hours to your verified account.',
     },
@@ -577,5 +803,28 @@ export function mergeLiveWebsiteTranslations(lang: WebsiteLanguage, remoteConten
       (target as any)[sectionKey] = sectionVal;
     }
   }
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(`fct_cms_content_${lang}`, JSON.stringify(target));
+    }
+  } catch {
+    // Ignore quota or private browsing errors
+  }
+}
+
+// Restauration immédiate du cache local pour éviter tout flash de texte par défaut
+try {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const cachedFr = localStorage.getItem('fct_cms_content_fr');
+    if (cachedFr) {
+      mergeLiveWebsiteTranslations('fr', JSON.parse(cachedFr));
+    }
+    const cachedEn = localStorage.getItem('fct_cms_content_en');
+    if (cachedEn) {
+      mergeLiveWebsiteTranslations('en', JSON.parse(cachedEn));
+    }
+  }
+} catch {
+  // Ignore
 }
 

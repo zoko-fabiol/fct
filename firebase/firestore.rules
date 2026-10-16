@@ -284,5 +284,58 @@ service cloud.firestore {
       allow read: if isStaff();
       allow write: if isSuperAdmin();
     }
+
+    // 13. CRM Leads (ERP interne)
+    match /leads/{leadId} {
+      allow read: if isStaff() && !isDriver();
+      allow create, update: if isSalesAgent() || isRentalAgent() || isDirector();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 14. Mouvements de Stock Pièces & Consommables
+    match /stock_movements/{movementId} {
+      allow read: if isStaff();
+      allow create, update: if isFleetManager();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 15. CMS Site Web Public & Paramètres de Thème
+    match /site_settings/{settingId} {
+      allow read: if true; // Lecture publique pour charger le thème graphique
+      allow write: if isDirector() || isSuperAdmin(); // Édition réservée à la direction FCT
+    }
+
+    match /site_content/{lang} {
+      allow read: if true; // Lecture publique des textes bilingues FR/EN
+      allow write: if isDirector() || isSuperAdmin();
+    }
+
+    // 16. Analytics du Site Web & Fréquentation
+    match /analytics_visitors/{visitorId} {
+      allow read: if isDirector() || isSuperAdmin();
+      allow create, update: if true; // Log anonymisé des visites publiques
+      allow delete: if isDirector() || isSuperAdmin(); // Purge ou consolidation des robots
+    }
+
+    match /analytics_daily_stats/{dateId} {
+      allow read: if isDirector() || isSuperAdmin();
+      allow create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+
+    // 17. Réseau Partenaires & Apporteurs d'Affaires
+    match /partners/{partnerId} {
+      allow read: if true; // Lecture publique (vérification du code de parrainage et lien d'affiliation)
+      allow create: if isSignedIn(); // Inscription partenaire autonome
+      allow update: if true; // Incrémentation des clics et mises à jour de stats / profil
+      allow delete: if isSuperAdmin();
+    }
+
+    // 18. Corbeille Sécurisée FCT (Garantie de Restauration 30 Jours)
+    match /trash_bin/{trashId} {
+      allow read: if isDirector();
+      allow create: if isStaff();
+      allow update, delete: if isDirector();
+    }
   }
 }

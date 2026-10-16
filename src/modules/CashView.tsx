@@ -70,6 +70,7 @@ export const CashView: React.FC<CashViewProps> = ({
   contextEntityId,
 }) => {
   const t = translations[lang];
+  const isEn = lang === 'en';
   const currentUser = dbStore.getCurrentUser();
   const activeSession = state.cashSessions.find((s) => s.status === 'OPEN');
 
@@ -601,7 +602,7 @@ export const CashView: React.FC<CashViewProps> = ({
                             rel="noreferrer"
                             download={doc.title}
                             className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-slate-100 transition cursor-pointer"
-                            title="Télécharger"
+                            title={isEn ? 'Download' : 'Télécharger'}
                           >
                             <Download className="w-4 h-4" />
                           </a>
@@ -620,8 +621,13 @@ export const CashView: React.FC<CashViewProps> = ({
               {selectedMovement.relatedContractId ? (
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex items-center justify-between">
                   <div>
-                    <span className="font-bold text-slate-900 block text-sm">Lié au Contrat de Location</span>
-                    <span className="font-mono text-slate-500 text-xs">ID Contrat : {selectedMovement.relatedContractId}</span>
+                    <span className="font-bold text-slate-900 block text-sm">
+                      {isEn ? 'Linked to Rental Contract' : 'Lié au Contrat de Location'}
+                    </span>
+                    <span className="font-mono text-slate-500 text-xs">
+                      {isEn ? 'Contract ID: ' : 'ID Contrat : '}
+                      {selectedMovement.relatedContractId}
+                    </span>
                   </div>
                   {onNavigate && (
                     <button
@@ -633,7 +639,7 @@ export const CashView: React.FC<CashViewProps> = ({
                       }}
                       className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                     >
-                      <span>Voir le Contrat de Location</span>
+                      <span>{isEn ? 'View Rental Contract' : 'Voir le Contrat de Location'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -641,8 +647,13 @@ export const CashView: React.FC<CashViewProps> = ({
               ) : selectedMovement.relatedInvoiceId ? (
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex items-center justify-between">
                   <div>
-                    <span className="font-bold text-slate-900 block text-sm">Lié à la Facture</span>
-                    <span className="font-mono text-slate-500 text-xs">ID Facture : {selectedMovement.relatedInvoiceId}</span>
+                    <span className="font-bold text-slate-900 block text-sm">
+                      {isEn ? 'Linked to Invoice' : 'Lié à la Facture'}
+                    </span>
+                    <span className="font-mono text-slate-500 text-xs">
+                      {isEn ? 'Invoice ID: ' : 'ID Facture : '}
+                      {selectedMovement.relatedInvoiceId}
+                    </span>
                   </div>
                   {onNavigate && (
                     <button
@@ -654,7 +665,7 @@ export const CashView: React.FC<CashViewProps> = ({
                       }}
                       className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                     >
-                      <span>Voir la Facture</span>
+                      <span>{isEn ? 'View Invoice' : 'Voir la Facture'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -662,8 +673,13 @@ export const CashView: React.FC<CashViewProps> = ({
               ) : selectedMovement.relatedSaleOrderId ? (
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex items-center justify-between">
                   <div>
-                    <span className="font-bold text-slate-900 block text-sm">Lié au Bon de Commande Vente</span>
-                    <span className="font-mono text-slate-500 text-xs">ID Vente : {selectedMovement.relatedSaleOrderId}</span>
+                    <span className="font-bold text-slate-900 block text-sm">
+                      {isEn ? 'Linked to Sales Order' : 'Lié au Bon de Commande Vente'}
+                    </span>
+                    <span className="font-mono text-slate-500 text-xs">
+                      {isEn ? 'Sale ID: ' : 'ID Vente : '}
+                      {selectedMovement.relatedSaleOrderId}
+                    </span>
                   </div>
                   {onNavigate && (
                     <button
@@ -675,14 +691,16 @@ export const CashView: React.FC<CashViewProps> = ({
                       }}
                       className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer"
                     >
-                      <span>Voir la Vente</span>
+                      <span>{isEn ? 'View Sale' : 'Voir la Vente'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
               ) : (
                 <div className="p-8 rounded-2xl bg-white border border-slate-200 text-slate-500 text-center text-xs">
-                  Écriture directe autonome enregistrée en agence FCT Douala (sans dossier rattaché).
+                  {isEn
+                    ? 'Standalone direct transaction recorded at FCT Douala branch (no dossier attached).'
+                    : 'Écriture directe autonome enregistrée en agence FCT Douala (sans dossier rattaché).'}
                 </div>
               )}
             </div>
@@ -722,7 +740,9 @@ export const CashView: React.FC<CashViewProps> = ({
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                   <Upload className="w-5 h-5 text-purple-600" />
-                  <span>Rattacher un Justificatif à l'Écriture</span>
+                  <span>
+                    {isEn ? 'Attach Supporting Document to Entry' : "Rattacher un Justificatif à l'Écriture"}
+                  </span>
                 </h3>
                 <button
                   type="button"
@@ -735,47 +755,74 @@ export const CashView: React.FC<CashViewProps> = ({
 
               <form onSubmit={handleAddDocumentToMovement} className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Intitulé du document *</label>
+                  <label className="block text-slate-700 font-bold mb-1">
+                    {isEn ? 'Document Title *' : 'Intitulé du document *'}
+                  </label>
                   <input
                     type="text"
                     required
                     value={docForm.title}
                     onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
-                    placeholder="Ex: Reçu émargé, Bon de décaissement, Décharge signée..."
+                    placeholder={
+                      isEn
+                        ? 'E.g., Signed receipt, disbursement voucher, signed waiver...'
+                        : 'Ex: Reçu émargé, Bon de décaissement, Décharge signée...'
+                    }
                     className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Catégorie du document</label>
+                  <label className="block text-slate-700 font-bold mb-1">
+                    {isEn ? 'Document Category' : 'Catégorie du document'}
+                  </label>
                   <select
                     value={docForm.category}
                     onChange={(e) => setDocForm({ ...docForm, category: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-slate-200"
                   >
-                    <option value="RECU_CAISSE">Reçu de Caisse Numéroté</option>
-                    <option value="BON_DECAISSEMENT">Bon de Décaissement Émargé</option>
-                    <option value="PIECE_IDENTITE">Pièce d'Identité Tiers</option>
-                    <option value="AUTRE">Autre Justificatif</option>
+                    <option value="RECU_CAISSE">
+                      {isEn ? 'Numbered Cash Receipt' : 'Reçu de Caisse Numéroté'}
+                    </option>
+                    <option value="BON_DECAISSEMENT">
+                      {isEn ? 'Signed Disbursement Voucher' : 'Bon de Décaissement Émargé'}
+                    </option>
+                    <option value="PIECE_IDENTITE">
+                      {isEn ? 'Third-Party Identity ID' : "Pièce d'Identité Tiers"}
+                    </option>
+                    <option value="AUTRE">
+                      {isEn ? 'Other Document' : 'Autre Justificatif'}
+                    </option>
                   </select>
                 </div>
 
                 <CloudinaryUploadDropzone
                   folder="fct_automobile/cash"
-                  label="Reçu émargé / Décharge (Téléversement Cloudinary FCT) :"
-                  helperText="Glissez ou sélectionnez le scan du reçu de caisse ou bon de décaissement"
+                  label={
+                    isEn
+                      ? 'Signed Receipt / Voucher (FCT Cloudinary Upload) :'
+                      : 'Reçu émargé / Décharge (Téléversement Cloudinary FCT) :'
+                  }
+                  helperText={
+                    isEn
+                      ? 'Drag or select the scan of cash receipt or disbursement voucher'
+                      : 'Glissez ou sélectionnez le scan du reçu de caisse ou bon de décaissement'
+                  }
                   currentValue={docForm.fileUrl}
                   onUploadSuccess={(url) => setDocForm({ ...docForm, fileUrl: url })}
                   onClear={() => setDocForm({ ...docForm, fileUrl: '' })}
+                  lang={lang}
                 />
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Notes / Observations</label>
+                  <label className="block text-slate-700 font-bold mb-1">
+                    {isEn ? 'Notes / Observations' : 'Notes / Observations'}
+                  </label>
                   <textarea
                     rows={2}
                     value={docForm.notes}
                     onChange={(e) => setDocForm({ ...docForm, notes: e.target.value })}
-                    placeholder="Observations comptables..."
+                    placeholder={isEn ? 'Accounting remarks...' : 'Observations comptables...'}
                     className="w-full p-2.5 rounded-xl border border-slate-200"
                   />
                 </div>
@@ -786,13 +833,13 @@ export const CashView: React.FC<CashViewProps> = ({
                     onClick={() => setIsAddDocModalOpen(false)}
                     className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
                   >
-                    Annuler
+                    {isEn ? 'Cancel' : 'Annuler'}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold cursor-pointer shadow-xs"
                   >
-                    Enregistrer et Rattacher
+                    {isEn ? 'Save & Attach' : 'Enregistrer et Rattacher'}
                   </button>
                 </div>
               </form>
@@ -1026,7 +1073,7 @@ export const CashView: React.FC<CashViewProps> = ({
                         {mov.reason}
                       </td>
                       <td
-                        className={`py-3 px-4 text-right font-black whitespace-nowrap text-xs ${
+                        className={`py-3 px-4 text-right font-black whitespace-nowrap text-xs privacy-blur ${
                           mov.isReversal
                             ? 'text-purple-700 line-through'
                             : isInflow
@@ -1044,7 +1091,7 @@ export const CashView: React.FC<CashViewProps> = ({
                       >
                         <button
                           onClick={() => handlePrintReceipt(mov)}
-                          title="Imprimer le reçu de caisse"
+                          title={isEn ? 'Print cash receipt' : 'Imprimer le reçu de caisse'}
                           className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer inline-flex items-center transition"
                         >
                           <Printer className="w-3.5 h-3.5" />

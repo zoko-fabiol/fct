@@ -65,6 +65,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   contextEntityId,
 }) => {
   const t = translations[lang];
+  const isEn = lang === 'en';
   const currentUser = dbStore.getCurrentUser();
   const [activeStageFilter, setActiveStageFilter] = useState<string>('ALL');
   const [search, setSearch] = useState('');
@@ -515,7 +516,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                             rel="noreferrer"
                             download={doc.title}
                             className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-slate-100 transition cursor-pointer"
-                            title="Télécharger"
+                            title={isEn ? 'Download' : 'Télécharger'}
                           >
                             <Download className="w-4 h-4" />
                           </a>
@@ -998,14 +999,14 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     <td className="py-3 px-4 font-mono font-bold text-blue-900">{sale.orderNumber}</td>
                     <td className="py-3 px-4 font-bold text-slate-900">{sale.customerName}</td>
                     <td className="py-3 px-4 text-slate-700">{sale.vehicleName}</td>
-                    <td className="py-3 px-4 text-right font-black text-slate-900 whitespace-nowrap">
+                    <td className="py-3 px-4 text-right font-black text-slate-900 whitespace-nowrap privacy-blur">
                       {formatXAF(sale.negotiatedPriceXAF)}
                     </td>
-                    <td className="py-3 px-4 text-right font-bold text-emerald-700 whitespace-nowrap">
+                    <td className="py-3 px-4 text-right font-bold text-emerald-700 whitespace-nowrap privacy-blur">
                       {formatXAF(sale.paidAmountXAF)}
                     </td>
                     <td
-                      className={`py-3 px-4 text-right font-bold whitespace-nowrap ${
+                      className={`py-3 px-4 text-right font-bold whitespace-nowrap privacy-blur ${
                         sale.balanceXAF > 0 ? 'text-amber-700 font-black' : 'text-slate-400'
                       }`}
                     >

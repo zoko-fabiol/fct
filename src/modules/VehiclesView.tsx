@@ -61,6 +61,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
   contextEntityId,
 }) => {
   const t = translations[lang];
+  const isEn = lang === 'en';
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -463,7 +464,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                     <div className="text-[10px] text-slate-400 font-medium">
                       {t.showroom.dailyRate}
                     </div>
-                    <div className="font-black text-emerald-700 text-sm">
+                    <div className="font-black text-emerald-700 text-sm privacy-blur">
                       {formatXAF(vehicle.rentalDailyRate)}
                     </div>
                   </div>
@@ -473,7 +474,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                       <div className="text-[10px] text-slate-400 font-medium">
                         {t.showroom.salePrice}
                       </div>
-                      <div className="font-bold text-blue-900 text-xs">
+                      <div className="font-bold text-blue-900 text-xs privacy-blur">
                         {formatXAF(vehicle.salePrice)}
                       </div>
                     </div>
@@ -556,7 +557,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                     <td className="py-2.5 px-4 font-mono text-slate-700 whitespace-nowrap">
                       {vehicle.mileage.toLocaleString()} km
                     </td>
-                    <td className="py-2.5 px-4 text-right font-black text-emerald-700 whitespace-nowrap">
+                    <td className="py-2.5 px-4 text-right font-black text-emerald-700 whitespace-nowrap privacy-blur">
                       {formatXAF(vehicle.rentalDailyRate)}
                     </td>
                     <td className="py-2.5 px-4 text-center whitespace-nowrap">
@@ -679,7 +680,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="17 caractères"
+                    placeholder={isEn ? '17 characters' : '17 caractères'}
                     value={newVehicle.vin}
                     onChange={(e) => setNewVehicle({ ...newVehicle, vin: e.target.value })}
                     className="w-full p-2 rounded border border-slate-300 font-mono uppercase"
@@ -1064,10 +1065,10 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
       {/* Delete Confirmation Modal with Audit Trail */}
       <DeleteConfirmModal
         isOpen={!!deleteConfirmVehicle}
-        title="Supprimer un Véhicule du Parc"
+        title={isEn ? 'Remove Vehicle from Fleet' : 'Supprimer un Véhicule du Parc'}
         itemName={deleteConfirmVehicle ? `${deleteConfirmVehicle.brand} ${deleteConfirmVehicle.model}` : ''}
-        itemDetails={deleteConfirmVehicle ? `Immatriculation : ${deleteConfirmVehicle.licensePlate} | VIN : ${deleteConfirmVehicle.vin}` : undefined}
-        warningMessage="Attention : cette action retirera définitivement ce véhicule du parc automobile et l'enregistrera dans le journal d'audit. Les véhicules avec contrat de location actif ne peuvent pas être supprimés."
+        itemDetails={deleteConfirmVehicle ? `${isEn ? 'Plate:' : 'Immatriculation :'} ${deleteConfirmVehicle.licensePlate} | VIN : ${deleteConfirmVehicle.vin}` : undefined}
+        warningMessage={isEn ? 'Warning: this action will permanently remove this vehicle from the fleet and log it in the audit trail. Vehicles with active rental contracts cannot be deleted.' : "Attention : cette action retirera définitivement ce véhicule du parc automobile et l'enregistrera dans le journal d'audit. Les véhicules avec contrat de location actif ne peuvent pas être supprimés."}
         requireReason={true}
         onClose={() => setDeleteConfirmVehicle(null)}
         onConfirm={handleConfirmDelete}

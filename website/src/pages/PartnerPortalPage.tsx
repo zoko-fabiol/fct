@@ -294,7 +294,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
     const affUrl = generateAffiliateUrl(targetVehicle.id, partner.partnerCode);
     const isRent = targetVehicle.isForRent;
-    const shareText = generateShareCopyText(targetVehicle, affUrl, isRent);
+    const shareText = generateShareCopyText(targetVehicle, affUrl, isRent, lang);
 
     const shareRes = await logPartnerShare(partner, targetVehicle, platform);
 
@@ -1166,7 +1166,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 <div className="fct-partner-catalog-grid">
                   {displayedShareVehicles.map((v) => {
                     const affUrl = generateAffiliateUrl(v.id, partner.partnerCode);
-                    const shareText = generateShareCopyText(v, affUrl, v.isForRent);
+                    const shareText = generateShareCopyText(v, affUrl, v.isForRent, lang);
                     const isPreviewExpanded = expandedPreviewVehicleId === v.id;
                     const isCopied = copiedVehicleId === v.id;
                     const eligibility = checkVehicleShareEligibility(partner, v.id);

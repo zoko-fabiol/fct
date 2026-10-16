@@ -62,6 +62,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
   contextEntityId,
 }) => {
   const t = translations[lang];
+  const isEn = lang === 'en';
   const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'LEADS'>('CUSTOMERS');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
@@ -470,29 +471,29 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
                   <div className="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
                     <User className="w-4 h-4 text-blue-600" />
-                    <span>Identité &amp; Coordonnées</span>
+                    <span>{isEn ? 'Identity & Contacts' : 'Identité & Coordonnées'}</span>
                   </div>
                   <div className="space-y-2 text-xs text-slate-700">
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Nom complet / Raison sociale :</span>
+                      <span className="text-slate-500">{isEn ? 'Full Name / Company Name:' : 'Nom complet / Raison sociale :'}</span>
                       <span className="font-bold text-slate-900">{selectedCustomer.companyName || selectedCustomer.fullName}</span>
                     </div>
                     {selectedCustomer.companyName && (
                       <div className="flex justify-between py-1 border-b border-slate-100">
-                        <span className="text-slate-500">Contact référent :</span>
+                        <span className="text-slate-500">{isEn ? 'Contact Person:' : 'Contact référent :'}</span>
                         <span className="font-semibold text-slate-900">{selectedCustomer.fullName}</span>
                       </div>
                     )}
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Numéro de téléphone :</span>
+                      <span className="text-slate-500">{isEn ? 'Phone Number:' : 'Numéro de téléphone :'}</span>
                       <span className="font-bold text-slate-900">{selectedCustomer.phone}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Adresse e-mail :</span>
+                      <span className="text-slate-500">{isEn ? 'Email Address:' : 'Adresse e-mail :'}</span>
                       <span className="font-mono text-slate-900">{selectedCustomer.email}</span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-slate-500">Adresse physique :</span>
+                      <span className="text-slate-500">{isEn ? 'Physical Address:' : 'Adresse physique :'}</span>
                       <span className="font-medium text-slate-900">{selectedCustomer.address}</span>
                     </div>
                   </div>
@@ -501,26 +502,28 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
                   <div className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
                     <Building className="w-4 h-4 text-emerald-600" />
-                    <span>Paramètres Fiscaux &amp; Statut FCT</span>
+                    <span>{isEn ? 'Tax Settings & FCT Status' : 'Paramètres Fiscaux & Statut FCT'}</span>
                   </div>
                   <div className="space-y-2 text-xs text-slate-700">
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Type de compte client :</span>
+                      <span className="text-slate-500">{isEn ? 'Account Type:' : 'Type de compte client :'}</span>
                       <span className="font-bold text-slate-900">
-                        {selectedCustomer.type === 'COMPANY' ? 'Client Entreprise (B2B)' : 'Particulier (B2C)'}
+                        {selectedCustomer.type === 'COMPANY'
+                          ? (isEn ? 'Corporate Account (B2B)' : 'Client Entreprise (B2B)')
+                          : (isEn ? 'Individual (B2C)' : 'Particulier (B2C)')}
                       </span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Numéro d'Identifiant Unique (NIU) :</span>
-                      <span className="font-mono font-bold text-blue-900">{selectedCustomer.taxNumber || 'Non renseigné'}</span>
+                      <span className="text-slate-500">{isEn ? 'Unique Taxpayer ID (NIU):' : "Numéro d'Identifiant Unique (NIU) :"}</span>
+                      <span className="font-mono font-bold text-blue-900">{selectedCustomer.taxNumber || (isEn ? 'Not specified' : 'Non renseigné')}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-100">
-                      <span className="text-slate-500">Date d'enregistrement :</span>
+                      <span className="text-slate-500">{isEn ? 'Registration Date:' : "Date d'enregistrement :"}</span>
                       <span className="font-mono text-slate-600">{selectedCustomer.createdAt}</span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-slate-500">Statut portefeuille :</span>
-                      <span className="font-bold text-emerald-800">Client Actif Conforme</span>
+                      <span className="text-slate-500">{isEn ? 'Account Status:' : 'Statut portefeuille :'}</span>
+                      <span className="font-bold text-emerald-800">{isEn ? 'Active Verified Client' : 'Client Actif Conforme'}</span>
                     </div>
                   </div>
                 </div>
@@ -533,8 +536,8 @@ export const CrmView: React.FC<CrmViewProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">Dossier Numérique &amp; Justificatifs Client</h3>
-                  <p className="text-xs text-slate-500">Scan CNI ou Passeport, Registre du Commerce (RCCM), Permis de conduire, Justificatif de domicile</p>
+                  <h3 className="text-sm font-black text-slate-900">{isEn ? 'Digital Records & Customer Documents' : 'Dossier Numérique & Justificatifs Client'}</h3>
+                  <p className="text-xs text-slate-500">{isEn ? 'National ID or Passport scan, Trade Register (RCCM), Driver License, Proof of address' : 'Scan CNI ou Passeport, Registre du Commerce (RCCM), Permis de conduire, Justificatif de domicile'}</p>
                 </div>
                 <button
                   type="button"
@@ -542,15 +545,15 @@ export const CrmView: React.FC<CrmViewProps> = ({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Rattacher un document</span>
+                  <span>{isEn ? 'Attach a document' : 'Rattacher un document'}</span>
                 </button>
               </div>
 
               {custDocs.length === 0 ? (
                 <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-500 space-y-2">
                   <FileText className="w-8 h-8 text-slate-300 mx-auto" />
-                  <p className="font-bold text-slate-700">Aucun document numérique archivé pour ce client</p>
-                  <p className="text-xs text-slate-400">Cliquez sur « Rattacher un document » pour joindre une copie de CNI, RCCM ou permis.</p>
+                  <p className="font-bold text-slate-700">{isEn ? 'No digital document archived for this client' : 'Aucun document numérique archivé pour ce client'}</p>
+                  <p className="text-xs text-slate-400">{isEn ? 'Click "Attach a document" to attach a copy of ID, RCCM or driver license.' : 'Cliquez sur « Rattacher un document » pour joindre une copie de CNI, RCCM ou permis.'}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -562,7 +565,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                         </div>
                         <div>
                           <h4 className="font-bold text-slate-900 text-xs">{doc.title}</h4>
-                          <div className="text-[11px] text-slate-500">{doc.category} • Ajouté le {doc.uploadedAt ? doc.uploadedAt.split('T')[0] : 'N/A'}</div>
+                          <div className="text-[11px] text-slate-500">{doc.category} • {isEn ? 'Added on' : 'Ajouté le'} {doc.uploadedAt ? doc.uploadedAt.split('T')[0] : 'N/A'}</div>
                           {doc.notes && <div className="text-[11px] text-slate-600 italic mt-0.5">{doc.notes}</div>}
                         </div>
                       </div>
@@ -571,7 +574,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                           type="button"
                           onClick={() => setViewerDoc(doc)}
                           className="p-1.5 rounded-lg text-slate-600 hover:text-blue-700 hover:bg-slate-100 transition cursor-pointer"
-                          title="Visualiser le document"
+                          title={isEn ? 'View document' : 'Visualiser le document'}
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -582,7 +585,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                             rel="noreferrer"
                             download={doc.title}
                             className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-slate-100 transition cursor-pointer"
-                            title="Télécharger"
+                            title={isEn ? 'Download' : 'Télécharger'}
                           >
                             <Download className="w-4 h-4" />
                           </a>
@@ -600,8 +603,8 @@ export const CrmView: React.FC<CrmViewProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">Historique des Locations</h3>
-                  <p className="text-xs text-slate-500">Tous les contrats de location passés ou en cours pour ce client</p>
+                  <h3 className="text-sm font-black text-slate-900">{isEn ? 'Rental History' : 'Historique des Locations'}</h3>
+                  <p className="text-xs text-slate-500">{isEn ? 'All past and active rental contracts for this client' : 'Tous les contrats de location passés ou en cours pour ce client'}</p>
                 </div>
                 {onNavigate && (
                   <button
@@ -614,7 +617,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                   >
                     <KeyRound className="w-3.5 h-3.5" />
-                    <span>Créer une Location</span>
+                    <span>{isEn ? 'Create Rental' : 'Créer une Location'}</span>
                   </button>
                 )}
               </div>
@@ -622,7 +625,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
               {custContracts.length === 0 ? (
                 <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-500 space-y-2">
                   <KeyRound className="w-8 h-8 text-slate-300 mx-auto" />
-                  <p className="font-bold text-slate-700">Aucun contrat de location enregistré pour ce client</p>
+                  <p className="font-bold text-slate-700">{isEn ? 'No rental contract recorded for this client' : 'Aucun contrat de location enregistré pour ce client'}</p>
                 </div>
               ) : (
                 <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
@@ -630,13 +633,13 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     <table className="w-full text-left text-xs min-w-[700px]">
                     <thead className="bg-[#0f2a4a] text-white uppercase text-[10px] tracking-wider">
                       <tr>
-                        <th className="py-3 px-4">N° Contrat</th>
-                        <th className="py-3 px-4">Véhicule Loué</th>
-                        <th className="py-3 px-4">Période</th>
-                        <th className="py-3 px-4 text-right">Montant Total</th>
-                        <th className="py-3 px-4 text-right">Encaissé</th>
-                        <th className="py-3 px-4 text-right">Solde Dû</th>
-                        <th className="py-3 px-4 text-center">Statut</th>
+                        <th className="py-3 px-4">{isEn ? 'Contract #' : 'N° Contrat'}</th>
+                        <th className="py-3 px-4">{isEn ? 'Rented Vehicle' : 'Véhicule Loué'}</th>
+                        <th className="py-3 px-4">{isEn ? 'Period' : 'Période'}</th>
+                        <th className="py-3 px-4 text-right">{isEn ? 'Total Amount' : 'Montant Total'}</th>
+                        <th className="py-3 px-4 text-right">{isEn ? 'Collected' : 'Encaissé'}</th>
+                        <th className="py-3 px-4 text-right">{isEn ? 'Balance Due' : 'Solde Dû'}</th>
+                        <th className="py-3 px-4 text-center">{isEn ? 'Status' : 'Statut'}</th>
                         <th className="py-3 px-4 text-right">Action</th>
                       </tr>
                     </thead>
@@ -645,7 +648,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                         <tr key={ctr.id} className="hover:bg-slate-50 transition">
                           <td className="py-3 px-4 font-mono font-bold text-blue-900">{ctr.contractNumber}</td>
                           <td className="py-3 px-4 font-semibold text-slate-900">{ctr.vehicleName}</td>
-                          <td className="py-3 px-4 text-slate-600">{ctr.startDate} au {ctr.endDate}</td>
+                          <td className="py-3 px-4 text-slate-600">{ctr.startDate} {isEn ? 'to' : 'au'} {ctr.endDate}</td>
                           <td className="py-3 px-4 text-right font-bold text-slate-900">{formatXAF(ctr.totalAmountXAF)}</td>
                           <td className="py-3 px-4 text-right font-bold text-emerald-700">{formatXAF(ctr.paidAmountXAF)}</td>
                           <td className="py-3 px-4 text-right font-black text-rose-700">{formatXAF(ctr.remainingAmountXAF)}</td>
@@ -653,7 +656,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                               ctr.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
                             }`}>
-                              {ctr.status === 'ACTIVE' ? 'En cours' : ctr.status === 'RETURNED' ? 'Restitué' : 'Annulé'}
+                              {ctr.status === 'ACTIVE' ? (isEn ? 'Active' : 'En cours') : ctr.status === 'RETURNED' ? (isEn ? 'Returned' : 'Restitué') : (isEn ? 'Cancelled' : 'Annulé')}
                             </span>
                           </td>
                           <td className="py-3 px-4 text-right">
@@ -666,7 +669,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                                 }}
                                 className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-blue-100 text-slate-700 hover:text-blue-900 font-bold text-[11px] transition inline-flex items-center gap-1 cursor-pointer"
                               >
-                                <span>Fiche</span>
+                                <span>{isEn ? 'Record' : 'Fiche'}</span>
                                 <ArrowRight className="w-3 h-3" />
                               </button>
                             )}
@@ -686,8 +689,8 @@ export const CrmView: React.FC<CrmViewProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">Commandes &amp; Achats de Véhicules</h3>
-                  <p className="text-xs text-slate-500">Bons de commande signés et véhicules achetés par ce client</p>
+                  <h3 className="text-sm font-black text-slate-900">{isEn ? 'Vehicle Orders & Purchases' : 'Commandes & Achats de Véhicules'}</h3>
+                  <p className="text-xs text-slate-500">{isEn ? 'Signed order forms and vehicles purchased by this client' : 'Bons de commande signés et véhicules achetés par ce client'}</p>
                 </div>
                 {onNavigate && (
                   <button
@@ -700,7 +703,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                   >
                     <TrendingUp className="w-3.5 h-3.5" />
-                    <span>Nouvelle Vente</span>
+                    <span>{isEn ? 'New Sale' : 'Nouvelle Vente'}</span>
                   </button>
                 )}
               </div>
@@ -708,7 +711,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
               {custSales.length === 0 ? (
                 <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-500 space-y-2">
                   <TrendingUp className="w-8 h-8 text-slate-300 mx-auto" />
-                  <p className="font-bold text-slate-700">Aucun dossier de vente lié à ce client</p>
+                  <p className="font-bold text-slate-700">{isEn ? 'No sales record linked to this client' : 'Aucun dossier de vente lié à ce client'}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -722,9 +725,9 @@ export const CrmView: React.FC<CrmViewProps> = ({
                       </div>
                       <h4 className="font-black text-slate-900 text-sm">{sale.vehicleName}</h4>
                       <div className="text-xs text-slate-600 space-y-1">
-                        <div>Prix de vente : <strong className="text-slate-900">{formatXAF(sale.negotiatedPriceXAF)}</strong></div>
-                        <div>Acompte encaissé : <strong className="text-emerald-700">{formatXAF(sale.paidAmountXAF)}</strong></div>
-                        <div>Solde restant : <strong className="text-rose-700">{formatXAF(sale.balanceXAF)}</strong></div>
+                        <div>{isEn ? 'Sale Price:' : 'Prix de vente :'} <strong className="text-slate-900">{formatXAF(sale.negotiatedPriceXAF)}</strong></div>
+                        <div>{isEn ? 'Deposit Paid:' : 'Acompte encaissé :'} <strong className="text-emerald-700">{formatXAF(sale.paidAmountXAF)}</strong></div>
+                        <div>{isEn ? 'Remaining Balance:' : 'Solde restant :'} <strong className="text-rose-700">{formatXAF(sale.balanceXAF)}</strong></div>
                       </div>
                       {onNavigate && (
                         <div className="pt-2 border-t">
@@ -736,7 +739,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                             }}
                             className="px-3 py-1.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
                           >
-                            <span>Consulter Showroom Vente</span>
+                            <span>{isEn ? 'View Sale Showroom' : 'Consulter Showroom Vente'}</span>
                             <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -753,8 +756,8 @@ export const CrmView: React.FC<CrmViewProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">Factures &amp; Créances Clients</h3>
-                  <p className="text-xs text-slate-500">Toutes les factures et règlements associés à ce client</p>
+                  <h3 className="text-sm font-black text-slate-900">{isEn ? 'Invoices & Receivables' : 'Factures & Créances Clients'}</h3>
+                  <p className="text-xs text-slate-500">{isEn ? 'All invoices and settlements associated with this client' : 'Toutes les factures et règlements associés à ce client'}</p>
                 </div>
                 {onNavigate && (
                   <button
@@ -767,7 +770,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                   >
                     <Receipt className="w-3.5 h-3.5" />
-                    <span>Émettre une Facture</span>
+                    <span>{isEn ? 'Issue Invoice' : 'Émettre une Facture'}</span>
                   </button>
                 )}
               </div>
@@ -775,7 +778,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
               {custInvoices.length === 0 ? (
                 <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-500 space-y-2">
                   <Receipt className="w-8 h-8 text-slate-300 mx-auto" />
-                  <p className="font-bold text-slate-700">Aucune facture enregistrée pour ce client</p>
+                  <p className="font-bold text-slate-700">{isEn ? 'No invoice recorded for this client' : 'Aucune facture enregistrée pour ce client'}</p>
                 </div>
               ) : (
                 <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs">
@@ -783,12 +786,12 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     <table className="w-full text-left text-xs min-w-[700px]">
                     <thead className="bg-[#0f2a4a] text-white uppercase text-[10px] tracking-wider">
                       <tr>
-                        <th className="py-3 px-4">N° Facture</th>
-                        <th className="py-3 px-4">Émise le</th>
-                        <th className="py-3 px-4 text-right">Total TTC</th>
-                        <th className="py-3 px-4 text-right">Encaissé</th>
-                        <th className="py-3 px-4 text-right">Solde Restant</th>
-                        <th className="py-3 px-4 text-center">Statut</th>
+                        <th className="py-3 px-4">{isEn ? 'Invoice #' : 'N° Facture'}</th>
+                        <th className="py-3 px-4">{isEn ? 'Issued Date' : 'Émise le'}</th>
+                        <th className="py-3 px-4 text-right">{isEn ? 'Total (Inc. Tax)' : 'Total TTC'}</th>
+                        <th className="py-3 px-4 text-right">{isEn ? 'Collected' : 'Encaissé'}</th>
+                        <th className="py-3 px-4 text-right">{isEn ? 'Remaining Balance' : 'Solde Restant'}</th>
+                        <th className="py-3 px-4 text-center">{isEn ? 'Status' : 'Statut'}</th>
                         <th className="py-3 px-4 text-right">Action</th>
                       </tr>
                     </thead>
@@ -808,7 +811,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                                   : 'bg-amber-100 text-amber-800'
                               }`}
                             >
-                              {inv.status === 'PAID' ? 'Soldée' : 'En attente'}
+                              {inv.status === 'PAID' ? (isEn ? 'Paid' : 'Soldée') : (isEn ? 'Pending' : 'En attente')}
                             </span>
                           </td>
                           <td className="py-3 px-4 text-right">
@@ -821,7 +824,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                                 }}
                                 className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-blue-100 text-slate-700 hover:text-blue-900 font-bold text-[11px] transition inline-flex items-center gap-1 cursor-pointer"
                               >
-                                <span>Fiche</span>
+                                <span>{isEn ? 'Record' : 'Fiche'}</span>
                                 <ArrowRight className="w-3 h-3" />
                               </button>
                             )}
@@ -866,7 +869,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                   <Upload className="w-5 h-5 text-purple-600" />
-                  <span>Rattacher un Document au Client</span>
+                  <span>{isEn ? 'Attach Document to Client' : 'Rattacher un Document au Client'}</span>
                 </h3>
                 <button
                   type="button"
@@ -879,48 +882,48 @@ export const CrmView: React.FC<CrmViewProps> = ({
 
               <form onSubmit={handleAddDocumentToCustomer} className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Intitulé du document *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Document title *' : 'Intitulé du document *'}</label>
                   <input
                     type="text"
                     required
                     value={docForm.title}
                     onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
-                    placeholder="Ex: Scan CNI, Registre de Commerce RCCM, Permis..."
+                    placeholder={isEn ? 'Ex: ID scan, Trade Register RCCM, Driver license...' : 'Ex: Scan CNI, Registre de Commerce RCCM, Permis...'}
                     className="w-full p-2.5 rounded-xl border border-slate-200 focus:outline-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Catégorie du document</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Document category' : 'Catégorie du document'}</label>
                   <select
                     value={docForm.category}
                     onChange={(e) => setDocForm({ ...docForm, category: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-slate-200"
                   >
-                    <option value="CNI_PASSEPORT">CNI / Passeport</option>
-                    <option value="PERMIS_CONDUIRE">Permis de Conduire</option>
-                    <option value="RCCM">Registre du Commerce (RCCM)</option>
-                    <option value="ATTESTATION_DOMICILE">Attestation de Domiciliation</option>
-                    <option value="AUTRE">Autre Document</option>
+                    <option value="CNI_PASSEPORT">{isEn ? 'National ID / Passport' : 'CNI / Passeport'}</option>
+                    <option value="PERMIS_CONDUIRE">{isEn ? 'Driver License' : 'Permis de Conduire'}</option>
+                    <option value="RCCM">{isEn ? 'Trade Register (RCCM)' : 'Registre du Commerce (RCCM)'}</option>
+                    <option value="ATTESTATION_DOMICILE">{isEn ? 'Proof of Address' : 'Attestation de Domiciliation'}</option>
+                    <option value="AUTRE">{isEn ? 'Other Document' : 'Autre Document'}</option>
                   </select>
                 </div>
 
                 <CloudinaryUploadDropzone
                   folder="fct_automobile/customers"
-                  label="Pièce justificative client (Téléversement Cloudinary FCT) :"
-                  helperText="Glissez ou sélectionnez la CNI, RCCM, passeport ou attestation de domicile"
+                  label={isEn ? 'Client supporting document (Cloudinary FCT):' : 'Pièce justificative client (Téléversement Cloudinary FCT) :'}
+                  helperText={isEn ? 'Drag & drop or select ID, RCCM, passport or proof of address' : 'Glissez ou sélectionnez la CNI, RCCM, passeport ou attestation de domicile'}
                   currentValue={docForm.fileUrl}
                   onUploadSuccess={(url) => setDocForm({ ...docForm, fileUrl: url })}
                   onClear={() => setDocForm({ ...docForm, fileUrl: '' })}
                 />
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Notes / Observations</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Notes / Observations' : 'Notes / Observations'}</label>
                   <textarea
                     rows={2}
                     value={docForm.notes}
                     onChange={(e) => setDocForm({ ...docForm, notes: e.target.value })}
-                    placeholder="Annotations..."
+                    placeholder={isEn ? 'Remarks...' : 'Annotations...'}
                     className="w-full p-2.5 rounded-xl border border-slate-200"
                   />
                 </div>
@@ -931,13 +934,13 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     onClick={() => setIsAddDocModalOpen(false)}
                     className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
                   >
-                    Annuler
+                    {isEn ? 'Cancel' : 'Annuler'}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold cursor-pointer shadow-xs"
                   >
-                    Enregistrer et Rattacher
+                    {isEn ? 'Save & Attach' : 'Enregistrer et Rattacher'}
                   </button>
                 </div>
               </form>
@@ -964,7 +967,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
 
               <form onSubmit={handleUpdateCustomer} className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Nom Complet / Contact Référent *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Full Name / Contact Person *' : 'Nom Complet / Contact Référent *'}</label>
                   <input
                     type="text"
                     required
@@ -976,7 +979,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
 
                 {editingCustomer.type === 'COMPANY' && (
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">Raison Sociale Entreprise *</label>
+                    <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Company Legal Name *' : 'Raison Sociale Entreprise *'}</label>
                     <input
                       type="text"
                       required
@@ -989,7 +992,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-700 font-bold mb-1">Téléphone *</label>
+                    <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Phone *' : 'Téléphone *'}</label>
                     <input
                       type="tel"
                       required
@@ -1011,7 +1014,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Adresse à Douala *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Address in Douala *' : 'Adresse à Douala *'}</label>
                   <input
                     type="text"
                     required
@@ -1302,11 +1305,11 @@ export const CrmView: React.FC<CrmViewProps> = ({
                     {/* Statistiques Client & Actions */}
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                       <div>
-                        <span className="text-[10px] text-slate-400 block font-medium">Locations</span>
-                        <span className="font-bold text-slate-900 text-xs">{rentalsCount} contrat(s)</span>
+                        <span className="text-[10px] text-slate-400 block font-medium">{isEn ? 'Rentals' : 'Locations'}</span>
+                        <span className="font-bold text-slate-900 text-xs">{rentalsCount} {isEn ? 'contract(s)' : 'contrat(s)'}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-400 block font-medium">Dépenses totales</span>
+                        <span className="text-[10px] text-slate-400 block font-medium">{isEn ? 'Total spent' : 'Dépenses totales'}</span>
                         <span className="font-black text-emerald-700 text-xs">{formatXAF(cust.totalSpentXAF)}</span>
                       </div>
                     </div>
@@ -1433,7 +1436,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
               <Search className="w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Rechercher un prospect par nom, téléphone, notes..."
+                placeholder={isEn ? 'Search lead by name, phone, notes...' : 'Rechercher un prospect par nom, téléphone, notes...'}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full text-xs outline-hidden"
@@ -1750,10 +1753,10 @@ export const CrmView: React.FC<CrmViewProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Entreprise (facultatif)</label>
+                <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Company (optional)' : 'Entreprise (facultatif)'}</label>
                 <input
                   type="text"
-                  placeholder="ex: Société Générale Cameroun"
+                  placeholder={isEn ? 'e.g.: Société Générale Cameroon' : 'ex: Société Générale Cameroun'}
                   value={leadForm.companyName}
                   onChange={(e) => setLeadForm({ ...leadForm, companyName: e.target.value })}
                   className="w-full p-2 rounded border border-slate-300"
@@ -1762,7 +1765,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Téléphone *</label>
+                  <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Phone *' : 'Téléphone *'}</label>
                   <input
                     type="text"
                     required
@@ -1772,21 +1775,21 @@ export const CrmView: React.FC<CrmViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Intérêt principal</label>
+                  <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Primary interest' : 'Intérêt principal'}</label>
                   <select
                     value={leadForm.interestType}
                     onChange={(e) => setLeadForm({ ...leadForm, interestType: e.target.value as any })}
                     className="w-full p-2 rounded border border-slate-300"
                   >
-                    <option value="RENTAL">Location automobile</option>
-                    <option value="PURCHASE">Achat de véhicule</option>
+                    <option value="RENTAL">{isEn ? 'Car Rental' : 'Location automobile'}</option>
+                    <option value="PURCHASE">{isEn ? 'Vehicle Purchase' : 'Achat de véhicule'}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Catégorie souhaitée</label>
+                  <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Desired category' : 'Catégorie souhaitée'}</label>
                   <select
                     value={leadForm.interestedCategory}
                     onChange={(e) => setLeadForm({ ...leadForm, interestedCategory: e.target.value as any })}
@@ -1800,7 +1803,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Budget prévisionnel (XAF)</label>
+                  <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Estimated budget (XAF)' : 'Budget prévisionnel (XAF)'}</label>
                   <input
                     type="number"
                     value={leadForm.budgetXAF}
@@ -1811,7 +1814,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Notes et besoins exprimés</label>
+                <label className="font-bold text-slate-700 block mb-1">{isEn ? 'Notes and specified needs' : 'Notes et besoins exprimés'}</label>
                 <textarea
                   rows={2}
                   value={leadForm.notes}
@@ -1826,13 +1829,13 @@ export const CrmView: React.FC<CrmViewProps> = ({
                   onClick={() => setIsNewLeadModalOpen(false)}
                   className="px-4 py-2 bg-slate-200 rounded font-semibold cursor-pointer"
                 >
-                  Annuler
+                  {isEn ? 'Cancel' : 'Annuler'}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded shadow transition cursor-pointer"
                 >
-                  Enregistrer Prospect
+                  {isEn ? 'Save Lead' : 'Enregistrer Prospect'}
                 </button>
               </div>
             </form>
@@ -1843,7 +1846,7 @@ export const CrmView: React.FC<CrmViewProps> = ({
       {/* Delete Confirmation Modal */}
       <DeleteConfirmModal
         isOpen={!!deleteConfirmCustomer}
-        title="Supprimer un Client du Répertoire"
+        title={isEn ? 'Delete Customer from Directory' : 'Supprimer un Client du Répertoire'}
         itemName={deleteConfirmCustomer ? deleteConfirmCustomer.companyName || deleteConfirmCustomer.fullName : ''}
         itemDetails={
           deleteConfirmCustomer

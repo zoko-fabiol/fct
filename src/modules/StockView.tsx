@@ -69,6 +69,7 @@ export const StockView: React.FC<StockViewProps> = ({
 }) => {
   const currentUser = dbStore.getCurrentUser();
   const t = translations[lang];
+  const isEn = lang === 'en';
   const [activeTab, setActiveTab] = useState<'ITEMS' | 'MOVEMENTS'>('ITEMS');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
@@ -412,23 +413,23 @@ export const StockView: React.FC<StockViewProps> = ({
               <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                   <PackageCheck className="w-4 h-4 text-emerald-600" />
-                  <span>Gestion des Volumes &amp; Emplacement</span>
+                  <span>{isEn ? 'Stock Quantities & Location' : 'Gestion des Volumes & Emplacement'}</span>
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Quantité physique en stock</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Physical Stock Quantity' : 'Quantité physique en stock'}</div>
                     <div className="font-black text-lg text-slate-900 mt-1">{selectedItemDetail.quantityInStock} {selectedItemDetail.unit}</div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Seuil d'alerte sécurité</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Safety Threshold Alert' : "Seuil d'alerte sécurité"}</div>
                     <div className="font-black text-lg text-amber-700 mt-1">{selectedItemDetail.minThresholdAlert} {selectedItemDetail.unit}</div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Unité de gestion magasin</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Warehouse Unit' : 'Unité de gestion magasin'}</div>
                     <div className="font-bold text-sm text-slate-900 mt-1">{selectedItemDetail.unit}</div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200">
-                    <div className="text-[10px] text-blue-900 font-bold uppercase">Casier &amp; Rayonnage</div>
+                    <div className="text-[10px] text-blue-900 font-bold uppercase">{isEn ? 'Shelf / Bin Location' : 'Casier & Rayonnage'}</div>
                     <div className="font-mono font-black text-sm text-blue-900 mt-1">{selectedItemDetail.locationBin}</div>
                   </div>
                 </div>
@@ -439,21 +440,21 @@ export const StockView: React.FC<StockViewProps> = ({
               <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-blue-900" />
-                  <span>Valorisation Comptable &amp; Approvisionnement</span>
+                  <span>{isEn ? 'Accounting Valuation & Sourcing' : 'Valorisation Comptable & Approvisionnement'}</span>
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Prix d’achat unitaire HT</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Unit Cost (Excl. Tax)' : 'Prix d’achat unitaire HT'}</div>
                     <div className="font-black text-lg text-slate-900 mt-1">{formatXAF(selectedItemDetail.unitCostXAF)}</div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200">
-                    <div className="text-[10px] text-emerald-800 font-bold uppercase">Valeur totale immobilisée</div>
+                    <div className="text-[10px] text-emerald-800 font-bold uppercase">{isEn ? 'Total Asset Value' : 'Valeur totale immobilisée'}</div>
                     <div className="font-black text-lg text-emerald-950 mt-1">
                       {formatXAF(selectedItemDetail.quantityInStock * selectedItemDetail.unitCostXAF)}
                     </div>
                   </div>
                   <div className="sm:col-span-2 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Fournisseur partenaire</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Partner Supplier' : 'Fournisseur partenaire'}</div>
                     <div className="font-bold text-sm text-slate-900 mt-1">{selectedItemDetail.supplier} (Douala)</div>
                   </div>
                 </div>
@@ -498,16 +499,16 @@ export const StockView: React.FC<StockViewProps> = ({
                   <p className="text-xs font-mono text-slate-500 mt-0.5">{selectedItemDetail.code}</p>
                 </div>
                 <div className="text-xs text-slate-600 space-y-1 pt-2 border-t border-slate-100">
-                  <div>Origine : <strong>{selectedItemDetail.supplier}</strong></div>
-                  <div>Catégorie : <strong>{selectedItemDetail.category}</strong></div>
+                  <div>{isEn ? 'Origin:' : 'Origine :'} <strong>{selectedItemDetail.supplier}</strong></div>
+                  <div>{isEn ? 'Category:' : 'Catégorie :'} <strong>{selectedItemDetail.category}</strong></div>
                 </div>
                 <div className="pt-2 flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() =>
                       setViewerDoc({
-                        title: `Fiche Technique - ${selectedItemDetail.name}`,
-                        categoryLabel: 'Fiche Technique Constructeur',
+                        title: `${isEn ? 'Technical Datasheet' : 'Fiche Technique'} - ${selectedItemDetail.name}`,
+                        categoryLabel: isEn ? 'Manufacturer Technical Datasheet' : 'Fiche Technique Constructeur',
                         fileUrl:
                           (selectedItemDetail as any).technicalSheetUrl ||
                           'https://res.cloudinary.com/c58pcgcp/image/upload/v1791555435/fct_automobile/_tests/fct_test_rpvnzf.pdf',
@@ -517,7 +518,7 @@ export const StockView: React.FC<StockViewProps> = ({
                     className="flex-1 text-center py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    <span>Consulter le document</span>
+                    <span>{isEn ? 'View Document' : 'Consulter le document'}</span>
                   </button>
                 </div>
               </div>
@@ -535,10 +536,10 @@ export const StockView: React.FC<StockViewProps> = ({
                   </div>
                   <div>
                     <h4 className="font-bold text-slate-900 text-sm">{doc.title}</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">{doc.fileType} • {doc.fileSizeMb || 1.0} Mo</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{doc.fileType} • {doc.fileSizeMb || 1.0} {isEn ? 'MB' : 'Mo'}</p>
                   </div>
                   <div className="text-xs text-slate-600 space-y-1 pt-2 border-t border-slate-100">
-                    <div>Enregistré le : <strong>{doc.createdAt}</strong></div>
+                    <div>{isEn ? 'Recorded on:' : 'Enregistré le :'} <strong>{doc.createdAt}</strong></div>
                   </div>
                   <div className="pt-2 flex items-center gap-2">
                     <button
@@ -547,7 +548,7 @@ export const StockView: React.FC<StockViewProps> = ({
                       className="flex-1 text-center py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5" />
-                      <span>Visualiser</span>
+                      <span>{isEn ? 'View' : 'Visualiser'}</span>
                     </button>
                     {doc.fileUrl && (
                       <a
@@ -556,7 +557,7 @@ export const StockView: React.FC<StockViewProps> = ({
                         rel="noreferrer"
                         download={doc.title}
                         className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs transition"
-                        title="Télécharger"
+                        title={isEn ? 'Download' : 'Télécharger'}
                       >
                         <Download className="w-3.5 h-3.5" />
                       </a>
@@ -571,10 +572,10 @@ export const StockView: React.FC<StockViewProps> = ({
         {/* TAB 3: MOVEMENTS */}
         {itemDetailTab === 'MOVEMENTS' && (
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-            <h3 className="text-base font-black text-slate-900">Journal d'Entrées, Sorties &amp; Mouvements ({moves.length})</h3>
+            <h3 className="text-base font-black text-slate-900">{isEn ? "Inflow, Outflow & Movements Log" : "Journal d'Entrées, Sorties & Mouvements"} ({moves.length})</h3>
             {moves.length === 0 ? (
               <div className="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 text-slate-500 text-xs font-semibold">
-                Aucun mouvement de stock enregistré pour cette référence.
+                {isEn ? 'No stock movement recorded for this item.' : 'Aucun mouvement de stock enregistré pour cette référence.'}
               </div>
             ) : (
               <div className="border border-slate-200 rounded-xl overflow-hidden">
@@ -582,11 +583,11 @@ export const StockView: React.FC<StockViewProps> = ({
                   <table className="w-full text-xs text-left min-w-[600px]">
                   <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                     <tr>
-                      <th className="py-3 px-4">Date &amp; Heure</th>
-                      <th className="py-3 px-4 text-center">Type</th>
-                      <th className="py-3 px-4 text-center">Quantité</th>
-                      <th className="py-3 px-4">Motif &amp; Opération</th>
-                      <th className="py-3 px-4">Auteur / Responsable</th>
+                      <th className="py-3 px-4">{isEn ? 'Date & Time' : 'Date & Heure'}</th>
+                      <th className="py-3 px-4 text-center">{isEn ? 'Type' : 'Type'}</th>
+                      <th className="py-3 px-4 text-center">{isEn ? 'Quantity' : 'Quantité'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Reason & Operation' : 'Motif & Opération'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Author / Assignee' : 'Auteur / Responsable'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -603,7 +604,7 @@ export const StockView: React.FC<StockViewProps> = ({
                                 : 'bg-blue-100 text-blue-800'
                             }`}
                           >
-                            {mv.type === 'INFLOW' ? 'Entrée (+)' : mv.type === 'OUTFLOW' ? 'Sortie (-)' : 'Ajustement'}
+                            {mv.type === 'INFLOW' ? (isEn ? 'Inflow (+)' : 'Entrée (+)') : mv.type === 'OUTFLOW' ? (isEn ? 'Outflow (-)' : 'Sortie (-)') : (isEn ? 'Adjustment' : 'Ajustement')}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-center font-black text-slate-900">
@@ -613,7 +614,7 @@ export const StockView: React.FC<StockViewProps> = ({
                           {selectedItemDetail.unit}
                         </td>
                         <td className="py-3 px-4 text-slate-800 font-medium">{mv.reason}</td>
-                        <td className="py-3 px-4 text-slate-500">{(mv as any).performedByName || (mv as any).createdByName || 'Système'}</td>
+                        <td className="py-3 px-4 text-slate-500">{(mv as any).performedByName || (mv as any).createdByName || (isEn ? 'System' : 'Système')}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -627,12 +628,12 @@ export const StockView: React.FC<StockViewProps> = ({
         {/* TAB 4: MAINTENANCE LINK */}
         {itemDetailTab === 'MAINTENANCE' && (
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-            <h3 className="text-base font-black text-slate-900">Dossiers d'Intervention Atelier Liés ({mnts.length})</h3>
-            <p className="text-xs text-slate-500">Véhicules du parc ayant consommé cette pièce lors d'une révision</p>
+            <h3 className="text-base font-black text-slate-900">{isEn ? 'Linked Workshop Work Orders' : "Dossiers d'Intervention Atelier Liés"} ({mnts.length})</h3>
+            <p className="text-xs text-slate-500">{isEn ? 'Fleet vehicles that consumed this spare part during servicing' : "Véhicules du parc ayant consommé cette pièce lors d'une révision"}</p>
 
             {mnts.length === 0 ? (
               <div className="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 text-slate-500 text-xs font-semibold">
-                Cette pièce n’a pas encore été consommée dans une intervention atelier enregistrée.
+                {isEn ? 'This part has not been used in any recorded workshop repair yet.' : 'Cette pièce n’a pas encore été consommée dans une intervention atelier enregistrée.'}
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-3">
@@ -651,7 +652,7 @@ export const StockView: React.FC<StockViewProps> = ({
 
                       <div className="text-right">
                         <div className="font-black text-slate-900 text-sm">
-                          Consommé : {partLine?.quantity || 1} {selectedItemDetail.unit}
+                          {isEn ? 'Consumed:' : 'Consommé :'} {partLine?.quantity || 1} {selectedItemDetail.unit}
                         </div>
                         {onNavigate && (
                           <button
@@ -662,7 +663,7 @@ export const StockView: React.FC<StockViewProps> = ({
                             }}
                             className="text-xs text-blue-700 hover:text-blue-900 font-bold inline-flex items-center gap-1 mt-1 cursor-pointer"
                           >
-                            <span>Consulter l'ordre de réparation</span>
+                            <span>{isEn ? 'View Repair Order' : "Consulter l'ordre de réparation"}</span>
                             <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                         )}
@@ -678,23 +679,23 @@ export const StockView: React.FC<StockViewProps> = ({
         {/* TAB 5: SUPPLIER */}
         {itemDetailTab === 'SUPPLIER' && (
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-            <h3 className="text-base font-black text-slate-900">Partenaire Fournisseur Référencé</h3>
+            <h3 className="text-base font-black text-slate-900">{isEn ? 'Referenced Supplier Partner' : 'Partenaire Fournisseur Référencé'}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Raison sociale</div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Company Name' : 'Raison sociale'}</div>
                 <div className="font-bold text-sm text-slate-900">{selectedItemDetail.supplier}</div>
               </div>
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Bassin d'approvisionnement</div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Supply Hub' : "Bassin d'approvisionnement"}</div>
                 <div className="font-bold text-sm text-slate-900">Zone Industrielle Bassa / Bonanjo, Douala</div>
               </div>
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Délai moyen d'approvisionnement</div>
-                <div className="font-bold text-sm text-slate-900">24h à 48h ouvrées</div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Average Lead Time' : "Délai moyen d'approvisionnement"}</div>
+                <div className="font-bold text-sm text-slate-900">{isEn ? '24h to 48h working days' : '24h à 48h ouvrées'}</div>
               </div>
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="text-[10px] text-slate-400 font-bold uppercase">Garantie pièce</div>
-                <div className="font-bold text-sm text-emerald-700">Pièce d'origine certifiée conforme constructeur</div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase">{isEn ? 'Part Warranty' : 'Garantie pièce'}</div>
+                <div className="font-bold text-sm text-emerald-700">{isEn ? 'OEM certified original manufacturer compliant' : "Pièce d'origine certifiée conforme constructeur"}</div>
               </div>
             </div>
           </div>
@@ -705,7 +706,7 @@ export const StockView: React.FC<StockViewProps> = ({
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
             <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
               <div className="flex items-center justify-between border-b pb-3">
-                <h3 className="text-base font-bold text-slate-900">Rattacher un Document à la Pièce</h3>
+                <h3 className="text-base font-bold text-slate-900">{isEn ? 'Attach Document to Spare Part' : 'Rattacher un Document à la Pièce'}</h3>
                 <button
                   onClick={() => setIsAddDocModalOpen(false)}
                   className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
@@ -716,11 +717,11 @@ export const StockView: React.FC<StockViewProps> = ({
 
               <form onSubmit={handleAddDocumentToStock} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Titre du document *</label>
+                  <label className="block text-slate-600 font-bold mb-1">{isEn ? 'Document title *' : 'Titre du document *'}</label>
                   <input
                     type="text"
                     required
-                    placeholder="Ex: Fiche technique fabricant, Facture d'achat, Certificat d'origine..."
+                    placeholder={isEn ? 'Ex: Manufacturer datasheet, Supplier invoice, Certificate of origin...' : "Ex: Fiche technique fabricant, Facture d'achat, Certificat d'origine..."}
                     value={docForm.title}
                     onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg outline-hidden focus:border-blue-900"
@@ -729,17 +730,17 @@ export const StockView: React.FC<StockViewProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-600 font-bold mb-1">Catégorie</label>
+                    <label className="block text-slate-600 font-bold mb-1">{isEn ? 'Category' : 'Catégorie'}</label>
                     <select
                       value={docForm.category}
                       onChange={(e) => setDocForm({ ...docForm, category: e.target.value })}
                       className="w-full px-3 py-2 border rounded-lg bg-white"
                     >
-                      <option value="FICHE_TECHNIQUE">Fiche Technique</option>
-                      <option value="FACTURE_ACHAT">Facture Fournisseur</option>
-                      <option value="BON_LIVRAISON">Bon de Livraison</option>
-                      <option value="CERTIFICAT_ORIGINE">Certificat d'Origine</option>
-                      <option value="AUTRE">Autre Document</option>
+                      <option value="FICHE_TECHNIQUE">{isEn ? 'Technical Datasheet' : 'Fiche Technique'}</option>
+                      <option value="FACTURE_ACHAT">{isEn ? 'Supplier Invoice' : 'Facture Fournisseur'}</option>
+                      <option value="BON_LIVRAISON">{isEn ? 'Delivery Note' : 'Bon de Livraison'}</option>
+                      <option value="CERTIFICAT_ORIGINE">{isEn ? 'Certificate of Origin' : "Certificat d'Origine"}</option>
+                      <option value="AUTRE">{isEn ? 'Other Document' : 'Autre Document'}</option>
                     </select>
                   </div>
                 </div>
@@ -747,8 +748,8 @@ export const StockView: React.FC<StockViewProps> = ({
                 <div className="pt-2">
                   <CloudinaryUploadDropzone
                     folder="fct_automobile/stock"
-                    label="Fiche technique / Facture (Téléversement Cloudinary FCT) :"
-                    helperText="Glissez ou sélectionnez la fiche technique ou facture fournisseur (PDF, PNG, JPG)"
+                    label={isEn ? 'Technical datasheet / Invoice (Cloudinary FCT):' : 'Fiche technique / Facture (Téléversement Cloudinary FCT) :'}
+                    helperText={isEn ? 'Drag & drop or select datasheet or supplier invoice (PDF, PNG, JPG)' : 'Glissez ou sélectionnez la fiche technique ou facture fournisseur (PDF, PNG, JPG)'}
                     currentValue={docForm.fileUrl}
                     onUploadSuccess={(url) => setDocForm({ ...docForm, fileUrl: url })}
                     onClear={() => setDocForm({ ...docForm, fileUrl: '' })}
@@ -756,12 +757,12 @@ export const StockView: React.FC<StockViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1">Observations / Notes</label>
+                  <label className="block text-slate-600 font-bold mb-1">{isEn ? 'Notes / Observations' : 'Observations / Notes'}</label>
                   <textarea
                     rows={2}
                     value={docForm.notes}
                     onChange={(e) => setDocForm({ ...docForm, notes: e.target.value })}
-                    placeholder="Référence commande d'approvisionnement..."
+                    placeholder={isEn ? 'Procurement order reference...' : "Référence commande d'approvisionnement..."}
                     className="w-full px-3 py-2 border rounded-lg outline-hidden"
                   />
                 </div>
@@ -772,13 +773,13 @@ export const StockView: React.FC<StockViewProps> = ({
                     onClick={() => setIsAddDocModalOpen(false)}
                     className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer font-semibold"
                   >
-                    Annuler
+                    {isEn ? 'Cancel' : 'Annuler'}
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 rounded-lg bg-blue-900 text-white font-bold hover:bg-blue-800 cursor-pointer"
                   >
-                    Rattacher Document
+                    {isEn ? 'Attach Document' : 'Rattacher Document'}
                   </button>
                 </div>
               </form>
@@ -981,7 +982,7 @@ export const StockView: React.FC<StockViewProps> = ({
                               setDeleteConfirmItem(item);
                             }}
                             className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 transition"
-                            title="Supprimer la référence"
+                            title={isEn ? 'Delete reference' : 'Supprimer la référence'}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -998,15 +999,15 @@ export const StockView: React.FC<StockViewProps> = ({
                 <table className="w-full text-xs text-left">
                   <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                     <tr>
-                      <th className="py-3 px-4">Référence</th>
-                      <th className="py-3 px-4">Désignation</th>
-                      <th className="py-3 px-4">Catégorie</th>
-                      <th className="py-3 px-4 text-center">Stock Actuel</th>
-                      <th className="py-3 px-4 text-center">Seuil Min</th>
-                      <th className="py-3 px-4 text-right">Coût Unitaire (XAF)</th>
-                      <th className="py-3 px-4 text-right">Valeur Totale (XAF)</th>
-                      <th className="py-3 px-4">Emplacement</th>
-                      <th className="py-3 px-4 text-center">Statut</th>
+                      <th className="py-3 px-4">{isEn ? 'Reference' : 'Référence'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Description' : 'Désignation'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Category' : 'Catégorie'}</th>
+                      <th className="py-3 px-4 text-center">{isEn ? 'Current Stock' : 'Stock Actuel'}</th>
+                      <th className="py-3 px-4 text-center">{isEn ? 'Min Threshold' : 'Seuil Min'}</th>
+                      <th className="py-3 px-4 text-right">{isEn ? 'Unit Cost (XAF)' : 'Coût Unitaire (XAF)'}</th>
+                      <th className="py-3 px-4 text-right">{isEn ? 'Total Value (XAF)' : 'Valeur Totale (XAF)'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Location' : 'Emplacement'}</th>
+                      <th className="py-3 px-4 text-center">{isEn ? 'Status' : 'Statut'}</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -1024,7 +1025,7 @@ export const StockView: React.FC<StockViewProps> = ({
                           <td className="py-3 px-4 font-mono font-bold text-blue-900">{item.code}</td>
                           <td className="py-3 px-4">
                             <div className="font-bold text-slate-900">{item.name}</div>
-                            <div className="text-[10px] text-slate-500">Fournisseur: {item.supplier}</div>
+                            <div className="text-[10px] text-slate-500">{isEn ? 'Supplier:' : 'Fournisseur:'} {item.supplier}</div>
                           </td>
                           <td className="py-3 px-4">
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
@@ -1048,7 +1049,7 @@ export const StockView: React.FC<StockViewProps> = ({
                             <EntityStatusBadge
                               status={isOutOfStock ? 'OUT_OF_STOCK' : isCritical ? 'LOW_STOCK' : 'AVAILABLE'}
                               label={
-                                isOutOfStock ? 'Rupture' : isCritical ? 'Alerte' : 'Normal'
+                                isOutOfStock ? (isEn ? 'Out of Stock' : 'Rupture') : isCritical ? (isEn ? 'Alert' : 'Alerte') : (isEn ? 'Normal' : 'Normal')
                               }
                               size="sm"
                             />
@@ -1064,14 +1065,14 @@ export const StockView: React.FC<StockViewProps> = ({
                                     setSelectedAdjustItem(item.id);
                                     setIsAdjustModalOpen(true);
                                   }}
-                                  title="Ajuster quantité"
+                                  title={isEn ? 'Adjust quantity' : 'Ajuster quantité'}
                                   className="p-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer inline-flex"
                                 >
                                   <ArrowUpDown className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => handleOpenEdit(item)}
-                                  title="Modifier"
+                                  title={isEn ? 'Edit' : 'Modifier'}
                                   className="p-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer inline-flex"
                                 >
                                   <Pencil className="w-3.5 h-3.5" />
@@ -1108,19 +1109,19 @@ export const StockView: React.FC<StockViewProps> = ({
             <table className="w-full text-xs text-left">
               <thead className="bg-[#0f2a4a] text-white uppercase text-[10px]">
                 <tr>
-                  <th className="py-3 px-4">Date &amp; Heure</th>
-                  <th className="py-3 px-4">Article</th>
-                  <th className="py-3 px-4 text-center">Type</th>
-                  <th className="py-3 px-4 text-center">Quantité</th>
-                  <th className="py-3 px-4">Motif &amp; Justificatif</th>
-                  <th className="py-3 px-4">Auteur</th>
+                  <th className="py-3 px-4">{isEn ? 'Date & Time' : 'Date & Heure'}</th>
+                  <th className="py-3 px-4">{isEn ? 'Item' : 'Article'}</th>
+                  <th className="py-3 px-4 text-center">{isEn ? 'Type' : 'Type'}</th>
+                  <th className="py-3 px-4 text-center">{isEn ? 'Quantity' : 'Quantité'}</th>
+                  <th className="py-3 px-4">{isEn ? 'Reason & Supporting Doc' : 'Motif & Justificatif'}</th>
+                  <th className="py-3 px-4">{isEn ? 'Author' : 'Auteur'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {state.stockMovements.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-8 text-center text-slate-400 font-semibold">
-                      Aucun mouvement de stock enregistré.
+                      {isEn ? 'No stock movement recorded.' : 'Aucun mouvement de stock enregistré.'}
                     </td>
                   </tr>
                 ) : (
@@ -1191,20 +1192,20 @@ export const StockView: React.FC<StockViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Sens du Mouvement *</label>
+                <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Movement Direction *' : 'Sens du Mouvement *'}</label>
                 <select
                   value={adjustType}
                   onChange={(e) => setAdjustType(e.target.value as any)}
                   className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
                 >
-                  <option value="INFLOW">Entrée en stock (+ Réapprovisionnement)</option>
-                  <option value="OUTFLOW">Sortie de stock (- Consommation / Perte)</option>
-                  <option value="ADJUSTMENT">Ajustement inventaire physique</option>
+                  <option value="INFLOW">{isEn ? 'Stock Inflow (+ Restocking)' : 'Entrée en stock (+ Réapprovisionnement)'}</option>
+                  <option value="OUTFLOW">{isEn ? 'Stock Outflow (- Consumption / Loss)' : 'Sortie de stock (- Consommation / Perte)'}</option>
+                  <option value="ADJUSTMENT">{isEn ? 'Physical Inventory Adjustment' : 'Ajustement inventaire physique'}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Quantité *</label>
+                <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Quantity *' : 'Quantité *'}</label>
                 <input
                   type="number"
                   min={1}
@@ -1216,12 +1217,12 @@ export const StockView: React.FC<StockViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Motif / Réf. Bon de livraison *</label>
+                <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Reason / Delivery Note Ref *' : 'Motif / Réf. Bon de livraison *'}</label>
                 <input
                   type="text"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="Ex: Facture BL-994 CFAO Motors"
+                  placeholder={isEn ? 'E.g.: Invoice DN-994 CFAO Motors' : 'Ex: Facture BL-994 CFAO Motors'}
                   className="w-full p-2.5 rounded-lg border border-slate-200 font-medium"
                   required
                 />
@@ -1233,13 +1234,13 @@ export const StockView: React.FC<StockViewProps> = ({
                   onClick={() => setIsAdjustModalOpen(false)}
                   className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {isEn ? 'Cancel' : 'Annuler'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Enregistrer Mouvement
+                  {isEn ? 'Save Movement' : 'Enregistrer Mouvement'}
                 </button>
               </div>
             </form>
@@ -1253,13 +1254,13 @@ export const StockView: React.FC<StockViewProps> = ({
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <Plus className="w-5 h-5 text-emerald-600" />
-              <span>Créer une Référence Pièce</span>
+              <span>{isEn ? 'Create Spare Part Reference' : 'Créer une Référence Pièce'}</span>
             </h3>
 
             <form onSubmit={handleCreateItem} className="space-y-3 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Code Référence *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Reference Code *' : 'Code Référence *'}</label>
                   <input
                     type="text"
                     value={newItemForm.code}
@@ -1270,30 +1271,30 @@ export const StockView: React.FC<StockViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Catégorie *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Category *' : 'Catégorie *'}</label>
                   <select
                     value={newItemForm.category}
                     onChange={(e) => setNewItemForm({ ...newItemForm, category: e.target.value as any })}
                     className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
                   >
-                    <option value="LUBRIFIANT">Lubrifiant</option>
-                    <option value="FREINAGE">Freinage</option>
-                    <option value="FILTRATION">Filtration</option>
-                    <option value="SUSPENSION">Suspension</option>
-                    <option value="PNEUMATIQUE">Pneumatique</option>
-                    <option value="BATTERIE">Batterie</option>
-                    <option value="AUTRE">Autre</option>
+                    <option value="LUBRIFIANT">{isEn ? 'Lubricant' : 'Lubrifiant'}</option>
+                    <option value="FREINAGE">{isEn ? 'Braking' : 'Freinage'}</option>
+                    <option value="FILTRATION">{isEn ? 'Filtration' : 'Filtration'}</option>
+                    <option value="SUSPENSION">{isEn ? 'Suspension' : 'Suspension'}</option>
+                    <option value="PNEUMATIQUE">{isEn ? 'Tires' : 'Pneumatique'}</option>
+                    <option value="BATTERIE">{isEn ? 'Battery' : 'Batterie'}</option>
+                    <option value="AUTRE">{isEn ? 'Other' : 'Autre'}</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Désignation complète *</label>
+                <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Full Description *' : 'Désignation complète *'}</label>
                 <input
                   type="text"
                   value={newItemForm.name}
                   onChange={(e) => setNewItemForm({ ...newItemForm, name: e.target.value })}
-                  placeholder="Ex: Filtre à Huile Original Toyota Land Cruiser"
+                  placeholder={isEn ? 'E.g.: Genuine Oil Filter Toyota Land Cruiser' : 'Ex: Filtre à Huile Original Toyota Land Cruiser'}
                   className="w-full p-2.5 rounded-lg border border-slate-200 font-bold"
                   required
                 />
@@ -1301,7 +1302,7 @@ export const StockView: React.FC<StockViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Stock Initial</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Initial Stock' : 'Stock Initial'}</label>
                   <input
                     type="number"
                     value={newItemForm.quantityInStock}
@@ -1310,7 +1311,7 @@ export const StockView: React.FC<StockViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Seuil Min. Alerte</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Min Alert Threshold' : 'Seuil Min. Alerte'}</label>
                   <input
                     type="number"
                     value={newItemForm.minThresholdAlert}
@@ -1319,7 +1320,7 @@ export const StockView: React.FC<StockViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Unité</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Unit' : 'Unité'}</label>
                   <input
                     type="text"
                     value={newItemForm.unit}
@@ -1331,7 +1332,7 @@ export const StockView: React.FC<StockViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Coût Unitaire (XAF) *</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Unit Cost (XAF) *' : 'Coût Unitaire (XAF) *'}</label>
                   <input
                     type="number"
                     value={newItemForm.unitCostXAF}
@@ -1341,7 +1342,7 @@ export const StockView: React.FC<StockViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Emplacement Rayon</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Shelf Location' : 'Emplacement Rayon'}</label>
                   <input
                     type="text"
                     value={newItemForm.locationBin}
@@ -1353,7 +1354,7 @@ export const StockView: React.FC<StockViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Fournisseur</label>
+                <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Supplier' : 'Fournisseur'}</label>
                 <input
                   type="text"
                   value={newItemForm.supplier}
@@ -1368,13 +1369,13 @@ export const StockView: React.FC<StockViewProps> = ({
                   onClick={() => setIsAddModalOpen(false)}
                   className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {isEn ? 'Cancel' : 'Annuler'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Créer la Pièce
+                  {isEn ? 'Create Part' : 'Créer la Pièce'}
                 </button>
               </div>
             </form>
@@ -1388,12 +1389,12 @@ export const StockView: React.FC<StockViewProps> = ({
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 text-slate-800 space-y-4 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
               <Pencil className="w-5 h-5 text-blue-900" />
-              <span>Modifier la Pièce {editingItem.code}</span>
+              <span>{isEn ? `Edit Part ${editingItem.code}` : `Modifier la Pièce ${editingItem.code}`}</span>
             </h3>
 
             <form onSubmit={handleSaveEditItem} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Désignation *</label>
+                <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Description *' : 'Désignation *'}</label>
                 <input
                   type="text"
                   value={editItemForm.name}
@@ -1405,7 +1406,7 @@ export const StockView: React.FC<StockViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Seuil Min. Alerte</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Min Alert Threshold' : 'Seuil Min. Alerte'}</label>
                   <input
                     type="number"
                     value={editItemForm.minThresholdAlert}
@@ -1414,7 +1415,7 @@ export const StockView: React.FC<StockViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Coût Unitaire (XAF)</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Unit Cost (XAF)' : 'Coût Unitaire (XAF)'}</label>
                   <input
                     type="number"
                     value={editItemForm.unitCostXAF}
@@ -1426,7 +1427,7 @@ export const StockView: React.FC<StockViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Emplacement</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Location' : 'Emplacement'}</label>
                   <input
                     type="text"
                     value={editItemForm.locationBin}
@@ -1435,7 +1436,7 @@ export const StockView: React.FC<StockViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Fournisseur</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isEn ? 'Supplier' : 'Fournisseur'}</label>
                   <input
                     type="text"
                     value={editItemForm.supplier}
@@ -1451,13 +1452,13 @@ export const StockView: React.FC<StockViewProps> = ({
                   onClick={() => setIsEditModalOpen(false)}
                   className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
-                  Annuler
+                  {isEn ? 'Cancel' : 'Annuler'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold cursor-pointer shadow-xs"
                 >
-                  Enregistrer Modifications
+                  {isEn ? 'Save Changes' : 'Enregistrer Modifications'}
                 </button>
               </div>
             </form>
@@ -1469,7 +1470,7 @@ export const StockView: React.FC<StockViewProps> = ({
       {deleteConfirmItem && (
         <DeleteConfirmModal
           isOpen={Boolean(deleteConfirmItem)}
-          title="Supprimer la Référence Stock"
+          title={isEn ? 'Delete Stock Reference' : 'Supprimer la Référence Stock'}
           itemName={`Article ${deleteConfirmItem.name} (${deleteConfirmItem.code})`}
           itemDetails={`Stock actuel : ${deleteConfirmItem.quantityInStock} ${deleteConfirmItem.unit} d'une valeur de ${formatXAF(deleteConfirmItem.quantityInStock * deleteConfirmItem.unitCostXAF)}.`}
           warningMessage="La suppression d'un article en stock est irréversible et sera consignée dans le journal d'audit de sécurité."
