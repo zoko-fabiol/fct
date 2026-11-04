@@ -22,6 +22,7 @@ import {
   Globe,
 } from 'lucide-react';
 import { FCT_LOGO_BASE64 } from '../utils/logoBase64.ts';
+import { NotificationBell } from './NotificationBell.tsx';
 
 interface NavbarProps {
   state: DatabaseState;
@@ -34,6 +35,7 @@ interface NavbarProps {
   onToggleMobileSidebar?: () => void;
   isPrivacyMode?: boolean;
   onTogglePrivacyMode?: () => void;
+  onOpenModule?: (moduleId: string) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -47,6 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleMobileSidebar,
   isPrivacyMode = false,
   onTogglePrivacyMode,
+  onOpenModule,
 }) => {
   const t = translations[lang];
   const pendingSyncCount = state.syncQueue.filter((q) => q.status === 'PENDING').length;
@@ -267,6 +270,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               {currentUser.fullName}
             </span>
           </button>
+
+          {/* Cloche de notifications temps réel */}
+          <NotificationBell userId={currentUser.id} lang={lang} onOpenModule={onOpenModule} />
 
           {/* Bouton Verrouiller l'écran */}
           {onLockNow && (

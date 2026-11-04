@@ -331,6 +331,26 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // 19. Notifications in-app (créées par Cloud Functions ou le personnel)
+    match /notifications/{notifId} {
+      allow read: if isSignedIn() && (
+        resource.data.get('recipientUid', null) == request.auth.uid ||
+        (isStaff() && resource.data.get('recipientRole', null) == getUserRole())
+      );
+      // Le destinataire ne peut modifier que l'état de lecture
+      allow update: if isSignedIn()
+        && resource.data.get('recipientUid', null) == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt']);
+      allow create: if isStaff();
+      allow delete: if isSuperAdmin();
+    }
+
+    // 20. Jetons FCM des appareils (un document par utilisateur + appareil)
+    match /user_fcm_tokens/{tokenId} {
+      allow create, update: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
     // 18. Corbeille Sécurisée FCT (Garantie de Restauration 30 Jours)
     match /trash_bin/{trashId} {
       allow read: if isDirector();

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * FCT ERP & CRM AUTOMOBILE - Cloud Functions Backend
  * Franchise Conseils Trading - Douala, Cameroun
@@ -100,7 +100,7 @@ export const reconcileAndCloseCashSession = functions.https.onCall(async (data, 
       countedClosingBalanceXAF,
       calculatedExpectedBalanceXAF: calculatedExpected,
       discrepancyXAF: discrepancy,
-      closedById: context.auth.uid,
+      closedById: context.auth!.uid,
       closedAt: admin.firestore.FieldValue.serverTimestamp(),
       closingNotes: closingNotes || '',
     });
@@ -187,7 +187,7 @@ export const validateAndCompleteMaintenance = functions.https.onCall(async (data
           reason: `Consommation maintenance ${mnt.recordNumber} - ${mnt.vehicleName}`,
           relatedMaintenanceId: mnt.id,
           relatedVehicleId: mnt.vehicleId,
-          performedById: context.auth.uid,
+          performedById: context.auth!.uid,
           performedByName: callerDoc.data()?.fullName || 'Gestionnaire Flotte',
           timestamp: new Date().toISOString(),
         });
@@ -214,7 +214,7 @@ export const validateAndCompleteMaintenance = functions.https.onCall(async (data
     transaction.update(mntRef, {
       status: 'COMPLETED',
       completedAt: new Date().toISOString(),
-      completedById: context.auth.uid,
+      completedById: context.auth!.uid,
       completedByName: callerDoc.data()?.fullName || 'Gestionnaire Flotte',
       actualMileageAtCompletion: actualMileage || mnt.mileageAtService,
     });
@@ -396,3 +396,180 @@ export const updateRolePermissionsServer = functions.https.onCall(async (data, c
   return { success: true, message: `Permissions du rôle ${role} mises à jour avec succès.` };
 });
 
+
+/* ------------------------------------------------------------------ *
+ * 8. Notifications : in-app (collection `notifications`) + push FCM
+ * ------------------------------------------------------------------ */
+
+interface NotifPayload {
+  title: string;
+  body: string;
+  type: string;
+  linkUrl?: string;
+  relatedEntityId?: string;
+}
+
+/**
+ * Crée une notification in-app par destinataire puis envoie le push FCM
+ * aux appareils enregistrés. Les tokens invalides sont purgés.
+ */
+async function notifyRoles(roles: string[], payload: NotifPayload): Promise<number> {
+  const usersSnap = await db.collection('users').where('role', 'in', roles).get();
+  const recipients = usersSnap.docs.filter((d) => d.data()?.isActive !== false).map((d) => d.id);
+  if (recipients.length === 0) return 0;
+
+  const batch = db.batch();
+  for (const uid of recipients) {
+    batch.set(db.collection('notifications').doc(), {
+      recipientUid: uid,
+      title: payload.title,
+      body: payload.body,
+      type: payload.type,
+      linkUrl: payload.linkUrl || '',
+      relatedEntityId: payload.relatedEntityId || '',
+      isRead: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+  await batch.commit();
+
+  // Firestore `in` est limité à 30 valeurs : découpage par paquets
+  const tokenDocs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+  for (let i = 0; i < recipients.length; i += 30) {
+    const snap = await db.collection('user_fcm_tokens').where('userId', 'in', recipients.slice(i, i + 30)).get();
+    tokenDocs.push(...snap.docs);
+  }
+  const tokens = tokenDocs.map((d) => d.data().token as string).filter(Boolean);
+  if (tokens.length === 0) return recipients.length;
+
+  for (let i = 0; i < tokens.length; i += 500) {
+    const chunk = tokens.slice(i, i + 500);
+    try {
+      const res = await admin.messaging().sendEachForMulticast({
+        tokens: chunk,
+        notification: { title: payload.title, body: payload.body },
+        data: { type: payload.type, linkUrl: payload.linkUrl || '', relatedEntityId: payload.relatedEntityId || '' },
+        android: { priority: 'high', notification: { channelId: 'fct_vip_alerts' } },
+      });
+      const stale: Promise<unknown>[] = [];
+      res.responses.forEach((r, idx) => {
+        const code = r.error?.code;
+        if (code === 'messaging/registration-token-not-registered' || code === 'messaging/invalid-registration-token') {
+          const doc = tokenDocs.find((d) => d.data().token === chunk[idx]);
+          if (doc) stale.push(doc.ref.delete());
+        }
+      });
+      await Promise.all(stale);
+    } catch (err) {
+      functions.logger.error('[FCT Notifications] Échec envoi FCM', err);
+    }
+  }
+  return recipients.length;
+}
+
+export const onWebBookingCreated = functions.firestore
+  .document('web_bookings/{bookingId}')
+  .onCreate(async (snap, ctx) => {
+    const b = snap.data();
+    await notifyRoles(['rental_agent', 'director'], {
+      title: 'Nouvelle réservation web',
+      body: `${b.customerName || 'Client'} — ${b.vehicleName || 'véhicule'} (${b.startDate} → ${b.endDate})`,
+      type: 'NEW_WEB_BOOKING',
+      linkUrl: 'rentals',
+      relatedEntityId: ctx.params.bookingId,
+    });
+  });
+
+export const onWebLeadCreated = functions.firestore
+  .document('web_leads/{leadId}')
+  .onCreate(async (snap, ctx) => {
+    const l = snap.data();
+    await notifyRoles(['sales_agent', 'rental_agent', 'director'], {
+      title: 'Nouveau lead depuis le site',
+      body: `${l.fullName || 'Prospect'} — ${l.vehicleName || ''} (${l.interestType || 'CONTACT'})`,
+      type: 'NEW_WEB_LEAD',
+      linkUrl: 'crm',
+      relatedEntityId: ctx.params.leadId,
+    });
+  });
+
+export const onCashSessionClosed = functions.firestore
+  .document('cash_sessions/{sessionId}')
+  .onUpdate(async (change, ctx) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    if (before.status === 'CLOSED' || after.status !== 'CLOSED') return;
+    const gap = Number(after.discrepancyXAF || 0);
+    if (gap === 0) return;
+    await notifyRoles(['director', 'super_admin'], {
+      title: 'Écart de caisse détecté',
+      body: `Clôture avec un écart de ${gap.toLocaleString('fr-FR')} FCFA.`,
+      type: 'CASH_DISCREPANCY',
+      linkUrl: 'cash',
+      relatedEntityId: ctx.params.sessionId,
+    });
+  });
+
+/** Échéances quotidiennes à 07h30 (Douala) : retours de location du jour et retards. */
+export const dailyRentalDueAlerts = functions.pubsub
+  .schedule('30 7 * * *')
+  .timeZone('Africa/Douala')
+  .onRun(async () => {
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Douala' });
+    const snap = await db.collection('rental_contracts').where('status', 'in', ['ACTIVE', 'OVERDUE']).get();
+    const due = snap.docs.filter((d) => d.data().endDate === today);
+    const late = snap.docs.filter((d) => typeof d.data().endDate === 'string' && d.data().endDate < today);
+
+    if (due.length > 0) {
+      await notifyRoles(['rental_agent', 'director'], {
+        title: 'Retours de location aujourd’hui',
+        body: `${due.length} contrat(s) arrivent à échéance aujourd’hui.`,
+        type: 'RENTAL_DUE_TODAY',
+        linkUrl: 'rentals',
+      });
+    }
+    if (late.length > 0) {
+      await notifyRoles(['rental_agent', 'director'], {
+        title: 'Locations en retard',
+        body: `${late.length} contrat(s) dépassent leur date de restitution.`,
+        type: 'RENTAL_OVERDUE',
+        linkUrl: 'rentals',
+      });
+    }
+    return null;
+  });
+
+/** Alertes quotidiennes : assurances et visites techniques expirant sous 7 jours. */
+export const dailyVehicleExpiryAlerts = functions.pubsub
+  .schedule('35 7 * * *')
+  .timeZone('Africa/Douala')
+  .onRun(async () => {
+    const now = Date.now();
+    const horizon = now + 7 * 24 * 60 * 60 * 1000;
+    const vehicles = await db.collection('vehicles').get();
+    const within = (v: unknown): boolean => {
+      if (typeof v !== 'string' || !v) return false;
+      const t = Date.parse(v);
+      return !isNaN(t) && t <= horizon;
+    };
+    const insurance = vehicles.docs.filter((d) => within(d.data().insuranceExpiryDate));
+    const inspection = vehicles.docs.filter((d) => within(d.data().nextTechnicalInspectionDate));
+
+    if (insurance.length > 0) {
+      await notifyRoles(['fleet_manager', 'director'], {
+        title: 'Assurances à échéance',
+        body: `${insurance.length} véhicule(s) : assurance expirée ou expirant sous 7 jours.`,
+        type: 'INSURANCE_EXPIRY',
+        linkUrl: 'vehicles',
+      });
+    }
+    if (inspection.length > 0) {
+      await notifyRoles(['fleet_manager', 'director'], {
+        title: 'Visites techniques à échéance',
+        body: `${inspection.length} véhicule(s) : visite technique échue ou sous 7 jours.`,
+        type: 'INSPECTION_EXPIRY',
+        linkUrl: 'vehicles',
+      });
+    }
+    return null;
+  });

@@ -11,6 +11,9 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { PushNotifications, Token, ActionPerformed } from '@capacitor/push-notifications';
 import { isNativeMobile } from './mobileFileService.ts';
+import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
+import { app } from './firebase.ts';
+import { saveDeviceToken, removeDeviceToken } from './notificationCenterService.ts';
 
 export interface NotificationPayload {
   id?: number;
@@ -25,6 +28,9 @@ export interface NotificationPayload {
 class FctNotificationEngine {
   private isInitialized = false;
   private pushToken: string | null = null;
+  private pushListenersAttached = false;
+  private session: { uid: string; role: string } | null = null;
+  private foregroundUnsub: (() => void) | null = null;
 
   /**
    * Initialise les canaux de notification Android (Heads-up haute priorité)
@@ -77,14 +83,20 @@ class FctNotificationEngine {
         try {
           const pushPerm = await PushNotifications.requestPermissions();
           if (pushPerm.receive === 'granted') {
+            if (!this.pushListenersAttached) {
+              this.pushListenersAttached = true;
+              PushNotifications.addListener('registration', (token: Token) => {
+                this.pushToken = token.value;
+                void this.persistToken();
+              });
+              PushNotifications.addListener('registrationError', (err) => {
+                console.error('[FCT Push FCM] Erreur d\'enregistrement :', err);
+              });
+              PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
+                console.log('[FCT Push FCM] Action sur notification distante :', action);
+              });
+            }
             await PushNotifications.register();
-            PushNotifications.addListener('registration', (token: Token) => {
-              this.pushToken = token.value;
-              console.log('[FCT Push FCM] Token appareil enregistré :', token.value);
-            });
-            PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
-              console.log('[FCT Push FCM] Action sur notification distante :', action);
-            });
           }
         } catch (pushErr) {
           console.warn('[FCT Push] Push distant facultatif :', pushErr);
@@ -183,6 +195,73 @@ class FctNotificationEngine {
       scheduleDate: reminderDate,
       data: { type: 'RENTAL_RETURN', contractNumber },
     });
+  }
+
+  private async persistToken(): Promise<void> {
+    if (!this.pushToken || !this.session) return;
+    try {
+      await saveDeviceToken(this.session.uid, this.session.role, this.pushToken, this.platform());
+    } catch (err) {
+      console.error('[FCT Push FCM] Impossible de sauvegarder le token appareil :', err);
+    }
+  }
+
+  private platform(): 'android' | 'web' {
+    return isNativeMobile() ? 'android' : 'web';
+  }
+
+  /**
+   * Associe l'appareil à l'utilisateur connecté et enregistre son token FCM dans Firestore.
+   * Sur le web, nécessite VITE_FIREBASE_VAPID_KEY ; sinon seules les notifications in-app sont actives.
+   */
+  public async registerForUser(uid: string, role: string): Promise<void> {
+    this.session = { uid, role };
+    try {
+      if (isNativeMobile()) {
+        if (this.pushToken) await this.persistToken();
+        else await this.requestPermissions();
+        return;
+      }
+
+      const vapidKey = (import.meta as any).env?.VITE_FIREBASE_VAPID_KEY as string | undefined;
+      if (!vapidKey || typeof window === 'undefined' || !('serviceWorker' in navigator) || !('Notification' in window)) {
+        return;
+      }
+      if (!(await isSupported()) || Notification.permission === 'denied') return;
+      if (Notification.permission !== 'granted') {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') return;
+      }
+
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      const messaging = getMessaging(app);
+      const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
+      if (token) {
+        this.pushToken = token;
+        await this.persistToken();
+      }
+      if (!this.foregroundUnsub) {
+        this.foregroundUnsub = onMessage(messaging, (msg) => {
+          void this.dispatch({
+            title: msg.notification?.title || 'FCT Automobile',
+            body: msg.notification?.body || '',
+            data: msg.data,
+          });
+        });
+      }
+    } catch (err) {
+      console.error('[FCT Push] Enregistrement de l\'appareil impossible :', err);
+    }
+  }
+
+  /** À appeler à la déconnexion : retire le token de l'appareil pour l'utilisateur sortant. */
+  public async unregisterUser(): Promise<void> {
+    const session = this.session;
+    const token = this.pushToken;
+    this.session = null;
+    if (session && token) {
+      await removeDeviceToken(session.uid, token);
+    }
   }
 
   /**

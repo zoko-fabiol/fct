@@ -20,6 +20,7 @@ import { LoginView } from './components/auth/LoginView.tsx';
 import { authService } from './services/firebase.ts';
 import { App as CapApp } from '@capacitor/app';
 import { isNativeMobile } from './services/mobileFileService.ts';
+import { notificationEngine } from './services/pushNotificationService.ts';
 
 // 18 Feature Modules + Showroom
 import { DashboardView } from './modules/DashboardView.tsx';
@@ -666,6 +667,12 @@ export default function App() {
           currentUser?.role === 'super_admin');
 
   // Badges calculation for sidebar items
+  // Enregistrement de l'appareil pour les notifications push (token FCM -> Firestore)
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    void notificationEngine.registerForUser(currentUser.id, currentUser.role);
+  }, [currentUser?.id, currentUser?.role]);
+
   const badges: Partial<Record<AppModule, number>> = {
     rentals: state.contracts.filter((c) => c.status === 'ACTIVE').length,
     reservations: state.reservations.filter((r) => r.status === 'CONFIRMED').length,
@@ -689,6 +696,7 @@ export default function App() {
       sessionStorage.removeItem('fct_session_locked');
       localStorage.removeItem('fct_session_locked');
       setIsSessionLocked(false);
+      await notificationEngine.unregisterUser();
       await authService.logout();
     } catch (e) {
       console.warn('Erreur déconnexion:', e);
@@ -733,6 +741,7 @@ export default function App() {
         onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
         isPrivacyMode={isPrivacyMode}
         onTogglePrivacyMode={handleTogglePrivacyMode}
+        onOpenModule={(m) => handleSelectModule(m as AppModule)}
       />
 
       {/* Offline Alert Strip when disconnected */}
