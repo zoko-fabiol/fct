@@ -33,6 +33,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { sendEmailViaEmailJS } from '../services/emailService.ts';
+import { notificationEngine } from '../services/pushNotificationService.ts';
 import { EmailPreviewModal, EmailPreviewData } from '../components/modals/EmailPreviewModal.tsx';
 import {
   buildReservationConfirmationEmail,
@@ -61,6 +62,8 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ state, lan
   const [benchTemplate, setBenchTemplate] = useState('RESERVATION');
   const [benchSending, setBenchSending] = useState(false);
   const [benchStatus, setBenchStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [pushTesting, setPushTesting] = useState(false);
+  const [pushStatus, setPushStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Génération dynamique des données de prévisualisation pour chaque modèle
   const getEmailDataForTemplate = (templateKey: string): EmailPreviewData => {
@@ -416,6 +419,95 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ state, lan
               <Eye className="w-3.5 h-3.5 text-blue-900" />
               <span>{isEn ? 'Open Full Preview (Desktop & Mobile)' : "Ouvrir l'Aperçu Complet (Desktop & Mobile)"}</span>
             </button>
+
+            <div className="pt-4 border-t border-slate-100 space-y-3">
+            <div className="flex items-center gap-2">
+              <Smartphone className="w-4 h-4 text-indigo-600" />
+              <h3 className="font-extrabold text-sm text-slate-900">
+                {isEn ? 'System notification test' : 'Test de notification système'}
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500">
+              {isEn
+                ? 'Display a test notification on this browser or Android device.'
+                : 'Affiche une notification de test sur ce navigateur ou cet appareil Android.'}
+            </p>
+            <button
+              type="button"
+              disabled={pushTesting}
+              onClick={async () => {
+                setPushTesting(true);
+                setPushStatus(null);
+                try {
+                  const permitted = await notificationEngine.requestPermissions();
+                  if (!permitted) {
+                    throw new Error(
+                      isEn
+                        ? 'Notification permission was not granted.'
+                        : 'L’autorisation de notification n’a pas été accordée.'
+                    );
+                  }
+                  const dispatched = await notificationEngine.dispatch({
+                    title: 'FCT Automobile — Test',
+                    body: isEn
+                      ? 'System notification is working on this device.'
+                      : 'La notification système fonctionne sur cet appareil.',
+                  });
+                  if (!dispatched) {
+                    throw new Error(
+                      isEn
+                        ? 'The notification could not be displayed.'
+                        : 'La notification n’a pas pu être affichée.'
+                    );
+                  }
+                  setPushStatus({
+                    type: 'success',
+                    message: isEn
+                      ? 'Test notification sent successfully.'
+                      : 'Notification de test envoyée avec succès.',
+                  });
+                } catch (err) {
+                  setPushStatus({
+                    type: 'error',
+                    message: err instanceof Error
+                      ? err.message
+                      : (isEn ? 'Notification test failed.' : 'Échec du test de notification.'),
+                  });
+                } finally {
+                  setPushTesting(false);
+                }
+              }}
+              className="w-full px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-400 text-white text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer"
+            >
+              {pushTesting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{isEn ? 'Testing...' : 'Test en cours...'}</span>
+                </>
+              ) : (
+                <>
+                  <BellRing className="w-4 h-4" />
+                  <span>{isEn ? 'Send system test' : 'Envoyer le test système'}</span>
+                </>
+              )}
+            </button>
+            {pushStatus && (
+              <div
+                className={`p-3 rounded-xl border text-xs flex items-center gap-2 ${
+                  pushStatus.type === 'success'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-900 font-semibold'
+                    : 'bg-rose-50 border-rose-200 text-rose-800'
+                }`}
+              >
+                {pushStatus.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                )}
+                <span>{pushStatus.message}</span>
+              </div>
+            )}
+            </div>
           </div>
 
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-xs border border-slate-200 p-5 space-y-4">
